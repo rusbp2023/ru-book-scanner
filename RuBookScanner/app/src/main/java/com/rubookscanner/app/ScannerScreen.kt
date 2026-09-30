@@ -105,8 +105,8 @@ private fun CameraScanContent(onWordAccepted: (String) -> Unit) {
 
     LaunchedEffect(Unit) {
         val cameraProvider = awaitCameraProvider(context)
-        val preview = Preview.Builder().build().also {
-            it.surfaceProvider = previewView.surfaceProvider
+               val preview = Preview.Builder().build().also {
+            it.setSurfaceProvider(previewView.surfaceProvider)
         }
         cameraProvider.unbindAll()
         cameraProvider.bindToLifecycle(

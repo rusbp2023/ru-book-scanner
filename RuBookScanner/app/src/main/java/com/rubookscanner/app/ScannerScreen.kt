@@ -3,13 +3,12 @@ package com.rubookscanner.app
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.Rect
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.mlkit.vision.MlKitAnalyzer
 import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -18,11 +17,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,7 +30,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -41,14 +37,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.rubookscanner.app.data.AiClient
 import com.rubookscanner.app.data.AiSettings
 import com.rubookscanner.app.data.Flashcard
@@ -100,30 +95,17 @@ private fun PermissionRequiredScreen(onRequest: () -> Unit) {
     }
 }
 
-/**
- * Egy jelölt szó doboza, amit az élő elemzés talált a képernyő közepe körül.
- * Csak a POZÍCIÓ megbízható belőle — a cirill betűket az élő (Latin) modell
- * gyakran félreolvassa, ezért a végleges szót és fordítást gombnyomásra
- * mindig egy fotóból, AI-vízióval kérjük le, nem ebből.
- */
-private data class TrackedBox(val rect: Rect, val text: String)
-
 @Composable
 private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashcard) -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val density = LocalDensity.current
     val scope = rememberCoroutineScope()
 
     val previewView = remember { PreviewView(context) }
     val cameraController = remember { LifecycleCameraController(context) }
-    val textRecognizer = remember { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
-
-    var trackedBox by remember { mutableStateOf<TrackedBox?>(null) }
-    var lastTrackUpdateMs by remember { mutableStateOf(0L) }
 
     var testMode by remember { mutableStateOf(true) }
-    val testWords = remember { mutableStateListOf<String>() }
+    var testCropPreview by remember { mutableStateOf<ImageBitmap?>(null) }
 
     var isProcessing by remember { mutableStateOf(false) }
     var recognizedCard by remember { mutableStateOf<Flashcard?>(null) }
@@ -131,60 +113,9 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
     var notFound by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        cameraController.setEnabledUseCases(
-            CameraController.IMAGE_CAPTURE or CameraController.IMAGE_ANALYSIS
-        )
+        cameraController.setEnabledUseCases(CameraController.IMAGE_CAPTURE)
         cameraController.bindToLifecycle(lifecycleOwner)
         previewView.controller = cameraController
-
-        cameraController.setImageAnalysisAnalyzer(
-            ContextCompat.getMainExecutor(context),
-            MlKitAnalyzer(
-                listOf(textRecognizer),
-                CameraController.COORDINATE_SYSTEM_VIEW_REFERENCED,
-                ContextCompat.getMainExecutor(context)
-            ) { result ->
-                val now = System.currentTimeMillis()
-                if (now - lastTrackUpdateMs < 250) {
-                    return@MlKitAnalyzer
-                }
-                lastTrackUpdateMs = now
-
-                val text = result.getValue(textRecognizer)
-                val elements = text?.textBlocks?.flatMap { block -> block.lines.flatMap { it.elements } }
-                if (elements.isNullOrEmpty()) {
-                    trackedBox = null
-                } else {
-                    val centerX = previewView.width / 2
-                    val centerY = previewView.height / 2
-                    val containing = elements.filter { it.boundingBox?.contains(centerX, centerY) == true }
-                    val best = if (containing.isNotEmpty()) {
-                        containing.minByOrNull { el ->
-                            val box = el.boundingBox!!
-                            box.width().toLong() * box.height().toLong()
-                        }
-                    } else {
-                        elements.minByOrNull { el ->
-                            val box = el.boundingBox
-                            if (box == null) {
-                                Long.MAX_VALUE
-                            } else {
-                                val dx = (box.centerX() - centerX).toLong()
-                                val dy = (box.centerY() - centerY).toLong()
-                                dx * dx + dy * dy
-                            }
-                        }
-                    }
-                    val bestBox = best?.boundingBox
-                    val bestText = best?.text
-                    trackedBox = if (bestBox != null && bestText != null) {
-                        TrackedBox(bestBox, bestText)
-                    } else {
-                        null
-                    }
-                }
-            }
-        )
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -193,19 +124,13 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
             modifier = Modifier.fillMaxSize()
         )
 
-        // Dinamikus, sárga keret a jelenleg középen lévő szó körül
-        trackedBox?.let { tracked ->
-            val leftDp = with(density) { tracked.rect.left.toDp() }
-            val topDp = with(density) { tracked.rect.top.toDp() }
-            val widthDp = with(density) { tracked.rect.width().toDp() }
-            val heightDp = with(density) { tracked.rect.height().toDp() }
-            Box(
-                Modifier
-                    .offset(x = leftDp, y = topDp)
-                    .size(width = widthDp, height = heightDp)
-                    .border(2.dp, Color.Yellow, RoundedCornerShape(6.dp))
-            )
-        }
+        // Statikus, sárga, üres kör a képernyő közepén — ide célozd a szót.
+        Box(
+            Modifier
+                .align(Alignment.Center)
+                .size(40.dp)
+                .border(2.dp, Color.Yellow, CircleShape)
+        )
 
         Column(
             Modifier
@@ -215,32 +140,35 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                "Mozgasd a telefont, hogy a sárga keret a kívánt szón legyen, majd nyomd meg a gombot.",
+                "Célozd a sárga körrel a szót, majd nyomd meg a gombot.",
                 color = Color.White
             )
             Row(
                 Modifier
                     .padding(top = 8.dp)
-                    .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                    .background(Color.Black.copy(alpha = 0.4f), CircleShape)
                     .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text("Teszt mód (AI nélkül)", color = Color.White)
-                Switch(checked = testMode, onCheckedChange = { testMode = it })
+                Switch(checked = testMode, onCheckedChange = {
+                    testMode = it
+                    testCropPreview = null
+                })
             }
-            if (testMode && testWords.isNotEmpty()) {
+            if (testMode && testCropPreview != null) {
                 Card(Modifier.padding(top = 8.dp)) {
-                    Column(Modifier.padding(12.dp)) {
-                        Text(
-                            "Teszt-szavak (${testWords.size}):",
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                        Text(testWords.joinToString(", "))
-                        OutlinedButton(
-                            onClick = { testWords.clear() },
+                    Column(
+                        Modifier.padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("Ez a rész menne az AI-nak:", style = MaterialTheme.typography.labelMedium)
+                        Image(
+                            bitmap = testCropPreview!!,
+                            contentDescription = null,
                             modifier = Modifier.padding(top = 6.dp)
-                        ) { Text("Lista ürítése") }
+                        )
                     }
                 }
             }
@@ -261,7 +189,7 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
                     ) {
                         when {
                             errorMsg != null -> Text("Hiba: $errorMsg")
-                            notFound -> Text("Nem találtam szót a keret helyén. Próbáld közelebbről vagy élesebben.")
+                            notFound -> Text("Nem találtam szót a kör helyén. Próbáld közelebbről vagy élesebben.")
                             recognizedCard != null -> {
                                 val card = recognizedCard!!
                                 Text(card.dictionaryForm, style = MaterialTheme.typography.headlineSmall)
@@ -292,15 +220,7 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
 
             Button(
                 onClick = {
-                    if (testMode) {
-                        val word = trackedBox?.text
-                        if (!word.isNullOrBlank()) {
-                            testWords.add(word)
-                        }
-                        return@Button
-                    }
-
-                    if (settings.apiKey.isBlank()) {
+                    if (!testMode && settings.apiKey.isBlank()) {
                         errorMsg = "Előbb add meg az API kulcsot a Beállításoknál!"
                         recognizedCard = null
                         notFound = false
@@ -310,7 +230,8 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
                     recognizedCard = null
                     notFound = false
                     errorMsg = null
-                    val boxAtPress = trackedBox
+                    testCropPreview = null
+
                     cameraController.takePicture(
                         ContextCompat.getMainExecutor(context),
                         object : androidx.camera.core.ImageCapture.OnImageCapturedCallback() {
@@ -324,35 +245,46 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
                                 }
                                 val screenBitmap = centerCropToAspect(rawBitmap, screenAspect)
 
-                                // A kereten belüli terület kivágása: a képernyő-koordinátákat
-                                // átszámoljuk a lefotózott (és képernyő-arányra vágott) kép
-                                // saját pixelkoordinátáira, bő ráhagyással.
-                                val cropBitmap = if (boxAtPress != null && previewView.width > 0 && previewView.height > 0) {
-                                    val scaleX = screenBitmap.width.toFloat() / previewView.width.toFloat()
-                                    val scaleY = screenBitmap.height.toFloat() / previewView.height.toFloat()
-                                    val r = boxAtPress.rect
-                                    val padW = r.width() * 0.8f
-                                    val padH = r.height() * 0.8f
-                                    val left = ((r.left - padW) * scaleX).toInt().coerceIn(0, screenBitmap.width - 1)
-                                    val top = ((r.top - padH) * scaleY).toInt().coerceIn(0, screenBitmap.height - 1)
-                                    val right = ((r.right + padW) * scaleX).toInt().coerceIn(left + 1, screenBitmap.width)
-                                    val bottom = ((r.bottom + padH) * scaleY).toInt().coerceIn(top + 1, screenBitmap.height)
-                                    Bitmap.createBitmap(screenBitmap, left, top, right - left, bottom - top)
-                                } else {
-                                    screenBitmap
-                                }
-
                                 scope.launch {
                                     try {
-                                        val base64 = bitmapToJpegBase64(cropBitmap)
-                                        val client = AiClient(settings)
-                                        val card = withContext(Dispatchers.IO) {
-                                            client.lookupWordFromImage(base64)
+                                        val cropBitmap = withContext(Dispatchers.Default) {
+                                            val centerX = screenBitmap.width / 2
+                                            val centerY = screenBitmap.height / 2
+                                            val text = recognizeTextOnDevice(screenBitmap)
+                                            val box = findWordBoxNearPoint(text, centerX, centerY)
+                                            if (box != null) {
+                                                val padW = (box.width() * 0.4f).toInt().coerceAtLeast(4)
+                                                val padH = (box.height() * 0.4f).toInt().coerceAtLeast(4)
+                                                val left = (box.left - padW).coerceIn(0, screenBitmap.width - 1)
+                                                val top = (box.top - padH).coerceIn(0, screenBitmap.height - 1)
+                                                val right = (box.right + padW).coerceIn(left + 1, screenBitmap.width)
+                                                val bottom = (box.bottom + padH).coerceIn(top + 1, screenBitmap.height)
+                                                Bitmap.createBitmap(
+                                                    screenBitmap, left, top, right - left, bottom - top
+                                                )
+                                            } else {
+                                                // Nem talált szót -> egy ésszerű méretű terület a kör körül
+                                                val fw = (screenBitmap.width * 0.35f).toInt().coerceAtLeast(1)
+                                                val fh = (screenBitmap.height * 0.12f).toInt().coerceAtLeast(1)
+                                                val left = (centerX - fw / 2).coerceIn(0, screenBitmap.width - fw)
+                                                val top = (centerY - fh / 2).coerceIn(0, screenBitmap.height - fh)
+                                                Bitmap.createBitmap(screenBitmap, left, top, fw, fh)
+                                            }
                                         }
-                                        if (card.original.isBlank()) {
-                                            notFound = true
+
+                                        if (testMode) {
+                                            testCropPreview = cropBitmap.asImageBitmap()
                                         } else {
-                                            recognizedCard = card
+                                            val base64 = bitmapToJpegBase64(cropBitmap)
+                                            val client = AiClient(settings)
+                                            val card = withContext(Dispatchers.IO) {
+                                                client.lookupWordFromImage(base64)
+                                            }
+                                            if (card.original.isBlank()) {
+                                                notFound = true
+                                            } else {
+                                                recognizedCard = card
+                                            }
                                         }
                                     } catch (e: Exception) {
                                         errorMsg = e.message ?: "ismeretlen hiba"

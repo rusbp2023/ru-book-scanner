@@ -2,9 +2,17 @@ package com.rubookscanner.app
 
 import android.graphics.Bitmap
 import android.graphics.Matrix
+import android.graphics.Rect
 import android.util.Base64
 import androidx.camera.core.ImageProxy
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.Text
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.io.ByteArrayOutputStream
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 /** JPEG ImageProxy -> felfelé álló (elforgatott) Bitmap. */
 fun imageProxyToUprightBitmap(image: ImageProxy): Bitmap {
@@ -63,4 +71,42 @@ fun bitmapToJpegBase64(bitmap: Bitmap, maxDimension: Int = 1280, quality: Int = 
     val stream = ByteArrayOutputStream()
     scaled.compress(Bitmap.CompressFormat.JPEG, quality, stream)
     return Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+}
+
+/**
+ * Egyszeri (nem folyamatos) szövegfelismerés egy Bitmap-en, csak a szavak HELYÉNEK
+ * megtalálásához. A cirill betűket ez a modell nem olvassa megbízhatóan, a tartalmát
+ * ne használd fel, csak a boundingBox-okat.
+ */
+suspend fun recognizeTextOnDevice(bitmap: Bitmap): Text = suspendCancellableCoroutine { cont ->
+    val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    val input = InputImage.fromBitmap(bitmap, 0)
+    recognizer.process(input)
+        .addOnSuccessListener { result -> cont.resume(result) }
+        .addOnFailureListener { e -> cont.resumeWithException(e) }
+}
+
+/** Megkeresi a (centerX, centerY) pont alatti, vagy ahhoz legközelebbi felismert szó dobozát. */
+fun findWordBoxNearPoint(text: Text, centerX: Int, centerY: Int): Rect? {
+    val elements = text.textBlocks.flatMap { block -> block.lines.flatMap { it.elements } }
+    if (elements.isEmpty()) return null
+
+    val containing = elements.filter { el -> el.boundingBox?.contains(centerX, centerY) == true }
+    if (containing.isNotEmpty()) {
+        return containing.minByOrNull { el ->
+            val box = el.boundingBox!!
+            box.width().toLong() * box.height().toLong()
+        }?.boundingBox
+    }
+
+    return elements.minByOrNull { el ->
+        val box = el.boundingBox
+        if (box == null) {
+            Long.MAX_VALUE
+        } else {
+            val dx = (box.centerX() - centerX).toLong()
+            val dy = (box.centerY() - centerY).toLong()
+            dx * dx + dy * dy
+        }
+    }?.boundingBox
 }

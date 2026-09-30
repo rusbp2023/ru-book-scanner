@@ -2,6 +2,7 @@ package com.rubookscanner.app
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.Rect
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,10 +28,12 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -103,7 +106,7 @@ private fun PermissionRequiredScreen(onRequest: () -> Unit) {
  * gyakran félreolvassa, ezért a végleges szót és fordítást gombnyomásra
  * mindig egy fotóból, AI-vízióval kérjük le, nem ebből.
  */
-private data class TrackedBox(val rect: Rect)
+private data class TrackedBox(val rect: Rect, val text: String)
 
 @Composable
 private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashcard) -> Unit) {
@@ -118,6 +121,9 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
 
     var trackedBox by remember { mutableStateOf<TrackedBox?>(null) }
     var lastTrackUpdateMs by remember { mutableStateOf(0L) }
+
+    var testMode by remember { mutableStateOf(true) }
+    val testWords = remember { mutableStateListOf<String>() }
 
     var isProcessing by remember { mutableStateOf(false) }
     var recognizedCard by remember { mutableStateOf<Flashcard?>(null) }
@@ -170,7 +176,12 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
                         }
                     }
                     val bestBox = best?.boundingBox
-                    trackedBox = if (bestBox != null) TrackedBox(bestBox) else null
+                    val bestText = best?.text
+                    trackedBox = if (bestBox != null && bestText != null) {
+                        TrackedBox(bestBox, bestText)
+                    } else {
+                        null
+                    }
                 }
             }
         )
@@ -180,14 +191,6 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
         AndroidView(
             factory = { previewView },
             modifier = Modifier.fillMaxSize()
-        )
-
-        // Halvány, fix piros pötty a képernyő közepén (tájékoztató referenciapont)
-        Box(
-            Modifier
-                .align(Alignment.Center)
-                .size(10.dp)
-                .background(Color.Red.copy(alpha = 0.5f), CircleShape)
         )
 
         // Dinamikus, sárga keret a jelenleg középen lévő szó körül
@@ -204,13 +207,44 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
             )
         }
 
-        Text(
-            "Mozgasd a telefont, hogy a sárga keret a kívánt szón legyen, majd nyomd meg a gombot.",
-            color = Color.White,
-            modifier = Modifier
+        Column(
+            Modifier
                 .align(Alignment.TopCenter)
-                .padding(16.dp)
-        )
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                "Mozgasd a telefont, hogy a sárga keret a kívánt szón legyen, majd nyomd meg a gombot.",
+                color = Color.White
+            )
+            Row(
+                Modifier
+                    .padding(top = 8.dp)
+                    .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("Teszt mód (AI nélkül)", color = Color.White)
+                Switch(checked = testMode, onCheckedChange = { testMode = it })
+            }
+            if (testMode && testWords.isNotEmpty()) {
+                Card(Modifier.padding(top = 8.dp)) {
+                    Column(Modifier.padding(12.dp)) {
+                        Text(
+                            "Teszt-szavak (${testWords.size}):",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                        Text(testWords.joinToString(", "))
+                        OutlinedButton(
+                            onClick = { testWords.clear() },
+                            modifier = Modifier.padding(top = 6.dp)
+                        ) { Text("Lista ürítése") }
+                    }
+                }
+            }
+        }
 
         Column(
             Modifier
@@ -258,6 +292,14 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
 
             Button(
                 onClick = {
+                    if (testMode) {
+                        val word = trackedBox?.text
+                        if (!word.isNullOrBlank()) {
+                            testWords.add(word)
+                        }
+                        return@Button
+                    }
+
                     if (settings.apiKey.isBlank()) {
                         errorMsg = "Előbb add meg az API kulcsot a Beállításoknál!"
                         recognizedCard = null
@@ -268,6 +310,7 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
                     recognizedCard = null
                     notFound = false
                     errorMsg = null
+                    val boxAtPress = trackedBox
                     cameraController.takePicture(
                         ContextCompat.getMainExecutor(context),
                         object : androidx.camera.core.ImageCapture.OnImageCapturedCallback() {
@@ -279,10 +322,29 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
                                 } else {
                                     rawBitmap.width.toFloat() / rawBitmap.height.toFloat()
                                 }
-                                val bitmap = centerCropToAspect(rawBitmap, screenAspect)
+                                val screenBitmap = centerCropToAspect(rawBitmap, screenAspect)
+
+                                // A kereten belüli terület kivágása: a képernyő-koordinátákat
+                                // átszámoljuk a lefotózott (és képernyő-arányra vágott) kép
+                                // saját pixelkoordinátáira, bő ráhagyással.
+                                val cropBitmap = if (boxAtPress != null && previewView.width > 0 && previewView.height > 0) {
+                                    val scaleX = screenBitmap.width.toFloat() / previewView.width.toFloat()
+                                    val scaleY = screenBitmap.height.toFloat() / previewView.height.toFloat()
+                                    val r = boxAtPress.rect
+                                    val padW = r.width() * 0.8f
+                                    val padH = r.height() * 0.8f
+                                    val left = ((r.left - padW) * scaleX).toInt().coerceIn(0, screenBitmap.width - 1)
+                                    val top = ((r.top - padH) * scaleY).toInt().coerceIn(0, screenBitmap.height - 1)
+                                    val right = ((r.right + padW) * scaleX).toInt().coerceIn(left + 1, screenBitmap.width)
+                                    val bottom = ((r.bottom + padH) * scaleY).toInt().coerceIn(top + 1, screenBitmap.height)
+                                    Bitmap.createBitmap(screenBitmap, left, top, right - left, bottom - top)
+                                } else {
+                                    screenBitmap
+                                }
+
                                 scope.launch {
                                     try {
-                                        val base64 = bitmapToJpegBase64(bitmap)
+                                        val base64 = bitmapToJpegBase64(cropBitmap)
                                         val client = AiClient(settings)
                                         val card = withContext(Dispatchers.IO) {
                                             client.lookupWordFromImage(base64)

@@ -6,7 +6,7 @@ import androidx.camera.core.ImageProxy
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.cyrillic.CyrillicTextRecognizerOptions
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -28,7 +28,7 @@ fun imageProxyToUprightBitmap(image: ImageProxy): Bitmap {
 
 /** Cirill szövegfelismerés futtatása egy Bitmap-en (suspend, IO/CPU munka, hívd háttérszálról). */
 suspend fun recognizeCyrillicText(bitmap: Bitmap): Text = suspendCancellableCoroutine { cont ->
-    val recognizer = TextRecognition.getClient(CyrillicTextRecognizerOptions.Builder().build())
+    val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
     val input = InputImage.fromBitmap(bitmap, 0)
     recognizer.process(input)
         .addOnSuccessListener { result -> cont.resume(result) }

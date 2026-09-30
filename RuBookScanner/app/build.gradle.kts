@@ -56,7 +56,7 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.3.4")
     implementation("androidx.camera:camera-view:1.3.4")
 
-    implementation("com.google.mlkit:text-recognition-cyrillic:16.0.1")
+    implementation("com.google.mlkit:text-recognition:16.0.1")
 
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")

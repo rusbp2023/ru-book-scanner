@@ -117,6 +117,7 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
     val textRecognizer = remember { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
 
     var trackedBox by remember { mutableStateOf<TrackedBox?>(null) }
+    var lastTrackUpdateMs by remember { mutableStateOf(0L) }
 
     var isProcessing by remember { mutableStateOf(false) }
     var recognizedCard by remember { mutableStateOf<Flashcard?>(null) }
@@ -137,6 +138,12 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
                 CameraController.COORDINATE_SYSTEM_VIEW_REFERENCED,
                 ContextCompat.getMainExecutor(context)
             ) { result ->
+                val now = System.currentTimeMillis()
+                if (now - lastTrackUpdateMs < 250) {
+                    return@MlKitAnalyzer
+                }
+                lastTrackUpdateMs = now
+
                 val text = result.getValue(textRecognizer)
                 val elements = text?.textBlocks?.flatMap { block -> block.lines.flatMap { it.elements } }
                 if (elements.isNullOrEmpty()) {
@@ -265,8 +272,14 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
                         ContextCompat.getMainExecutor(context),
                         object : androidx.camera.core.ImageCapture.OnImageCapturedCallback() {
                             override fun onCaptureSuccess(image: androidx.camera.core.ImageProxy) {
-                                val bitmap = imageProxyToUprightBitmap(image)
+                                val rawBitmap = imageProxyToUprightBitmap(image)
                                 image.close()
+                                val screenAspect = if (previewView.height > 0) {
+                                    previewView.width.toFloat() / previewView.height.toFloat()
+                                } else {
+                                    rawBitmap.width.toFloat() / rawBitmap.height.toFloat()
+                                }
+                                val bitmap = centerCropToAspect(rawBitmap, screenAspect)
                                 scope.launch {
                                     try {
                                         val base64 = bitmapToJpegBase64(bitmap)

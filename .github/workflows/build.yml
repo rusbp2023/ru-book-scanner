@@ -1,4 +1,4 @@
-yaml
+```yaml
 name: Build APK
 
 on:
@@ -36,3 +36,4 @@ jobs:
         with:
           name: app-debug-apk
           path: RuBookScanner/app/build/outputs/apk/debug/app-debug.apk
+```

@@ -87,10 +87,11 @@ fun AppRoot(store: Store) {
         Box(Modifier.padding(padding)) {
             when (screen) {
                 AppScreen.SCAN -> ScannerScreen(
-                    onWordAccepted = { word ->
+                    settings = settings,
+                    onFlashcardAccepted = { card ->
                         scope.launch {
-                            store.addWord(word)
-                            snackbarHostState.showSnackbar("Hozzáadva: $word")
+                            store.addFlashcards(listOf(card))
+                            snackbarHostState.showSnackbar("Hozzáadva a kártyákhoz: ${card.original}")
                         }
                     }
                 )

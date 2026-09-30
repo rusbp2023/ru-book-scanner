@@ -146,6 +146,165 @@ class AiClient(private val settings: AiSettings) {
         }
     }
 
+    /** Blokkoló hívás — mindig háttérszálon (Dispatchers.IO) hívd! Egy fotóból ismeri fel + fordítja a szót. */
+    fun lookupWordFromImage(imageBase64: String): Flashcard {
+        if (settings.apiKey.isBlank()) throw IllegalStateException("Nincs megadva API kulcs a Beállításoknál.")
+
+        val prompt = buildImagePrompt()
+        val rawText = when (settings.provider) {
+            AiProvider.ANTHROPIC -> callAnthropicVision(prompt, imageBase64)
+            AiProvider.OPENAI -> callOpenAiVision(prompt, imageBase64)
+            AiProvider.GEMINI -> callGeminiVision(prompt, imageBase64)
+        }
+        return parseSingleCardResponse(rawText)
+    }
+
+    private fun buildImagePrompt(): String = """
+        Ez a kép egy nyomtatott lap fotója, aminek pontosan a közepén egy kis piros pötty van egy orosz szón.
+        Azonosítsd ezt az egy orosz szót (amelyik pontosan a piros pötty alatt, vagy ahhoz a legközelebb van).
+        Adj meg hozzá:
+        1. a szót pontosan úgy, ahogy a lapon áll (ragozott/toldalékolt alakban)
+        2. a szótári alapalakot (ige esetén infinitivus, főnév esetén egyes szám alanyeset, stb.)
+        3. a legjellemzőbb magyar fordítást, röviden.
+
+        Válaszolj KIZÁRÓLAG egy JSON objektummal, semmi mást ne írj a válaszba (se magyarázatot, se code fence-t).
+        A formátum pontosan ez legyen:
+        {"original":"...","dictionary_form":"...","translation":"..."}
+    """.trimIndent()
+
+    private fun callAnthropicVision(prompt: String, imageBase64: String): String {
+        val content = JSONArray().apply {
+            put(JSONObject().apply {
+                put("type", "image")
+                put(
+                    "source",
+                    JSONObject().apply {
+                        put("type", "base64")
+                        put("media_type", "image/jpeg")
+                        put("data", imageBase64)
+                    }
+                )
+            })
+            put(JSONObject().apply {
+                put("type", "text")
+                put("text", prompt)
+            })
+        }
+        val body = JSONObject().apply {
+            put("model", settings.model.ifBlank { "claude-sonnet-4-6" })
+            put("max_tokens", 500)
+            put(
+                "messages",
+                JSONArray().put(JSONObject().apply {
+                    put("role", "user")
+                    put("content", content)
+                })
+            )
+        }
+        val url = settings.baseUrl.ifBlank { "https://api.anthropic.com/v1/messages" }
+        val request = Request.Builder()
+            .url(url)
+            .addHeader("x-api-key", settings.apiKey)
+            .addHeader("anthropic-version", "2023-06-01")
+            .addHeader("content-type", "application/json")
+            .post(body.toString().toRequestBody(jsonMedia))
+            .build()
+
+        client.newCall(request).execute().use { resp ->
+            val respBody = resp.body?.string() ?: ""
+            if (!resp.isSuccessful) throw RuntimeException("Anthropic hiba (${resp.code}): $respBody")
+            val json = JSONObject(respBody)
+            val contentArr = json.getJSONArray("content")
+            val sb = StringBuilder()
+            for (i in 0 until contentArr.length()) {
+                val block = contentArr.getJSONObject(i)
+                if (block.optString("type") == "text") sb.append(block.getString("text"))
+            }
+            return sb.toString()
+        }
+    }
+
+    private fun callOpenAiVision(prompt: String, imageBase64: String): String {
+        val content = JSONArray().apply {
+            put(JSONObject().apply {
+                put("type", "text")
+                put("text", prompt)
+            })
+            put(JSONObject().apply {
+                put("type", "image_url")
+                put(
+                    "image_url",
+                    JSONObject().apply { put("url", "data:image/jpeg;base64,$imageBase64") }
+                )
+            })
+        }
+        val body = JSONObject().apply {
+            put("model", settings.model.ifBlank { "gpt-4o-mini" })
+            put(
+                "messages",
+                JSONArray().put(JSONObject().apply {
+                    put("role", "user")
+                    put("content", content)
+                })
+            )
+        }
+        val url = settings.baseUrl.ifBlank { "https://api.openai.com/v1/chat/completions" }
+        val request = Request.Builder()
+            .url(url)
+            .addHeader("Authorization", "Bearer ${settings.apiKey}")
+            .addHeader("content-type", "application/json")
+            .post(body.toString().toRequestBody(jsonMedia))
+            .build()
+
+        client.newCall(request).execute().use { resp ->
+            val respBody = resp.body?.string() ?: ""
+            if (!resp.isSuccessful) throw RuntimeException("OpenAI hiba (${resp.code}): $respBody")
+            val json = JSONObject(respBody)
+            val choices = json.getJSONArray("choices")
+            val message = choices.getJSONObject(0).getJSONObject("message")
+            return message.getString("content")
+        }
+    }
+
+    private fun callGeminiVision(prompt: String, imageBase64: String): String {
+        val model = settings.model.ifBlank { "gemini-2.0-flash" }
+        val url = settings.baseUrl.ifBlank {
+            "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=${settings.apiKey}"
+        }
+        val parts = JSONArray().apply {
+            put(JSONObject().apply { put("text", prompt) })
+            put(
+                JSONObject().apply {
+                    put(
+                        "inline_data",
+                        JSONObject().apply {
+                            put("mime_type", "image/jpeg")
+                            put("data", imageBase64)
+                        }
+                    )
+                }
+            )
+        }
+        val body = JSONObject().apply {
+            put("contents", JSONArray().put(JSONObject().apply { put("parts", parts) }))
+        }
+        val request = Request.Builder()
+            .url(url)
+            .addHeader("content-type", "application/json")
+            .post(body.toString().toRequestBody(jsonMedia))
+            .build()
+
+        client.newCall(request).execute().use { resp ->
+            val respBody = resp.body?.string() ?: ""
+            if (!resp.isSuccessful) throw RuntimeException("Gemini hiba (${resp.code}): $respBody")
+            val json = JSONObject(respBody)
+            val candidates = json.getJSONArray("candidates")
+            val content = candidates.getJSONObject(0).getJSONObject("content")
+            val partsArr = content.getJSONArray("parts")
+            return partsArr.getJSONObject(0).getString("text")
+        }
+    }
+
     private fun parseResponse(raw: String, originalWords: List<String>): List<Flashcard> {
         val cleaned = raw.trim()
             .removePrefix("```json").removePrefix("```")
@@ -170,5 +329,23 @@ class AiClient(private val settings: AiSettings) {
             )
         }
         return out
+    }
+
+    private fun parseSingleCardResponse(raw: String): Flashcard {
+        val cleaned = raw.trim()
+            .removePrefix("```json").removePrefix("```")
+            .removeSuffix("```").trim()
+        val startIdx = cleaned.indexOf('{')
+        val endIdx = cleaned.lastIndexOf('}')
+        if (startIdx == -1 || endIdx == -1) {
+            throw RuntimeException("Nem sikerült értelmezni az AI válaszát: $cleaned")
+        }
+        val obj = JSONObject(cleaned.substring(startIdx, endIdx + 1))
+        return Flashcard(
+            id = 0L,
+            original = obj.optString("original", ""),
+            dictionaryForm = obj.optString("dictionary_form", ""),
+            translation = obj.optString("translation", "")
+        )
     }
 }

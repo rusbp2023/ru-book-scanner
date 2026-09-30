@@ -41,12 +41,17 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import com.rubookscanner.app.data.AiClient
+import com.rubookscanner.app.data.AiSettings
+import com.rubookscanner.app.data.Flashcard
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 
 @Composable
-fun ScannerScreen(onWordAccepted: (String) -> Unit) {
+fun ScannerScreen(settings: AiSettings, onFlashcardAccepted: (Flashcard) -> Unit) {
     val context = LocalContext.current
     var hasPermission by remember {
         mutableStateOf(
@@ -65,7 +70,7 @@ fun ScannerScreen(onWordAccepted: (String) -> Unit) {
     }
 
     if (hasPermission) {
-        CameraScanContent(onWordAccepted = onWordAccepted)
+        CameraScanContent(settings = settings, onFlashcardAccepted = onFlashcardAccepted)
     } else {
         PermissionRequiredScreen(onRequest = { launcher.launch(Manifest.permission.CAMERA) })
     }
@@ -90,7 +95,7 @@ private fun PermissionRequiredScreen(onRequest: () -> Unit) {
 }
 
 @Composable
-private fun CameraScanContent(onWordAccepted: (String) -> Unit) {
+private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashcard) -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
@@ -99,13 +104,13 @@ private fun CameraScanContent(onWordAccepted: (String) -> Unit) {
     val imageCapture = remember { ImageCapture.Builder().build() }
 
     var isProcessing by remember { mutableStateOf(false) }
-    var recognizedWord by remember { mutableStateOf<String?>(null) }
+    var recognizedCard by remember { mutableStateOf<Flashcard?>(null) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
     var notFound by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         val cameraProvider = awaitCameraProvider(context)
-               val preview = Preview.Builder().build().also {
+        val preview = Preview.Builder().build().also {
             it.setSurfaceProvider(previewView.surfaceProvider)
         }
         cameraProvider.unbindAll()
@@ -146,7 +151,7 @@ private fun CameraScanContent(onWordAccepted: (String) -> Unit) {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (recognizedWord != null || notFound || errorMsg != null) {
+            if (recognizedCard != null || notFound || errorMsg != null) {
                 Card(Modifier.padding(bottom = 16.dp)) {
                     Column(
                         Modifier.padding(16.dp),
@@ -155,21 +160,27 @@ private fun CameraScanContent(onWordAccepted: (String) -> Unit) {
                         when {
                             errorMsg != null -> Text("Hiba: $errorMsg")
                             notFound -> Text("Nem találtam szót a pötty alatt. Próbáld közelebbről vagy élesebben.")
-                            recognizedWord != null -> {
-                                Text(recognizedWord!!, style = MaterialTheme.typography.headlineSmall)
+                            recognizedCard != null -> {
+                                val card = recognizedCard!!
+                                Text(card.dictionaryForm, style = MaterialTheme.typography.headlineSmall)
+                                Text(
+                                    "(eredeti: ${card.original})",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                Text(card.translation, style = MaterialTheme.typography.titleMedium)
                                 Row(
                                     Modifier.padding(top = 12.dp),
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     OutlinedButton(onClick = {
-                                        recognizedWord = null
+                                        recognizedCard = null
                                         notFound = false
                                         errorMsg = null
                                     }) { Text("Elvetés") }
                                     Button(onClick = {
-                                        onWordAccepted(recognizedWord!!)
-                                        recognizedWord = null
-                                    }) { Text("Hozzáadás a listához") }
+                                        onFlashcardAccepted(card)
+                                        recognizedCard = null
+                                    }) { Text("Hozzáadás a kártyákhoz") }
                                 }
                             }
                         }
@@ -179,8 +190,14 @@ private fun CameraScanContent(onWordAccepted: (String) -> Unit) {
 
             Button(
                 onClick = {
+                    if (settings.apiKey.isBlank()) {
+                        errorMsg = "Előbb add meg az API kulcsot a Beállításoknál!"
+                        recognizedCard = null
+                        notFound = false
+                        return@Button
+                    }
                     isProcessing = true
-                    recognizedWord = null
+                    recognizedCard = null
                     notFound = false
                     errorMsg = null
                     imageCapture.takePicture(
@@ -191,16 +208,15 @@ private fun CameraScanContent(onWordAccepted: (String) -> Unit) {
                                 image.close()
                                 scope.launch {
                                     try {
-                                        val text = recognizeCyrillicText(bitmap)
-                                        val word = findWordNearPoint(
-                                            text,
-                                            bitmap.width / 2,
-                                            bitmap.height / 2
-                                        )
-                                        if (word.isNullOrBlank()) {
+                                        val base64 = bitmapToJpegBase64(bitmap)
+                                        val client = AiClient(settings)
+                                        val card = withContext(Dispatchers.IO) {
+                                            client.lookupWordFromImage(base64)
+                                        }
+                                        if (card.original.isBlank()) {
                                             notFound = true
                                         } else {
-                                            recognizedWord = word
+                                            recognizedCard = card
                                         }
                                     } catch (e: Exception) {
                                         errorMsg = e.message ?: "ismeretlen hiba"

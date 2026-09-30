@@ -2,24 +2,26 @@ package com.rubookscanner.app
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Rect
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.Preview
-import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.mlkit.vision.MlKitAnalyzer
+import androidx.camera.view.CameraController
+import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,18 +39,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.rubookscanner.app.data.AiClient
 import com.rubookscanner.app.data.AiSettings
 import com.rubookscanner.app.data.Flashcard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.resume
 
 @Composable
 fun ScannerScreen(settings: AiSettings, onFlashcardAccepted: (Flashcard) -> Unit) {
@@ -94,14 +97,26 @@ private fun PermissionRequiredScreen(onRequest: () -> Unit) {
     }
 }
 
+/**
+ * Egy jelölt szó doboza, amit az élő elemzés talált a képernyő közepe körül.
+ * Csak a POZÍCIÓ megbízható belőle — a cirill betűket az élő (Latin) modell
+ * gyakran félreolvassa, ezért a végleges szót és fordítást gombnyomásra
+ * mindig egy fotóból, AI-vízióval kérjük le, nem ebből.
+ */
+private data class TrackedBox(val rect: Rect)
+
 @Composable
 private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashcard) -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val density = LocalDensity.current
     val scope = rememberCoroutineScope()
 
     val previewView = remember { PreviewView(context) }
-    val imageCapture = remember { ImageCapture.Builder().build() }
+    val cameraController = remember { LifecycleCameraController(context) }
+    val textRecognizer = remember { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
+
+    var trackedBox by remember { mutableStateOf<TrackedBox?>(null) }
 
     var isProcessing by remember { mutableStateOf(false) }
     var recognizedCard by remember { mutableStateOf<Flashcard?>(null) }
@@ -109,16 +124,48 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
     var notFound by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        val cameraProvider = awaitCameraProvider(context)
-        val preview = Preview.Builder().build().also {
-            it.setSurfaceProvider(previewView.surfaceProvider)
-        }
-        cameraProvider.unbindAll()
-        cameraProvider.bindToLifecycle(
-            lifecycleOwner,
-            CameraSelector.DEFAULT_BACK_CAMERA,
-            preview,
-            imageCapture
+        cameraController.setEnabledUseCases(
+            CameraController.IMAGE_CAPTURE or CameraController.IMAGE_ANALYSIS
+        )
+        cameraController.bindToLifecycle(lifecycleOwner)
+        previewView.controller = cameraController
+
+        cameraController.setImageAnalysisAnalyzer(
+            ContextCompat.getMainExecutor(context),
+            MlKitAnalyzer(
+                listOf(textRecognizer),
+                CameraController.COORDINATE_SYSTEM_VIEW_REFERENCED,
+                ContextCompat.getMainExecutor(context)
+            ) { result ->
+                val text = result.getValue(textRecognizer)
+                val elements = text?.textBlocks?.flatMap { block -> block.lines.flatMap { it.elements } }
+                if (elements.isNullOrEmpty()) {
+                    trackedBox = null
+                } else {
+                    val centerX = previewView.width / 2
+                    val centerY = previewView.height / 2
+                    val containing = elements.filter { it.boundingBox?.contains(centerX, centerY) == true }
+                    val best = if (containing.isNotEmpty()) {
+                        containing.minByOrNull { el ->
+                            val box = el.boundingBox!!
+                            box.width().toLong() * box.height().toLong()
+                        }
+                    } else {
+                        elements.minByOrNull { el ->
+                            val box = el.boundingBox
+                            if (box == null) {
+                                Long.MAX_VALUE
+                            } else {
+                                val dx = (box.centerX() - centerX).toLong()
+                                val dy = (box.centerY() - centerY).toLong()
+                                dx * dx + dy * dy
+                            }
+                        }
+                    }
+                    val bestBox = best?.boundingBox
+                    trackedBox = if (bestBox != null) TrackedBox(bestBox) else null
+                }
+            }
         )
     }
 
@@ -128,16 +175,30 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
             modifier = Modifier.fillMaxSize()
         )
 
-        // Piros, áttetsző pötty a képernyő közepén
+        // Halvány, fix piros pötty a képernyő közepén (tájékoztató referenciapont)
         Box(
             Modifier
                 .align(Alignment.Center)
-                .size(22.dp)
-                .background(Color.Red.copy(alpha = 0.55f), CircleShape)
+                .size(10.dp)
+                .background(Color.Red.copy(alpha = 0.5f), CircleShape)
         )
 
+        // Dinamikus, sárga keret a jelenleg középen lévő szó körül
+        trackedBox?.let { tracked ->
+            val leftDp = with(density) { tracked.rect.left.toDp() }
+            val topDp = with(density) { tracked.rect.top.toDp() }
+            val widthDp = with(density) { tracked.rect.width().toDp() }
+            val heightDp = with(density) { tracked.rect.height().toDp() }
+            Box(
+                Modifier
+                    .offset(x = leftDp, y = topDp)
+                    .size(width = widthDp, height = heightDp)
+                    .border(2.dp, Color.Yellow, RoundedCornerShape(6.dp))
+            )
+        }
+
         Text(
-            "Állj a szó fölé, hogy a piros pötty pontosan rajta legyen, majd nyomd meg a gombot.",
+            "Mozgasd a telefont, hogy a sárga keret a kívánt szón legyen, majd nyomd meg a gombot.",
             color = Color.White,
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -159,7 +220,7 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
                     ) {
                         when {
                             errorMsg != null -> Text("Hiba: $errorMsg")
-                            notFound -> Text("Nem találtam szót a pötty alatt. Próbáld közelebbről vagy élesebben.")
+                            notFound -> Text("Nem találtam szót a keret helyén. Próbáld közelebbről vagy élesebben.")
                             recognizedCard != null -> {
                                 val card = recognizedCard!!
                                 Text(card.dictionaryForm, style = MaterialTheme.typography.headlineSmall)
@@ -200,9 +261,9 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
                     recognizedCard = null
                     notFound = false
                     errorMsg = null
-                    imageCapture.takePicture(
+                    cameraController.takePicture(
                         ContextCompat.getMainExecutor(context),
-                        object : ImageCapture.OnImageCapturedCallback() {
+                        object : androidx.camera.core.ImageCapture.OnImageCapturedCallback() {
                             override fun onCaptureSuccess(image: androidx.camera.core.ImageProxy) {
                                 val bitmap = imageProxyToUprightBitmap(image)
                                 image.close()
@@ -226,7 +287,7 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
                                 }
                             }
 
-                            override fun onError(exception: ImageCaptureException) {
+                            override fun onError(exception: androidx.camera.core.ImageCaptureException) {
                                 errorMsg = exception.message ?: "kamera hiba"
                                 isProcessing = false
                             }
@@ -246,12 +307,3 @@ private fun CameraScanContent(settings: AiSettings, onFlashcardAccepted: (Flashc
         }
     }
 }
-
-private suspend fun awaitCameraProvider(context: android.content.Context): ProcessCameraProvider =
-    suspendCancellableCoroutine { cont ->
-        val future = ProcessCameraProvider.getInstance(context)
-        future.addListener(
-            { cont.resume(future.get()) },
-            ContextCompat.getMainExecutor(context)
-        )
-    }

@@ -71,7 +71,7 @@ fun AppRoot(store: Store) {
 
     val cardsInActiveDeck = cards.filter { it.deckId == activeDeckId }
 
-        Scaffold(
+    Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             NavigationBar(containerColor = Color(0xFF121212)) {
@@ -118,7 +118,8 @@ fun AppRoot(store: Store) {
                     colors = navColors
                 )
             }
-        }{ padding ->
+        }
+    ) { padding ->
         Box(Modifier.padding(padding)) {
             when (screen) {
                 AppScreen.SCAN -> ScannerScreen(

@@ -5,8 +5,14 @@ data class WordItem(
     val original: String
 )
 
+data class Deck(
+    val id: Long,
+    val name: String
+)
+
 data class Flashcard(
     val id: Long,
+    val deckId: Long,
     val original: String,
     val dictionaryForm: String,
     val translation: String,

@@ -19,6 +19,17 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -73,50 +84,30 @@ fun AppRoot(store: Store) {
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        bottomBar = {
-            NavigationBar(containerColor = Color(0xFF121212)) {
-                val navColors = NavigationBarItemDefaults.colors(
-                    selectedTextColor = Color.White,
-                    unselectedTextColor = Color(0xFF9E9E9E),
-                    selectedIconColor = Color.White,
-                    unselectedIconColor = Color(0xFF9E9E9E),
-                    indicatorColor = Color(0xFF2C2C2E)
-                )
-                NavigationBarItem(
-                    selected = screen == AppScreen.SCAN,
-                    onClick = { screen = AppScreen.SCAN },
-                    icon = {},
-                    label = { Text("Scan", fontWeight = FontWeight.Bold) },
-                    colors = navColors
-                )
-                NavigationBarItem(
-                    selected = screen == AppScreen.WORDS,
-                    onClick = { screen = AppScreen.WORDS },
-                    icon = {},
-                    label = { Text("Word (${words.size})", fontWeight = FontWeight.Bold) },
-                    colors = navColors
-                )
-                NavigationBarItem(
-                    selected = screen == AppScreen.CARDS,
-                    onClick = { screen = AppScreen.CARDS },
-                    icon = {},
-                    label = { Text("Card (${cardsInActiveDeck.size})", fontWeight = FontWeight.Bold) },
-                    colors = navColors
-                )
-                NavigationBarItem(
-                    selected = screen == AppScreen.DECKS,
-                    onClick = { screen = AppScreen.DECKS },
-                    icon = {},
-                    label = { Text("Deck", fontWeight = FontWeight.Bold) },
-                    colors = navColors
-                )
-                NavigationBarItem(
-                    selected = screen == AppScreen.SETTINGS,
-                    onClick = { screen = AppScreen.SETTINGS },
-                    icon = { Icon(Icons.Filled.Settings, contentDescription = "Beállítások") },
-                    label = {},
-                    colors = navColors
-                )
+                bottomBar = {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF1E1E22))
+                    .navigationBarsPadding()
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                NavButton(screen == AppScreen.SCAN, Modifier.weight(1f), { screen = AppScreen.SCAN }) {
+                    Text("Scan", fontWeight = FontWeight.Bold, maxLines = 1)
+                }
+                NavButton(screen == AppScreen.WORDS, Modifier.weight(1f), { screen = AppScreen.WORDS }) {
+                    Text("Word", fontWeight = FontWeight.Bold, maxLines = 1)
+                }
+                NavButton(screen == AppScreen.CARDS, Modifier.weight(1f), { screen = AppScreen.CARDS }) {
+                    Text("Card", fontWeight = FontWeight.Bold, maxLines = 1)
+                }
+                NavButton(screen == AppScreen.DECKS, Modifier.weight(1f), { screen = AppScreen.DECKS }) {
+                    Text("Deck", fontWeight = FontWeight.Bold, maxLines = 1)
+                }
+                NavButton(screen == AppScreen.SETTINGS, Modifier.weight(0.7f), { screen = AppScreen.SETTINGS }) {
+                    Icon(Icons.Filled.Settings, contentDescription = "Beállítások")
+                }
             }
         }
     ) { padding ->
@@ -195,5 +186,27 @@ fun AppRoot(store: Store) {
                 )
             }
         }
+    }
+}
+@Composable
+private fun NavButton(
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    val blue = Color(0xFF64B5F6)
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(10.dp),
+        border = BorderStroke(1.dp, if (selected) blue else Color(0xFF3F5F80)),
+        colors = ButtonDefaults.outlinedButtonColors(
+            contentColor = blue,
+            containerColor = if (selected) Color(0xFF26364A) else Color.Transparent
+        ),
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
+    ) {
+        content()
     }
 }

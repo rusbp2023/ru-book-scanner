@@ -43,9 +43,9 @@ class Store(private val context: Context) {
 
     val settingsFlow: Flow<AiSettings> = context.dataStore.data.map { prefs ->
         val provider = try {
-            AiProvider.valueOf(prefs[Keys.PROVIDER] ?: "ANTHROPIC")
+            AiProvider.valueOf(prefs[Keys.PROVIDER] ?: "GEMINI")
         } catch (e: Exception) {
-            AiProvider.ANTHROPIC
+            AiProvider.GEMINI
         }
         AiSettings(
             provider = provider,

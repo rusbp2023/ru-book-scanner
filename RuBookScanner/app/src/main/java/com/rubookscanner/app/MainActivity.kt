@@ -1,5 +1,6 @@
 package com.rubookscanner.app
-
+import android.graphics.Bitmap
+import androidx.compose.runtime.mutableStateListOf
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent

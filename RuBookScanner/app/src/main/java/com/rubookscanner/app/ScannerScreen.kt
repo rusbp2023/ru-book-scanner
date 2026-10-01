@@ -144,13 +144,7 @@ private fun CameraScanContent(
                 .border(2.dp, Color.Yellow, CircleShape)
         )
 
-        Text(
-            "Célozd a sárga körrel a szót, és gyűjtsd össze a szavakat a gombbal.",
-            color = Color.White,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(16.dp)
-        )
+
 
         Column(
             Modifier

@@ -12,11 +12,11 @@ data class Deck(
 
 data class Flashcard(
     val id: Long,
-    val deckId: Long,
     val original: String,
     val dictionaryForm: String,
     val translation: String,
-    val known: Boolean = false
+    val known: Boolean = false,
+    val deckId: Long = 0L
 )
 
 enum class AiProvider { ANTHROPIC, OPENAI, GEMINI }

@@ -52,7 +52,7 @@ fun AppRoot(store: Store) {
     val scope = rememberCoroutineScope()
     var loading by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
-
+        val pendingCrops = remember { mutableStateListOf<Bitmap>() }
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
@@ -86,12 +86,13 @@ fun AppRoot(store: Store) {
     ) { padding ->
         Box(Modifier.padding(padding)) {
             when (screen) {
-                AppScreen.SCAN -> ScannerScreen(
+                               AppScreen.SCAN -> ScannerScreen(
                     settings = settings,
-                    onFlashcardAccepted = { card ->
+                    pendingCrops = pendingCrops,
+                    onFlashcardsAccepted = { cards2 ->
                         scope.launch {
-                            store.addFlashcards(listOf(card))
-                            snackbarHostState.showSnackbar("Hozzáadva a kártyákhoz: ${card.original}")
+                            store.addFlashcards(cards2)
+                            snackbarHostState.showSnackbar("${cards2.size} kártya hozzáadva")
                         }
                     }
                 )

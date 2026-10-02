@@ -54,7 +54,7 @@ class AiClient(private val settings: AiSettings) {
     private fun buildPrompt(words: List<String>): String {
         val list = words.joinToString("\n") { "- $it" }
         return """
-            A következő orosz szavak ragozott/toldalékolt alakban vannak megadva, egy weboldalról kimásolva.
+            A következő ${settings.sourceLanguage.promptName} szavak (esetleg ragozott alakban) vannak megadva, egy weboldalról kimásolva.
             Minden szóhoz add meg:
             1. a szótári alapalakot (ige esetén infinitivus, főnév esetén egyes szám alanyeset, stb.)
             2. a legjellemzőbb magyar fordítást, röviden.
@@ -321,8 +321,8 @@ class AiClient(private val settings: AiSettings) {
         }
     }
          private fun buildBatchImagePrompt(count: Int): String = """
-        Az alábbi $count kép mindegyike egy-egy kivágott részletet mutat egy nyomtatott orosz szövegről;
-        mindegyiken pontosan egy releváns orosz szó van középen.
+        Az alábbi $count kép mindegyike egy-egy kivágott részletet mutat egy nyomtatott ${settings.sourceLanguage.promptName} szövegről;
+        mindegyiken pontosan egy releváns ${settings.sourceLanguage.promptName} szó van középen.
         Minden képhez, a képek sorrendjében, add meg:
         1. a szót pontosan úgy, ahogy a képen áll (ragozott/toldalékolt alakban)
         2. a szótári alapalakot

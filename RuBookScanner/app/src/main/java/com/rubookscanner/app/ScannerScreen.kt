@@ -91,6 +91,7 @@ fun ScannerScreen(
 
 @Composable
 private fun PermissionRequiredScreen(onRequest: () -> Unit) {
+    val t = LocalStrings.current
     Box(Modifier.fillMaxSize()) {
         Column(
             Modifier
@@ -99,9 +100,9 @@ private fun PermissionRequiredScreen(onRequest: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text("A szófelismeréshez szükség van a kamera engedélyre.")
+            Text(Text(t.cameraPermissionNeeded))
             Button(onClick = onRequest) {
-                Text("Kamera engedélyezése")
+                Text(t.allowCamera)
             }
         }
     }
@@ -116,7 +117,7 @@ private fun CameraScanContent(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
-
+    val t = LocalStrings.current
     val previewView = remember { PreviewView(context) }
     val cameraController = remember { LifecycleCameraController(context) }
 
@@ -155,7 +156,7 @@ private fun CameraScanContent(
         ) {
             errorMsg?.let {
                 Card(Modifier.padding(bottom = 12.dp)) {
-                    Text("Hiba: $it", Modifier.padding(12.dp))
+                    Text(t.errorPrefix(it), Modifier.padding(12.dp))
                 }
             }
 
@@ -163,7 +164,7 @@ private fun CameraScanContent(
                 Card(Modifier.padding(bottom = 12.dp)) {
                     Column(Modifier.padding(12.dp)) {
                         Text(
-                            "Összegyűjtött szavak (${pendingCrops.size}):",
+                            t.collectedWords(pendingCrops.size),
                             style = MaterialTheme.typography.labelMedium
                         )
                         LazyRow(
@@ -195,13 +196,13 @@ private fun CameraScanContent(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             OutlinedButton(onClick = { pendingCrops.clear() }) {
-                                Text("Lista ürítése")
+                                Text(t.clearList)
                             }
                             Button(
                                 enabled = !isTranslating,
                                 onClick = {
                                     if (settings.apiKey.isBlank()) {
-                                        errorMsg = "Előbb add meg az API kulcsot a Beállításoknál!"
+                                        errorMsg = t.enterApiKeyFirst
                                         return@Button
                                     }
                                     isTranslating = true
@@ -219,7 +220,7 @@ private fun CameraScanContent(
                                             onFlashcardsAccepted(cards)
                                             pendingCrops.clear()
                                         } catch (e: Exception) {
-                                            errorMsg = e.message ?: "ismeretlen hiba"
+                                            errorMsg = e.message ?: t.unknownError
                                         } finally {
                                             isTranslating = false
                                         }
@@ -229,7 +230,7 @@ private fun CameraScanContent(
                                 if (isTranslating) {
                                     CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                                 } else {
-                                    Text("Lefordítás (${pendingCrops.size})")
+                                    Text(t.translateN(pendingCrops.size))
                                 }
                             }
                         }
@@ -281,7 +282,7 @@ private fun CameraScanContent(
                                         }
                                         pendingCrops.add(cropBitmap)
                                     } catch (e: Exception) {
-                                        errorMsg = e.message ?: "ismeretlen hiba"
+                                        errorMsg = e.message ?: t.unknownError
                                     } finally {
                                         isCapturing = false
                                     }
@@ -289,7 +290,7 @@ private fun CameraScanContent(
                             }
 
                             override fun onError(exception: androidx.camera.core.ImageCaptureException) {
-                                errorMsg = exception.message ?: "kamera hiba"
+                                errorMsg = exception.message ?: t.cameraError
                                 isCapturing = false
                             }
                         }

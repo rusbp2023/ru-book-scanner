@@ -57,7 +57,7 @@ class AiClient(private val settings: AiSettings) {
             A következő ${settings.sourceLanguage.promptName} szavak (esetleg ragozott alakban) vannak megadva, egy weboldalról kimásolva.
             Minden szóhoz add meg:
             1. a szótári alapalakot (ige esetén infinitivus, főnév esetén egyes szám alanyeset, stb.)
-            2. a legjellemzőbb magyar fordítást, röviden.
+            2. a legjellemzőbb ${settings.targetLanguage.promptName} fordítást, röviden.
 
             Válaszolj KIZÁRÓLAG egy JSON tömbbel, semmi mást ne írj a válaszba (se magyarázatot, se code fence-t).
             A formátum pontosan ez legyen:
@@ -181,7 +181,7 @@ class AiClient(private val settings: AiSettings) {
         Adj meg hozzá:
         1. a szót pontosan úgy, ahogy a lapon áll (ragozott/toldalékolt alakban)
         2. a szótári alapalakot (ige esetén infinitivus, főnév esetén egyes szám alanyeset, stb.)
-        3. a legjellemzőbb magyar fordítást, röviden.
+        3. a legjellemzőbb ${settings.targetLanguage.promptName} fordítást, röviden.
 
         Válaszolj KIZÁRÓLAG egy JSON objektummal, semmi mást ne írj a válaszba (se magyarázatot, se code fence-t).
         A formátum pontosan ez legyen:
@@ -326,7 +326,7 @@ class AiClient(private val settings: AiSettings) {
         Minden képhez, a képek sorrendjében, add meg:
         1. a szót pontosan úgy, ahogy a képen áll (ragozott/toldalékolt alakban)
         2. a szótári alapalakot
-        3. a legjellemzőbb magyar fordítást, röviden.
+        3. a legjellemzőbb ${settings.targetLanguage.promptName} fordítást, röviden.
 
         Válaszolj KIZÁRÓLAG egy JSON tömbbel, pontosan $count elemmel, a képek sorrendjében, semmi mást ne írj:
         [{"original":"...","dictionary_form":"...","translation":"..."}]

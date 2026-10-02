@@ -100,7 +100,7 @@ private fun PermissionRequiredScreen(onRequest: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(Text(t.cameraPermissionNeeded))
+            Text(t.cameraPermissionNeeded)
             Button(onClick = onRequest) {
                 Text(t.allowCamera)
             }

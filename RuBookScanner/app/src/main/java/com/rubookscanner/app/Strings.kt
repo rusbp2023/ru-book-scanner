@@ -29,6 +29,9 @@ interface Strings {
     val cancel: String
     val known: String
     val markKnown: String
+    val editCard: String
+    val dictionaryFormLabel: String
+    val translationLabel: String
     val previous: String
     val next: String
 
@@ -89,6 +92,9 @@ object StringsHu : Strings {
     override val cancel = "Mégse"
     override val known = "Tudom ✓"
     override val markKnown = "Megjelöl: tudom"
+    override val editCard = "Kártya szerkesztése"
+    override val dictionaryFormLabel = "Szótári alak"
+    override val translationLabel = "Fordítás"
     override val previous = "◀ Előző"
     override val next = "Következő ▶"
 
@@ -152,6 +158,9 @@ object StringsEn : Strings {
     override val cancel = "Cancel"
     override val known = "Known ✓"
     override val markKnown = "Mark as known"
+    override val editCard = "Edit card"
+    override val dictionaryFormLabel = "Dictionary form"
+    override val translationLabel = "Translation"
     override val previous = "◀ Previous"
     override val next = "Next ▶"
 

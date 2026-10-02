@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,8 +38,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.rubookscanner.app.data.AiProvider
 import com.rubookscanner.app.data.AiSettings
-import com.rubookscanner.app.data.SourceLanguage
+import com.rubookscanner.app.data.AppLang
 import com.rubookscanner.app.data.Flashcard
+import com.rubookscanner.app.data.SourceLanguage
 import com.rubookscanner.app.data.WordItem
 import com.rubookscanner.app.data.defaultModelFor
 
@@ -50,6 +53,7 @@ fun WordListScreen(
     onAddManual: (String) -> Unit,
     onGenerate: () -> Unit
 ) {
+    val t = LocalStrings.current
     var manualText by remember { mutableStateOf("") }
 
     Column(
@@ -57,17 +61,13 @@ fun WordListScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(
-            "Jelölj ki egy szót a Chrome-ban a weboldalon, majd Megosztás → Orosz Szókártyák. " +
-                "A szó itt jelenik meg a listában.",
-            style = MaterialTheme.typography.bodyMedium
-        )
+        Text(t.wordsHint, style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(12.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
                 value = manualText,
                 onValueChange = { manualText = it },
-                label = { Text("Szó kézzel hozzáadása") },
+                label = { Text(t.addWordManually) },
                 modifier = Modifier.weight(1f)
             )
             Spacer(Modifier.width(8.dp))
@@ -97,7 +97,7 @@ fun WordListScreen(
         Spacer(Modifier.height(12.dp))
         Row {
             OutlinedButton(onClick = onClear, modifier = Modifier.weight(1f)) {
-                Text("Lista ürítése")
+                Text(t.clearList)
             }
             Spacer(Modifier.width(8.dp))
             Button(
@@ -108,7 +108,7 @@ fun WordListScreen(
                 if (loading) {
                     CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                 } else {
-                    Text("Kártyák generálása (${words.size})")
+                    Text(t.generateCards(words.size))
                 }
             }
         }
@@ -121,10 +121,12 @@ fun FlashcardScreen(
     onDelete: (Long) -> Unit,
     onToggleKnown: (Flashcard) -> Unit
 ) {
+    val t = LocalStrings.current
+
     if (cards.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
-                "Még nincs szókártyád. Adj hozzá szavakat a Szólista fülön, majd generáld le őket.",
+                t.noCardsYet,
                 modifier = Modifier.padding(24.dp),
                 style = MaterialTheme.typography.bodyLarge
             )
@@ -157,13 +159,13 @@ fun FlashcardScreen(
                     if (!flipped) {
                         Text(card.dictionaryForm, style = MaterialTheme.typography.headlineMedium)
                         Spacer(Modifier.height(8.dp))
-                        Text("(eredeti: ${card.original})", style = MaterialTheme.typography.bodySmall)
+                        Text(t.originalLabel(card.original), style = MaterialTheme.typography.bodySmall)
                     } else {
                         Text(card.translation, style = MaterialTheme.typography.headlineMedium)
                     }
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        if (flipped) "Koppints: vissza" else "Koppints a fordításért",
+                        if (flipped) t.tapBack else t.tapForTranslation,
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -173,9 +175,9 @@ fun FlashcardScreen(
             OutlinedButton(onClick = {
                 onDelete(card.id)
                 flipped = false
-            }) { Text("Törlés") }
+            }) { Text(t.delete) }
             OutlinedButton(onClick = { onToggleKnown(card) }) {
-                Text(if (card.known) "Tudom ✓" else "Megjelöl: tudom")
+                Text(if (card.known) t.known else t.markKnown)
             }
         }
         Spacer(Modifier.height(12.dp))
@@ -183,94 +185,120 @@ fun FlashcardScreen(
             Button(onClick = {
                 flipped = false
                 index = (safeIndex - 1 + cards.size) % cards.size
-            }) { Text("◀ Előző") }
+            }) { Text(t.previous) }
             Button(onClick = {
                 flipped = false
                 index = (safeIndex + 1) % cards.size
-            }) { Text("Következő ▶") }
+            }) { Text(t.next) }
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+private fun <T> DropdownField(
+    label: String,
+    selectedText: String,
+    options: List<T>,
+    optionLabel: (T) -> String,
+    onSelect: (T) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+        OutlinedTextField(
+            value = selectedText,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(label) },
+            modifier = Modifier
+                .menuAnchor()
+                .fillMaxWidth()
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(optionLabel(option)) },
+                    onClick = {
+                        onSelect(option)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun SettingsScreen(
     settings: AiSettings,
     onSave: (AiSettings) -> Unit
 ) {
+    val t = LocalStrings.current
     var provider by remember(settings) { mutableStateOf(settings.provider) }
     var apiKey by remember(settings) { mutableStateOf(settings.apiKey) }
     var model by remember(settings) { mutableStateOf(settings.model) }
     var baseUrl by remember(settings) { mutableStateOf(settings.baseUrl) }
-    var expanded by remember { mutableStateOf(false) }
     var sourceLanguage by remember(settings) { mutableStateOf(settings.sourceLanguage) }
-    var langExpanded by remember { mutableStateOf(false) }
+    var targetLanguage by remember(settings) { mutableStateOf(settings.targetLanguage) }
+    var uiLanguage by remember(settings) { mutableStateOf(settings.uiLanguage) }
+
+    val srcLabel: (SourceLanguage) -> String = {
+        if (it == SourceLanguage.RUSSIAN) t.langRussian else t.langEnglish
+    }
+
     Column(
         Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        Text("Könyv nyelve", style = MaterialTheme.typography.titleMedium)
+        Text(t.languagesTitle, style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
-        ExposedDropdownMenuBox(expanded = langExpanded, onExpandedChange = { langExpanded = it }) {
-            OutlinedTextField(
-                value = sourceLanguage.label,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Forrásnyelv (a fordítás mindig magyar)") },
-                modifier = Modifier
-                    .menuAnchor()
-                    .fillMaxWidth()
-            )
-            ExposedDropdownMenu(
-                expanded = langExpanded,
-                onDismissRequest = { langExpanded = false }
-            ) {
-                SourceLanguage.entries.forEach { l ->
-                    DropdownMenuItem(
-                        text = { Text(l.label) },
-                        onClick = {
-                            sourceLanguage = l
-                            langExpanded = false
-                        }
-                    )
-                }
-            }
-        }
+        DropdownField(
+            label = t.bookLanguageLabel,
+            selectedText = srcLabel(sourceLanguage),
+            options = SourceLanguage.entries,
+            optionLabel = srcLabel,
+            onSelect = { sourceLanguage = it }
+        )
+        Spacer(Modifier.height(12.dp))
+        DropdownField(
+            label = t.translationLanguageLabel,
+            selectedText = targetLanguage.label,
+            options = AppLang.entries,
+            optionLabel = { it.label },
+            onSelect = { targetLanguage = it }
+        )
+        Spacer(Modifier.height(12.dp))
+        DropdownField(
+            label = t.appLanguageLabel,
+            selectedText = uiLanguage.label,
+            options = AppLang.entries,
+            optionLabel = { it.label },
+            onSelect = { uiLanguage = it }
+        )
         Spacer(Modifier.height(20.dp))
-        Text("AI szolgáltató", style = MaterialTheme.typography.titleMedium)
+
+        Text(t.aiProviderTitle, style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
-        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-            OutlinedTextField(
-                value = provider.name,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Szolgáltató") },
-                modifier = Modifier
-                    .menuAnchor()
-                    .fillMaxWidth()
-            )
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                AiProvider.entries.forEach { p ->
-                    DropdownMenuItem(
-                        text = { Text(p.name) },
-                        onClick = {
-                            provider = p
-                            model = defaultModelFor(p)
-                            expanded = false
-                        }
-                    )
-                }
+        DropdownField(
+            label = t.providerLabel,
+            selectedText = provider.name,
+            options = AiProvider.entries,
+            optionLabel = { it.name },
+            onSelect = {
+                provider = it
+                model = defaultModelFor(it)
             }
-        }
+        )
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
             value = apiKey,
             onValueChange = { apiKey = it },
-            label = { Text("API kulcs") },
+            label = { Text(t.apiKeyLabel) },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
@@ -278,29 +306,36 @@ fun SettingsScreen(
         OutlinedTextField(
             value = model,
             onValueChange = { model = it },
-            label = { Text("Modell neve") },
+            label = { Text(t.modelLabel) },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
             value = baseUrl,
             onValueChange = { baseUrl = it },
-            label = { Text("Egyedi API végpont (opcionális)") },
+            label = { Text(t.baseUrlLabel) },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(20.dp))
         Button(
-            onClick = { onSave(AiSettings(provider, apiKey, model, baseUrl, sourceLanguage)) },
+            onClick = {
+                onSave(
+                    AiSettings(
+                        provider = provider,
+                        apiKey = apiKey,
+                        model = model,
+                        baseUrl = baseUrl,
+                        sourceLanguage = sourceLanguage,
+                        uiLanguage = uiLanguage,
+                        targetLanguage = targetLanguage
+                    )
+                )
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Mentés")
+            Text(t.save)
         }
         Spacer(Modifier.height(20.dp))
-        Text(
-            "Tipp: az API kulcsot a szolgáltató oldalán kapod (pl. console.anthropic.com, " +
-                "platform.openai.com, aistudio.google.com). A kulcs csak a telefonodon tárolódik, " +
-                "az AI-nak közvetlenül a telefon küldi el a kéréseket.",
-            style = MaterialTheme.typography.bodySmall
-        )
+        Text(t.settingsTip, style = MaterialTheme.typography.bodySmall)
     }
 }

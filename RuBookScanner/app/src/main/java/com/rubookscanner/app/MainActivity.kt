@@ -24,7 +24,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
@@ -49,6 +48,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.core.view.WindowCompat
 
 private val AppDarkColors = darkColorScheme(
     primary = Color(0xFF64B5F6),
@@ -74,7 +81,13 @@ enum class AppScreen { SCAN, WORDS, CARDS, DECKS, SETTINGS }
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val store = Store(applicationContext)
+window.statusBarColor = android.graphics.Color.parseColor("#0D1117")
+window.navigationBarColor = android.graphics.Color.parseColor("#1E1E22")
+WindowCompat.getInsetsController(window, window.decorView).apply {
+    isAppearanceLightStatusBars = false
+    isAppearanceLightNavigationBars = false
+}
+val store = Store(applicationContext)
         setContent {
            MaterialTheme(colorScheme = AppDarkColors) {
     AppRoot(store)
@@ -226,17 +239,22 @@ private fun NavButton(
     content: @Composable () -> Unit
 ) {
     val blue = Color(0xFF64B5F6)
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier,
-        shape = RoundedCornerShape(10.dp),
-        border = BorderStroke(1.dp, if (selected) blue else Color(0xFF3F5F80)),
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = blue,
-            containerColor = if (selected) Color(0xFF26364A) else Color.Transparent
-        ),
-        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
+    val shape = RoundedCornerShape(10.dp)
+    val top = if (selected) Color(0xFF41648F) else Color(0xFF2F3B4C)
+    val bottom = if (selected) Color(0xFF1A2C45) else Color(0xFF171E28)
+    val rimTop = if (selected) Color(0xFF8CC8FA) else Color(0xFF5A7391)
+    val rimBottom = if (selected) Color(0xFF2B4D75) else Color(0xFF222C3A)
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(Brush.verticalGradient(listOf(top, bottom)))
+            .border(1.dp, Brush.verticalGradient(listOf(rimTop, rimBottom)), shape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 4.dp, vertical = 12.dp),
+        contentAlignment = Alignment.Center
     ) {
-        content()
+        CompositionLocalProvider(LocalContentColor provides blue) {
+            content()
+        }
     }
 }

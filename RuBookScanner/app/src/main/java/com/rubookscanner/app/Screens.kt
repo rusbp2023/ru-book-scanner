@@ -36,6 +36,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.rubookscanner.app.data.AiProvider
 import com.rubookscanner.app.data.AiSettings
+import com.rubookscanner.app.data.SourceLanguage
 import com.rubookscanner.app.data.Flashcard
 import com.rubookscanner.app.data.WordItem
 import com.rubookscanner.app.data.defaultModelFor
@@ -202,12 +203,41 @@ fun SettingsScreen(
     var model by remember(settings) { mutableStateOf(settings.model) }
     var baseUrl by remember(settings) { mutableStateOf(settings.baseUrl) }
     var expanded by remember { mutableStateOf(false) }
-
+    var sourceLanguage by remember(settings) { mutableStateOf(settings.sourceLanguage) }
+    var langExpanded by remember { mutableStateOf(false) }
     Column(
         Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
+        Text("Könyv nyelve", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(8.dp))
+        ExposedDropdownMenuBox(expanded = langExpanded, onExpandedChange = { langExpanded = it }) {
+            OutlinedTextField(
+                value = sourceLanguage.label,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Forrásnyelv (a fordítás mindig magyar)") },
+                modifier = Modifier
+                    .menuAnchor()
+                    .fillMaxWidth()
+            )
+            ExposedDropdownMenu(
+                expanded = langExpanded,
+                onDismissRequest = { langExpanded = false }
+            ) {
+                SourceLanguage.entries.forEach { l ->
+                    DropdownMenuItem(
+                        text = { Text(l.label) },
+                        onClick = {
+                            sourceLanguage = l
+                            langExpanded = false
+                        }
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(20.dp))
         Text("AI szolgáltató", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
         ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
@@ -260,7 +290,7 @@ fun SettingsScreen(
         )
         Spacer(Modifier.height(20.dp))
         Button(
-            onClick = { onSave(AiSettings(provider, apiKey, model, baseUrl)) },
+            onClick = { onSave(AiSettings(provider, apiKey, model, baseUrl, sourceLanguage)) },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Mentés")

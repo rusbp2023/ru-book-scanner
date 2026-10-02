@@ -488,7 +488,6 @@ class AiClient(private val settings: AiSettings) {
             out.add(
                 Flashcard(
                     id = 0L,
-                    original = o.optString("original", originalWords.getOrElse(i) { "" }),
                     dictionaryForm = o.optString("dictionary_form", ""),
                     translation = o.optString("translation", "")
                 )
@@ -509,7 +508,6 @@ class AiClient(private val settings: AiSettings) {
         val obj = JSONObject(cleaned.substring(startIdx, endIdx + 1))
         return Flashcard(
             id = 0L,
-            original = obj.optString("original", ""),
             dictionaryForm = obj.optString("dictionary_form", ""),
             translation = obj.optString("translation", "")
         )

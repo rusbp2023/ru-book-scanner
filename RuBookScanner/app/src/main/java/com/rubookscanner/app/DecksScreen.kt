@@ -32,6 +32,8 @@ import com.rubookscanner.app.data.Deck
 import com.rubookscanner.app.data.Flashcard
 import com.rubookscanner.app.data.buildAllDecksExportText
 import com.rubookscanner.app.data.buildDeckExportText
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 
 @Composable
 fun DecksScreen(
@@ -46,7 +48,7 @@ fun DecksScreen(
     val t = LocalStrings.current
     var newDeckName by remember { mutableStateOf("") }
     var pendingExportText by remember { mutableStateOf<String?>(null) }
-
+    var deckToDelete by remember { mutableStateOf<Deck?>(null) }
     val createDocLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("text/plain")
     ) { uri ->
@@ -55,7 +57,21 @@ fun DecksScreen(
         }
         pendingExportText = null
     }
-
+    deckToDelete?.let { deck ->
+        AlertDialog(
+            onDismissRequest = { deckToDelete = null },
+            title = { Text(t.confirmDeleteDeck(deck.name)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDeleteDeck(deck.id)
+                    deckToDelete = null
+                }) { Text(t.yesDelete) }
+            },
+            dismissButton = {
+                TextButton(onClick = { deckToDelete = null }) { Text(t.cancel) }
+            }
+        )
+    }
     Column(
         Modifier
             .fillMaxSize()
@@ -124,7 +140,7 @@ fun DecksScreen(
                             pendingExportText = buildDeckExportText(deck.name, cardsForDeck, t.emptyDeck)
                             createDocLauncher.launch("${deck.name}.txt")
                         }) { Text("⬇") }
-                        IconButton(onClick = { onDeleteDeck(deck.id) }) { Text("✕") }
+                        IconButton(onClick = { deckToDelete = deck }) { Text("✕") }
                     }
                 }
             }

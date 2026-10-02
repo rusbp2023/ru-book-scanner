@@ -48,6 +48,26 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.material3.darkColorScheme
+
+private val AppDarkColors = darkColorScheme(
+    primary = Color(0xFF64B5F6),
+    onPrimary = Color(0xFF0B1A2A),
+    primaryContainer = Color(0xFF1E3A5F),
+    onPrimaryContainer = Color(0xFFD6E8FF),
+    secondary = Color(0xFF81C784),
+    onSecondary = Color(0xFF0B1F0D),
+    tertiary = Color(0xFFBCAAA4),
+    background = Color(0xFF0D1117),
+    onBackground = Color(0xFFE6EDF3),
+    surface = Color(0xFF111A24),
+    onSurface = Color(0xFFE6EDF3),
+    surfaceVariant = Color(0xFF1B2838),
+    onSurfaceVariant = Color(0xFFB8C7D9),
+    outline = Color(0xFF3F5F80),
+    outlineVariant = Color(0xFF2A3B50),
+    error = Color(0xFFEF9A9A)
+)
 
 enum class AppScreen { SCAN, WORDS, CARDS, DECKS, SETTINGS }
 
@@ -56,9 +76,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val store = Store(applicationContext)
         setContent {
-            MaterialTheme {
-                AppRoot(store)
-            }
+           MaterialTheme(colorScheme = AppDarkColors) {
+    AppRoot(store)
+}
         }
     }
 }

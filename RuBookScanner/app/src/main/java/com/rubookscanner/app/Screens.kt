@@ -43,6 +43,8 @@ import com.rubookscanner.app.data.Flashcard
 import com.rubookscanner.app.data.SourceLanguage
 import com.rubookscanner.app.data.WordItem
 import com.rubookscanner.app.data.defaultModelFor
+import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun WordListScreen(

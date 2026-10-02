@@ -12,7 +12,6 @@ data class Deck(
 
 data class Flashcard(
     val id: Long,
-    val original: String,
     val dictionaryForm: String,
     val translation: String,
     val known: Boolean = false,

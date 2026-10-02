@@ -137,16 +137,16 @@ fun AppContent(store: Store) {
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 NavButton(screen == AppScreen.SCAN, Modifier.weight(1f), { screen = AppScreen.SCAN }) {
-                    Text("Scan", fontWeight = FontWeight.Bold, maxLines = 1)
+                    Text(t.navScan, fontWeight = FontWeight.Bold, maxLines = 1)
                 }
                 NavButton(screen == AppScreen.WORDS, Modifier.weight(1f), { screen = AppScreen.WORDS }) {
-                    Text("Word", fontWeight = FontWeight.Bold, maxLines = 1)
+                    Text(t.navWord, fontWeight = FontWeight.Bold, maxLines = 1)
                 }
                 NavButton(screen == AppScreen.CARDS, Modifier.weight(1f), { screen = AppScreen.CARDS }) {
-                    Text("Card", fontWeight = FontWeight.Bold, maxLines = 1)
+                    Text(t.navCard, fontWeight = FontWeight.Bold, maxLines = 1)
                 }
                 NavButton(screen == AppScreen.DECKS, Modifier.weight(1f), { screen = AppScreen.DECKS }) {
-                    Text("Deck", fontWeight = FontWeight.Bold, maxLines = 1)
+                    Text(t.navDeck, fontWeight = FontWeight.Bold, maxLines = 1)
                 }
                 NavButton(screen == AppScreen.SETTINGS, Modifier.weight(0.7f), { screen = AppScreen.SETTINGS }) {
                     Icon(Icons.Filled.Settings, contentDescription = t.settingsDesc)

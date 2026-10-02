@@ -56,7 +56,7 @@ class AiClient(private val settings: AiSettings) {
         return """
             A következő ${settings.sourceLanguage.promptName} szavak (esetleg ragozott alakban) vannak megadva, egy weboldalról kimásolva.
             Minden szóhoz add meg:
-            1. a szótári alapalakot (ige esetén infinitivus, főnév esetén egyes szám alanyeset, stb.)
+                        1. a szótári alapalakot (ige esetén infinitivus, főnév esetén egyes szám alanyeset, stb.). A szótári alakot a szótárban szereplő írásmóddal add meg: kisbetűvel, kivéve ha a szó a szótár szerint is nagybetűs (például tulajdonnév). Ha a szó csak mondat eleje miatt vagy más okból van nagybetűvel, a szótári alak legyen kisbetűs.
             2. a szótári alapalak legjellemzőbb ${settings.targetLanguage.promptName} fordítását, röviden, ugyancsak szótári alakban (ige: főnévi igenév, főnév: egyes szám alanyeset). NEM a ragozott alak fordítását kérem.
 
             Válaszolj KIZÁRÓLAG egy JSON tömbbel, semmi mást ne írj a válaszba (se magyarázatot, se code fence-t).
@@ -325,7 +325,7 @@ class AiClient(private val settings: AiSettings) {
         mindegyiken pontosan egy releváns ${settings.sourceLanguage.promptName} szó van középen.
         Minden képhez, a képek sorrendjében, add meg:
         1. a szót pontosan úgy, ahogy a képen áll (ragozott/toldalékolt alakban)
-        2. a szótári alapalakot
+        2. a szótári alapalakot, a szótárban szereplő írásmóddal: kisbetűvel, kivéve ha a szó a szótár szerint is nagybetűs (például tulajdonnév). Ha a szó csak mondat eleje miatt vagy más okból van nagybetűvel, a szótári alak legyen kisbetűs.
         3. a szótári alapalak legjellemzőbb ${settings.targetLanguage.promptName} fordítását, röviden, ugyancsak szótári alakban (ige: főnévi igenév, főnév: egyes szám alanyeset). NEM a ragozott alak fordítását kérem.
 
         Válaszolj KIZÁRÓLAG egy JSON tömbbel, pontosan $count elemmel, a képek sorrendjében, semmi mást ne írj:

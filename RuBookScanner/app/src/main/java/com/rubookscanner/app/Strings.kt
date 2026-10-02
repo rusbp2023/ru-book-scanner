@@ -89,7 +89,7 @@ object StringsHu : Strings {
     override fun wordAddedToList(word: String) = "Szólistához adva: $word"
 
     override val noCardsYet =
-        "Még nincs szókártyád. Adj hozzá szavakat a Word fülön, majd generáld le őket."
+        "Még nincs szókártyád. Adj hozzá szavakat a Szó fülön, majd generáld le őket."
     override fun originalLabel(o: String) = "(eredeti: $o)"
     override val tapBack = "Koppints: vissza"
     override val tapForTranslation = "Koppints a fordításért"

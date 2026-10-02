@@ -135,7 +135,8 @@ fun WordListScreen(
 fun FlashcardScreen(
     cards: List<Flashcard>,
     onDelete: (Long) -> Unit,
-    onToggleKnown: (Flashcard) -> Unit
+    onToggleKnown: (Flashcard) -> Unit,
+    onEdit: (Flashcard) -> Unit
 ) {
     val t = LocalStrings.current
 
@@ -154,6 +155,7 @@ fun FlashcardScreen(
     var index by remember { mutableStateOf(0) }
     var flipped by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
     var widthPx by remember { mutableStateOf(0f) }
     var animating by remember { mutableStateOf(false) }
     val dragX = remember { Animatable(0f) }
@@ -227,11 +229,17 @@ fun FlashcardScreen(
                     contentColor = Color(0xFFEAF2FB)
                 )
             ) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                   Text(
-    if (!flipped) card.translation else card.dictionaryForm,
-    style = MaterialTheme.typography.headlineMedium
-)
+                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        if (!flipped) card.translation else card.dictionaryForm,
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                    IconButton(
+                        onClick = { showEditDialog = true },
+                        modifier = Modifier.align(Alignment.TopEnd)
+                    ) {
+                        Text("✎", style = MaterialTheme.typography.titleLarge)
+                    }
                 }
             }
         }
@@ -248,6 +256,46 @@ fun FlashcardScreen(
         }
     }
 
+    if (showEditDialog) {
+        var editDict by remember(card.id) { mutableStateOf(card.dictionaryForm) }
+        var editTrans by remember(card.id) { mutableStateOf(card.translation) }
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { Text(t.editCard) },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = editDict,
+                        onValueChange = { editDict = it },
+                        label = { Text(t.dictionaryFormLabel) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = editTrans,
+                        onValueChange = { editTrans = it },
+                        label = { Text(t.translationLabel) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = editDict.isNotBlank() && editTrans.isNotBlank(),
+                    onClick = {
+                        showEditDialog = false
+                        onEdit(card.copy(dictionaryForm = editDict.trim(), translation = editTrans.trim()))
+                    }
+                ) { Text(t.save) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) { Text(t.cancel) }
+            }
+        )
+    }
+    
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },

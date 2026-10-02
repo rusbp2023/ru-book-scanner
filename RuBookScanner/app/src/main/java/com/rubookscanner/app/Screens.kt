@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -308,6 +311,7 @@ fun SettingsScreen(
     onSave: (AiSettings) -> Unit
 ) {
     val t = LocalStrings.current
+    val uriHandler = LocalUriHandler.current
     var provider by remember(settings) { mutableStateOf(settings.provider) }
     var apiKey by remember(settings) { mutableStateOf(settings.apiKey) }
     var model by remember(settings) { mutableStateOf(settings.model) }
@@ -326,7 +330,7 @@ fun SettingsScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        Text(t.languagesTitle, style = MaterialTheme.typography.titleMedium)
+        Text(t.languagesTitle, style = MaterialTheme.typography.titleMedium, color = Color(0xFFFFA726))
         Spacer(Modifier.height(8.dp))
         DropdownField(
             label = t.bookLanguageLabel,
@@ -353,7 +357,7 @@ fun SettingsScreen(
         )
         Spacer(Modifier.height(20.dp))
 
-        Text(t.aiProviderTitle, style = MaterialTheme.typography.titleMedium)
+        Text(t.aiProviderTitle, style = MaterialTheme.typography.titleMedium, color = Color(0xFFFFA726))
         Spacer(Modifier.height(8.dp))
         DropdownField(
             label = t.providerLabel,
@@ -407,6 +411,19 @@ fun SettingsScreen(
             Text(t.save)
         }
         Spacer(Modifier.height(20.dp))
-        Text(t.settingsTip, style = MaterialTheme.typography.bodySmall)
+                Text(t.settingsTip, style = MaterialTheme.typography.bodySmall)
+        Spacer(Modifier.height(8.dp))
+        val keyUrl = when (provider) {
+            AiProvider.ANTHROPIC -> "https://console.anthropic.com/settings/keys"
+            AiProvider.OPENAI -> "https://platform.openai.com/api-keys"
+            AiProvider.GEMINI -> "https://aistudio.google.com/apikey"
+        }
+        Text(
+            keyUrl,
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color(0xFF64B5F6),
+            textDecoration = TextDecoration.Underline,
+            modifier = Modifier.clickable { uriHandler.openUri(keyUrl) }
+        )
     }
 }

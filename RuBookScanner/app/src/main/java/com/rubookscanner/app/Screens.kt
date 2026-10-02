@@ -149,12 +149,16 @@ fun FlashcardScreen(
     ) {
         Text("${safeIndex + 1} / ${cards.size}", style = MaterialTheme.typography.labelLarge)
         Spacer(Modifier.height(16.dp))
-        Card(
+                Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
                 .padding(vertical = 8.dp),
-            onClick = { flipped = !flipped }
+            onClick = { flipped = !flipped },
+            colors = CardDefaults.cardColors(
+                containerColor = Color(0xFF16263A),
+                contentColor = Color(0xFFEAF2FB)
+            )
         ) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {

@@ -24,12 +24,18 @@ enum class SourceLanguage(val label: String, val promptName: String) {
     RUSSIAN("Orosz", "orosz"),
     ENGLISH("Angol", "angol")
 }
+enum class AppLang(val label: String, val promptName: String) {
+    HUNGARIAN("Magyar", "magyar"),
+    ENGLISH("English", "angol")
+}
 data class AiSettings(
     val provider: AiProvider = AiProvider.GEMINI,
     val apiKey: String = "",
     val model: String = defaultModelFor(AiProvider.GEMINI),
     val baseUrl: String = "",
-    val sourceLanguage: SourceLanguage = SourceLanguage.RUSSIAN
+    val sourceLanguage: SourceLanguage = SourceLanguage.RUSSIAN,
+    val uiLanguage: AppLang = AppLang.HUNGARIAN,
+    val targetLanguage: AppLang = AppLang.HUNGARIAN
 )
 
 fun defaultModelFor(provider: AiProvider): String = when (provider) {

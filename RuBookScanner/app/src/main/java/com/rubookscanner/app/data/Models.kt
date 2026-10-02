@@ -20,12 +20,16 @@ data class Flashcard(
 )
 
 enum class AiProvider { ANTHROPIC, OPENAI, GEMINI }
-
+enum class SourceLanguage(val label: String, val promptName: String) {
+    RUSSIAN("Orosz", "orosz"),
+    ENGLISH("Angol", "angol")
+}
 data class AiSettings(
     val provider: AiProvider = AiProvider.GEMINI,
     val apiKey: String = "",
     val model: String = defaultModelFor(AiProvider.GEMINI),
-    val baseUrl: String = ""
+    val baseUrl: String = "",
+    val sourceLanguage: SourceLanguage = SourceLanguage.RUSSIAN
 )
 
 fun defaultModelFor(provider: AiProvider): String = when (provider) {

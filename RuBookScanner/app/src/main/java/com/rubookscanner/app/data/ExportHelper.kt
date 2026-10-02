@@ -9,7 +9,7 @@ fun buildDeckExportText(deckName: String, cards: List<Flashcard>, emptyText: Str
         sb.append(emptyText).append("\n")
     } else {
         cards.forEach { c ->
-            sb.append("${c.original} — ${c.dictionaryForm} — ${c.translation}\n")
+            sb.append("${c.dictionaryForm} — ${c.translation}\n")
         }
     }
     return sb.toString()

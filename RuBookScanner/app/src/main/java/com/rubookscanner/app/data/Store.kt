@@ -231,7 +231,6 @@ class Store(private val context: Context) {
                 Flashcard(
                     id = o.getLong("id"),
                     deckId = o.optLong("deckId", 0L),
-                    original = o.getString("original"),
                     dictionaryForm = o.getString("dictionaryForm"),
                     translation = o.getString("translation"),
                     known = o.optBoolean("known", false)
@@ -247,7 +246,6 @@ class Store(private val context: Context) {
             arr.put(JSONObject().apply {
                 put("id", c.id)
                 put("deckId", c.deckId)
-                put("original", c.original)
                 put("dictionaryForm", c.dictionaryForm)
                 put("translation", c.translation)
                 put("known", c.known)

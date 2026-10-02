@@ -47,6 +47,7 @@ import com.rubookscanner.app.data.Store
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.runtime.CompositionLocalProvider
 
 enum class AppScreen { SCAN, WORDS, CARDS, DECKS, SETTINGS }
 
@@ -62,9 +63,18 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppRoot(store: Store) {
+    val settings by store.settingsFlow.collectAsStateWithLifecycle(initialValue = AiSettings())
+    CompositionLocalProvider(LocalStrings provides stringsFor(settings.uiLanguage)) {
+        AppContent(store)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AppContent(store: Store) {
+    val t = LocalStrings.current
     var screen by remember { mutableStateOf(AppScreen.SCAN) }
     val words by store.wordsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val cards by store.flashcardsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -106,7 +116,7 @@ fun AppRoot(store: Store) {
                     Text("Deck", fontWeight = FontWeight.Bold, maxLines = 1)
                 }
                 NavButton(screen == AppScreen.SETTINGS, Modifier.weight(0.7f), { screen = AppScreen.SETTINGS }) {
-                    Icon(Icons.Filled.Settings, contentDescription = "Beállítások")
+                    Icon(Icons.Filled.Settings, contentDescription = t.settingsDesc)
                 }
             }
         }
@@ -120,10 +130,10 @@ fun AppRoot(store: Store) {
                         scope.launch {
                             val deckId = activeDeckId
                             if (deckId == null) {
-                                snackbarHostState.showSnackbar("Nincs aktív pakli — hozz létre egyet a Paklik fülön!")
+                                snackbarHostState.showSnackbar(t.noActiveDeck)
                             } else {
                                 store.addFlashcards(newCards, deckId)
-                                snackbarHostState.showSnackbar("${newCards.size} kártya hozzáadva")
+                                snackbarHostState.showSnackbar(t.cardsAdded(newCards.size))
                             }
                         }
                     }
@@ -139,11 +149,11 @@ fun AppRoot(store: Store) {
                         val deckId = activeDeckId
                         if (settings.apiKey.isBlank()) {
                             scope.launch {
-                                snackbarHostState.showSnackbar("Előbb add meg az API kulcsot a Beállításoknál!")
+                                snackbarHostState.showSnackbar(t.enterApiKeyFirst)
                             }
                         } else if (deckId == null) {
                             scope.launch {
-                                snackbarHostState.showSnackbar("Nincs aktív pakli — hozz létre egyet a Paklik fülön!")
+                                snackbarHostState.showSnackbar(t.noActiveDeck)
                             }
                         } else {
                             loading = true
@@ -156,7 +166,7 @@ fun AppRoot(store: Store) {
                                     store.clearWords()
                                     screen = AppScreen.CARDS
                                 } catch (e: Exception) {
-                                    snackbarHostState.showSnackbar("Hiba: ${e.message}")
+                                    snackbarHostState.showSnackbar(t.errorPrefix(e.message))
                                 } finally {
                                     loading = false
                                 }

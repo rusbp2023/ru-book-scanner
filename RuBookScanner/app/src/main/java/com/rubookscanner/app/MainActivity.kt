@@ -211,7 +211,8 @@ fun AppContent(store: Store) {
                 AppScreen.CARDS -> FlashcardScreen(
                     cards = cardsInActiveDeck,
                     onDelete = { id -> scope.launch { store.deleteFlashcard(id) } },
-                    onToggleKnown = { c -> scope.launch { store.updateFlashcard(c.copy(known = !c.known)) } }
+                    onToggleKnown = { c -> scope.launch { store.updateFlashcard(c.copy(known = !c.known)) } },
+                    onEdit = { c -> scope.launch { store.updateFlashcard(c) } }
                 )
 
                 AppScreen.DECKS -> DecksScreen(

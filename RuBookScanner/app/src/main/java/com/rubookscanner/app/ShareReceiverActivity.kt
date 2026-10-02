@@ -15,7 +15,7 @@ class ShareReceiverActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val word = extractText(intent)?.trim()?.take(200)
+        val word = extractText(intent)?.let { stripUrls(it) }?.take(200)
         if (word.isNullOrBlank()) {
             finish()
             return
@@ -41,7 +41,11 @@ class ShareReceiverActivity : ComponentActivity() {
         Intent.ACTION_PROCESS_TEXT -> intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
         else -> null
     }
-
+    private fun stripUrls(s: String): String =
+    s.replace(Regex("""https?://\S+"""), "")
+        .replace(Regex("\\s+"), " ")
+        .trim()
+        .trim('"', '“', '”', '„')
     private fun toast(msg: String) =
         Toast.makeText(applicationContext, msg, Toast.LENGTH_SHORT).show()
 }

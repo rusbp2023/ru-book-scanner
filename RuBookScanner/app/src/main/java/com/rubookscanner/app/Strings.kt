@@ -5,6 +5,10 @@ import com.rubookscanner.app.data.AppLang
 
 interface Strings {
     val settingsDesc: String
+    val navScan: String
+    val navWord: String
+    val navCard: String
+    val navDeck: String
     val noActiveDeck: String
     val enterApiKeyFirst: String
     fun cardsAdded(n: Int): String
@@ -65,6 +69,10 @@ interface Strings {
 
 object StringsHu : Strings {
     override val settingsDesc = "Beállítások"
+    override val navScan = "Scan"
+    override val navWord = "Szó"
+    override val navCard = "Kártya"
+    override val navDeck = "Pakli"
     override val noActiveDeck = "Nincs aktív pakli — hozz létre egyet a Paklik fülön!"
     override val enterApiKeyFirst = "Előbb add meg az API kulcsot a Beállításoknál!"
     override fun cardsAdded(n: Int) = "$n kártya hozzáadva"
@@ -131,6 +139,10 @@ object StringsHu : Strings {
 
 object StringsEn : Strings {
     override val settingsDesc = "Settings"
+    override val navScan = "Scan"
+    override val navWord = "Word"
+    override val navCard = "Card"
+    override val navDeck = "Deck"
     override val noActiveDeck = "No active deck — create one on the Deck tab!"
     override val enterApiKeyFirst = "Enter your API key in Settings first!"
     override fun cardsAdded(n: Int) = "$n card(s) added"

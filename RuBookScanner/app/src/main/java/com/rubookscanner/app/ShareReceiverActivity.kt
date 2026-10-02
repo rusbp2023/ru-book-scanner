@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
 import com.rubookscanner.app.data.Store
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /** Átlátszó, felület nélküli Activity: a megosztott szót a szólistába teszi. */
@@ -22,11 +23,13 @@ class ShareReceiverActivity : ComponentActivity() {
 
         val store = Store(applicationContext)
         lifecycleScope.launch {
+            var t: Strings = StringsHu
             try {
+                t = stringsFor(store.settingsFlow.first().uiLanguage)
                 store.addWord(word)
-                toast("Szólistához adva: $word")
+                toast(t.wordAddedToList(word))
             } catch (e: Exception) {
-                toast("Hiba: ${e.message}")
+                toast(t.errorPrefix(e.message))
             } finally {
                 finish()
             }

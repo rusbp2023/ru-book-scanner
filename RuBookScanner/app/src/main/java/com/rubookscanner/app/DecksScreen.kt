@@ -43,6 +43,7 @@ fun DecksScreen(
     onDeleteDeck: (Long) -> Unit
 ) {
     val context = LocalContext.current
+    val t = LocalStrings.current
     var newDeckName by remember { mutableStateOf("") }
     var pendingExportText by remember { mutableStateOf<String?>(null) }
 
@@ -60,7 +61,7 @@ fun DecksScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text("Paklik", style = MaterialTheme.typography.titleLarge)
+        Text(t.decksTitle, style = MaterialTheme.typography.titleLarge)
 
         Row(
             Modifier.padding(vertical = 12.dp),
@@ -69,7 +70,7 @@ fun DecksScreen(
             OutlinedTextField(
                 value = newDeckName,
                 onValueChange = { newDeckName = it },
-                label = { Text("Új pakli neve") },
+                label = { Text(t.newDeckName) },
                 modifier = Modifier.weight(1f)
             )
             Button(
@@ -80,16 +81,16 @@ fun DecksScreen(
                     }
                 },
                 modifier = Modifier.padding(start = 8.dp)
-            ) { Text("Létrehozás") }
+            ) { Text(t.create) }
         }
 
         OutlinedButton(
             onClick = {
-                pendingExportText = buildAllDecksExportText(decks, allCards)
-                createDocLauncher.launch("osszes_pakli.txt")
+                pendingExportText = buildAllDecksExportText(decks, allCards, t.emptyDeck)
+                createDocLauncher.launch(t.allDecksFileName)
             },
             modifier = Modifier.fillMaxWidth()
-        ) { Text("Összes pakli letöltése") }
+        ) { Text(t.downloadAll) }
 
         Divider(Modifier.padding(vertical = 12.dp))
 
@@ -114,13 +115,13 @@ fun DecksScreen(
                         Column(Modifier.weight(1f)) {
                             Text(deck.name, style = MaterialTheme.typography.bodyLarge)
                             Text(
-                                "$count kártya",
+                                t.cardCount(count),
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
                         IconButton(onClick = {
                             val cardsForDeck = allCards.filter { it.deckId == deck.id }
-                            pendingExportText = buildDeckExportText(deck.name, cardsForDeck)
+                            pendingExportText = buildDeckExportText(deck.name, cardsForDeck, t.emptyDeck)
                             createDocLauncher.launch("${deck.name}.txt")
                         }) { Text("⬇") }
                         IconButton(onClick = { onDeleteDeck(deck.id) }) { Text("✕") }

@@ -23,6 +23,10 @@ interface Strings {
     val tapBack: String
     val tapForTranslation: String
     val delete: String
+    val confirmDeleteCard: String
+    fun confirmDeleteDeck(name: String): String
+    val yesDelete: String
+    val cancel: String
     val known: String
     val markKnown: String
     val previous: String
@@ -79,6 +83,10 @@ object StringsHu : Strings {
     override val tapBack = "Koppints: vissza"
     override val tapForTranslation = "Koppints a fordításért"
     override val delete = "Törlés"
+    override val confirmDeleteCard = "Biztosan törlöd ezt a kártyát?"
+    override fun confirmDeleteDeck(name: String) = "Biztosan törlöd a(z) \"$name\" paklit a benne lévő összes kártyával?"
+    override val yesDelete = "Igen, törlöm"
+    override val cancel = "Mégse"
     override val known = "Tudom ✓"
     override val markKnown = "Megjelöl: tudom"
     override val previous = "◀ Előző"
@@ -138,6 +146,10 @@ object StringsEn : Strings {
     override val tapBack = "Tap: back"
     override val tapForTranslation = "Tap for the translation"
     override val delete = "Delete"
+    override val confirmDeleteCard = "Are you sure you want to delete this card?"
+    override fun confirmDeleteDeck(name: String) = "Are you sure you want to delete the deck \"$name\" and all its cards?"
+    override val yesDelete = "Yes, delete"
+    override val cancel = "Cancel"
     override val known = "Known ✓"
     override val markKnown = "Mark as known"
     override val previous = "◀ Previous"

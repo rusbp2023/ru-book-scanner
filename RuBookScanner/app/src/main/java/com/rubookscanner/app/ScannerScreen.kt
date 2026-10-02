@@ -7,25 +7,19 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.ui.unit.sp
+import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -53,11 +47,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.rubookscanner.app.data.AiClient
@@ -139,6 +139,7 @@ private fun CameraScanContent(
     var isCapturing by remember { mutableStateOf(false) }
     var isTranslating by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
+
     var highlight by remember { mutableStateOf<ScanHighlight?>(null) }
     val beam = remember { Animatable(0f) }
     val frame = remember { Animatable(0f) }
@@ -158,6 +159,7 @@ private fun CameraScanContent(
             highlight = null
         }
     }
+
     LaunchedEffect(Unit) {
         cameraController.setEnabledUseCases(CameraController.IMAGE_CAPTURE)
         cameraController.bindToLifecycle(lifecycleOwner)
@@ -183,7 +185,7 @@ private fun CameraScanContent(
                 val w = size.width
                 val hh = size.height
                 val l = h.l * w
-                val t = h.t * hh
+                val tp = h.t * hh
                 val r = h.r * w
                 val b = h.b * hh
                 val origin = Offset(w / 2f, hh / 2f)
@@ -194,18 +196,24 @@ private fun CameraScanContent(
                 // 1) fénycsíkok a körből a négy sarok felé
                 val p = beam.value
                 if (p > 0.01f) {
-                    listOf(Offset(l, t), Offset(r, t), Offset(l, b), Offset(r, b)).forEach { corner ->
+                    listOf(Offset(l, tp), Offset(r, tp), Offset(l, b), Offset(r, b)).forEach { corner ->
                         val head = origin + (corner - origin) * p
                         val tail = origin + (corner - origin) * (p - 0.45f).coerceAtLeast(0f)
                         drawLine(
                             Brush.linearGradient(listOf(Color.Transparent, glow), start = tail, end = head),
-                            tail, head,
-                            strokeWidth = 9.dp.toPx(), cap = StrokeCap.Round, alpha = 0.35f * a
+                            tail,
+                            head,
+                            strokeWidth = 9.dp.toPx(),
+                            cap = StrokeCap.Round,
+                            alpha = 0.35f * a
                         )
                         drawLine(
                             Brush.linearGradient(listOf(Color.Transparent, bright), start = tail, end = head),
-                            tail, head,
-                            strokeWidth = 3.dp.toPx(), cap = StrokeCap.Round, alpha = a
+                            tail,
+                            head,
+                            strokeWidth = 3.dp.toPx(),
+                            cap = StrokeCap.Round,
+                            alpha = a
                         )
                     }
                 }
@@ -213,16 +221,22 @@ private fun CameraScanContent(
                 // 2) a téglalap keretének felizzása
                 val f = frame.value
                 if (f > 0f) {
-                    drawRect(glow, Offset(l, t), Size(r - l, b - t), alpha = 0.10f * f * a)
-                    drawRect(glow, Offset(l, t), Size(r - l, b - t), alpha = 0.35f * f * a, style = Stroke(width = 8.dp.toPx()))
-                    drawRect(bright, Offset(l, t), Size(r - l, b - t), alpha = f * a, style = Stroke(width = 2.dp.toPx()))
+                    drawRect(glow, Offset(l, tp), Size(r - l, b - tp), alpha = 0.10f * f * a)
+                    drawRect(
+                        glow, Offset(l, tp), Size(r - l, b - tp),
+                        alpha = 0.35f * f * a, style = Stroke(width = 8.dp.toPx())
+                    )
+                    drawRect(
+                        bright, Offset(l, tp), Size(r - l, b - tp),
+                        alpha = f * a, style = Stroke(width = 2.dp.toPx())
+                    )
                 }
 
                 // 3) halvány kék letapogató vonal felülről lefelé
                 val s = sweep.value
                 if (s > 0f) {
-                    val y = t + (b - t) * s
-                    val trailTop = maxOf(t, y - 36.dp.toPx())
+                    val y = tp + (b - tp) * s
+                    val trailTop = maxOf(tp, y - 36.dp.toPx())
                     if (y - trailTop > 1f) {
                         drawRect(
                             brush = Brush.verticalGradient(
@@ -350,8 +364,7 @@ private fun CameraScanContent(
 
                                 scope.launch {
                                     try {
-                                        val cropBitmap = withContext(Dispatchers.Default) {
-                                                                                   var newHighlight: ScanHighlight? = null
+                                        var newHighlight: ScanHighlight? = null
                                         val cropBitmap = withContext(Dispatchers.Default) {
                                             val centerX = screenBitmap.width / 2
                                             val centerY = screenBitmap.height / 2
@@ -389,7 +402,6 @@ private fun CameraScanContent(
                                         }
                                         pendingCrops.add(cropBitmap)
                                         highlight = newHighlight
-                                        pendingCrops.add(cropBitmap)
                                     } catch (e: Exception) {
                                         errorMsg = e.message ?: t.unknownError
                                     } finally {
@@ -405,7 +417,7 @@ private fun CameraScanContent(
                         }
                     )
                 },
-                                enabled = !isCapturing,
+                enabled = !isCapturing,
                 modifier = Modifier.size(80.dp),
                 shape = CircleShape,
                 contentPadding = PaddingValues(0.dp)

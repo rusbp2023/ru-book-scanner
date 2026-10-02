@@ -45,6 +45,8 @@ import com.rubookscanner.app.data.WordItem
 import com.rubookscanner.app.data.defaultModelFor
 import androidx.compose.material3.CardDefaults
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 
 @Composable
 fun WordListScreen(
@@ -138,6 +140,7 @@ fun FlashcardScreen(
 
     var index by remember { mutableStateOf(0) }
     var flipped by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     val safeIndex = index.coerceIn(0, cards.size - 1)
     val card = cards[safeIndex]
 
@@ -178,10 +181,7 @@ fun FlashcardScreen(
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            OutlinedButton(onClick = {
-                onDelete(card.id)
-                flipped = false
-            }) { Text(t.delete) }
+                        OutlinedButton(onClick = { showDeleteDialog = true }) { Text(t.delete) }
             OutlinedButton(onClick = { onToggleKnown(card) }) {
                 Text(if (card.known) t.known else t.markKnown)
             }
@@ -197,6 +197,23 @@ fun FlashcardScreen(
                 index = (safeIndex + 1) % cards.size
             }) { Text(t.next) }
         }
+    }
+        if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(t.confirmDeleteCard) },
+            text = { Text(card.dictionaryForm) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteDialog = false
+                    onDelete(card.id)
+                    flipped = false
+                }) { Text(t.yesDelete) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text(t.cancel) }
+            }
+        )
     }
 }
 

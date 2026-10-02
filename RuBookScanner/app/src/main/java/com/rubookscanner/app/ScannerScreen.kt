@@ -7,6 +7,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.unit.sp
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -296,14 +298,15 @@ private fun CameraScanContent(
                         }
                     )
                 },
-                enabled = !isCapturing,
-                modifier = Modifier.size(72.dp),
-                shape = CircleShape
+                                enabled = !isCapturing,
+                modifier = Modifier.size(80.dp),
+                shape = CircleShape,
+                contentPadding = PaddingValues(0.dp)
             ) {
                 if (isCapturing) {
-                    CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
+                    CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 3.dp)
                 } else {
-                    Text("📷")
+                    Text("📷", fontSize = 38.sp)
                 }
             }
         }

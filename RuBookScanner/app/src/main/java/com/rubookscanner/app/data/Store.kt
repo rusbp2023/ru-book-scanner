@@ -21,6 +21,7 @@ private object Keys {
     val API_KEY = stringPreferencesKey("api_key")
     val MODEL = stringPreferencesKey("model")
     val BASE_URL = stringPreferencesKey("base_url")
+    val SOURCE_LANGUAGE = stringPreferencesKey("source_language")
 }
 
 class Store(private val context: Context) {
@@ -51,7 +52,12 @@ class Store(private val context: Context) {
             provider = provider,
             apiKey = prefs[Keys.API_KEY] ?: "",
             model = prefs[Keys.MODEL] ?: defaultModelFor(provider),
-            baseUrl = prefs[Keys.BASE_URL] ?: ""
+                        baseUrl = prefs[Keys.BASE_URL] ?: "",
+            sourceLanguage = try {
+                SourceLanguage.valueOf(prefs[Keys.SOURCE_LANGUAGE] ?: "RUSSIAN")
+            } catch (e: Exception) {
+                SourceLanguage.RUSSIAN
+            }
         )
     }
 
@@ -163,6 +169,7 @@ class Store(private val context: Context) {
             prefs[Keys.API_KEY] = settings.apiKey
             prefs[Keys.MODEL] = settings.model
             prefs[Keys.BASE_URL] = settings.baseUrl
+            prefs[Keys.SOURCE_LANGUAGE] = settings.sourceLanguage.name
         }
     }
 

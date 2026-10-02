@@ -77,8 +77,7 @@ fun DecksScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(t.decksTitle, style = MaterialTheme.typography.titleLarge)
-
+        
         Row(
             Modifier.padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically

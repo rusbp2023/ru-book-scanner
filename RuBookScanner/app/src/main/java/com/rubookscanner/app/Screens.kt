@@ -224,10 +224,10 @@ fun FlashcardScreen(
                 )
             ) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                     Text(
-                        if (!flipped) card.dictionaryForm else card.translation,
-                        style = MaterialTheme.typography.headlineMedium
-                    )
+                                   Text(
+    if (!flipped) card.translation else card.dictionaryForm,
+    style = MaterialTheme.typography.headlineMedium
+)
                 }
             }
         }

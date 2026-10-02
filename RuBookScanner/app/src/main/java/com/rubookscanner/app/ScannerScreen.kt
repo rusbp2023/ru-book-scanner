@@ -9,6 +9,16 @@ import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -56,6 +66,9 @@ import com.rubookscanner.app.data.Flashcard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+/** A kivágott téglalap a képernyő méretéhez viszonyítva (0..1 közötti arányok). */
+private data class ScanHighlight(val l: Float, val t: Float, val r: Float, val b: Float)
 
 @Composable
 fun ScannerScreen(
@@ -126,7 +139,25 @@ private fun CameraScanContent(
     var isCapturing by remember { mutableStateOf(false) }
     var isTranslating by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
+    var highlight by remember { mutableStateOf<ScanHighlight?>(null) }
+    val beam = remember { Animatable(0f) }
+    val frame = remember { Animatable(0f) }
+    val sweep = remember { Animatable(0f) }
+    val fade = remember { Animatable(0f) }
 
+    LaunchedEffect(highlight) {
+        if (highlight != null) {
+            beam.snapTo(0f)
+            frame.snapTo(0f)
+            sweep.snapTo(0f)
+            fade.snapTo(1f)
+            beam.animateTo(1f, tween(350, easing = FastOutSlowInEasing))
+            frame.animateTo(1f, tween(250))
+            sweep.animateTo(1f, tween(650, easing = LinearEasing))
+            fade.animateTo(0f, tween(450))
+            highlight = null
+        }
+    }
     LaunchedEffect(Unit) {
         cameraController.setEnabledUseCases(CameraController.IMAGE_CAPTURE)
         cameraController.bindToLifecycle(lifecycleOwner)
@@ -147,7 +178,67 @@ private fun CameraScanContent(
                 .border(2.dp, Color.Yellow, CircleShape)
         )
 
+        highlight?.let { h ->
+            Canvas(Modifier.fillMaxSize()) {
+                val w = size.width
+                val hh = size.height
+                val l = h.l * w
+                val t = h.t * hh
+                val r = h.r * w
+                val b = h.b * hh
+                val origin = Offset(w / 2f, hh / 2f)
+                val glow = Color(0xFF64B5F6)
+                val bright = Color(0xFFE3F2FD)
+                val a = fade.value
 
+                // 1) fénycsíkok a körből a négy sarok felé
+                val p = beam.value
+                if (p > 0.01f) {
+                    listOf(Offset(l, t), Offset(r, t), Offset(l, b), Offset(r, b)).forEach { corner ->
+                        val head = origin + (corner - origin) * p
+                        val tail = origin + (corner - origin) * (p - 0.45f).coerceAtLeast(0f)
+                        drawLine(
+                            Brush.linearGradient(listOf(Color.Transparent, glow), start = tail, end = head),
+                            tail, head,
+                            strokeWidth = 9.dp.toPx(), cap = StrokeCap.Round, alpha = 0.35f * a
+                        )
+                        drawLine(
+                            Brush.linearGradient(listOf(Color.Transparent, bright), start = tail, end = head),
+                            tail, head,
+                            strokeWidth = 3.dp.toPx(), cap = StrokeCap.Round, alpha = a
+                        )
+                    }
+                }
+
+                // 2) a téglalap keretének felizzása
+                val f = frame.value
+                if (f > 0f) {
+                    drawRect(glow, Offset(l, t), Size(r - l, b - t), alpha = 0.10f * f * a)
+                    drawRect(glow, Offset(l, t), Size(r - l, b - t), alpha = 0.35f * f * a, style = Stroke(width = 8.dp.toPx()))
+                    drawRect(bright, Offset(l, t), Size(r - l, b - t), alpha = f * a, style = Stroke(width = 2.dp.toPx()))
+                }
+
+                // 3) halvány kék letapogató vonal felülről lefelé
+                val s = sweep.value
+                if (s > 0f) {
+                    val y = t + (b - t) * s
+                    val trailTop = maxOf(t, y - 36.dp.toPx())
+                    if (y - trailTop > 1f) {
+                        drawRect(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, glow),
+                                startY = trailTop,
+                                endY = y
+                            ),
+                            topLeft = Offset(l, trailTop),
+                            size = Size(r - l, y - trailTop),
+                            alpha = 0.45f * a
+                        )
+                    }
+                    drawLine(bright, Offset(l, y), Offset(r, y), strokeWidth = 2.dp.toPx(), alpha = 0.9f * a)
+                }
+            }
+        }
 
         Column(
             Modifier
@@ -260,6 +351,8 @@ private fun CameraScanContent(
                                 scope.launch {
                                     try {
                                         val cropBitmap = withContext(Dispatchers.Default) {
+                                                                                   var newHighlight: ScanHighlight? = null
+                                        val cropBitmap = withContext(Dispatchers.Default) {
                                             val centerX = screenBitmap.width / 2
                                             val centerY = screenBitmap.height / 2
                                             val text = recognizeTextOnDevice(screenBitmap)
@@ -271,6 +364,12 @@ private fun CameraScanContent(
                                                 val top = (box.top - padH).coerceIn(0, screenBitmap.height - 1)
                                                 val right = (box.right + padW).coerceIn(left + 1, screenBitmap.width)
                                                 val bottom = (box.bottom + padH).coerceIn(top + 1, screenBitmap.height)
+                                                newHighlight = ScanHighlight(
+                                                    left.toFloat() / screenBitmap.width,
+                                                    top.toFloat() / screenBitmap.height,
+                                                    right.toFloat() / screenBitmap.width,
+                                                    bottom.toFloat() / screenBitmap.height
+                                                )
                                                 Bitmap.createBitmap(
                                                     screenBitmap, left, top, right - left, bottom - top
                                                 )
@@ -279,9 +378,17 @@ private fun CameraScanContent(
                                                 val fh = (screenBitmap.height * 0.12f).toInt().coerceAtLeast(1)
                                                 val left = (centerX - fw / 2).coerceIn(0, screenBitmap.width - fw)
                                                 val top = (centerY - fh / 2).coerceIn(0, screenBitmap.height - fh)
+                                                newHighlight = ScanHighlight(
+                                                    left.toFloat() / screenBitmap.width,
+                                                    top.toFloat() / screenBitmap.height,
+                                                    (left + fw).toFloat() / screenBitmap.width,
+                                                    (top + fh).toFloat() / screenBitmap.height
+                                                )
                                                 Bitmap.createBitmap(screenBitmap, left, top, fw, fh)
                                             }
                                         }
+                                        pendingCrops.add(cropBitmap)
+                                        highlight = newHighlight
                                         pendingCrops.add(cropBitmap)
                                     } catch (e: Exception) {
                                         errorMsg = e.message ?: t.unknownError

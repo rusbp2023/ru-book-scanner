@@ -11,7 +11,12 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 val Context.dataStore by preferencesDataStore(name = "ru_flashcards")
-
+private inline fun <reified T : Enum<T>> enumOrDefault(name: String?, default: T): T =
+    try {
+        if (name == null) default else enumValueOf<T>(name)
+    } catch (e: Exception) {
+        default
+    }
 private object Keys {
     val WORDS = stringPreferencesKey("words_json")
     val FLASHCARDS = stringPreferencesKey("flashcards_json")
@@ -22,6 +27,8 @@ private object Keys {
     val MODEL = stringPreferencesKey("model")
     val BASE_URL = stringPreferencesKey("base_url")
     val SOURCE_LANGUAGE = stringPreferencesKey("source_language")
+    val UI_LANGUAGE = stringPreferencesKey("ui_language")
+    val TARGET_LANGUAGE = stringPreferencesKey("target_language")
 }
 
 class Store(private val context: Context) {
@@ -52,12 +59,10 @@ class Store(private val context: Context) {
             provider = provider,
             apiKey = prefs[Keys.API_KEY] ?: "",
             model = prefs[Keys.MODEL] ?: defaultModelFor(provider),
-                        baseUrl = prefs[Keys.BASE_URL] ?: "",
-            sourceLanguage = try {
-                SourceLanguage.valueOf(prefs[Keys.SOURCE_LANGUAGE] ?: "RUSSIAN")
-            } catch (e: Exception) {
-                SourceLanguage.RUSSIAN
-            }
+                                   baseUrl = prefs[Keys.BASE_URL] ?: "",
+            sourceLanguage = enumOrDefault(prefs[Keys.SOURCE_LANGUAGE], SourceLanguage.RUSSIAN),
+            uiLanguage = enumOrDefault(prefs[Keys.UI_LANGUAGE], AppLang.HUNGARIAN),
+            targetLanguage = enumOrDefault(prefs[Keys.TARGET_LANGUAGE], AppLang.HUNGARIAN)
         )
     }
 
@@ -170,6 +175,8 @@ class Store(private val context: Context) {
             prefs[Keys.MODEL] = settings.model
             prefs[Keys.BASE_URL] = settings.baseUrl
             prefs[Keys.SOURCE_LANGUAGE] = settings.sourceLanguage.name
+            prefs[Keys.UI_LANGUAGE] = settings.uiLanguage.name
+            prefs[Keys.TARGET_LANGUAGE] = settings.targetLanguage.name
         }
     }
 

@@ -4,31 +4,29 @@ import android.graphics.Bitmap
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -36,9 +34,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rubookscanner.app.data.AiClient
 import com.rubookscanner.app.data.AiSettings
@@ -46,16 +49,6 @@ import com.rubookscanner.app.data.Store
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.core.view.WindowCompat
 
 private val AppDarkColors = darkColorScheme(
     primary = Color(0xFF64B5F6),
@@ -81,17 +74,17 @@ enum class AppScreen { SCAN, WORDS, CARDS, DECKS, SETTINGS }
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-window.statusBarColor = android.graphics.Color.parseColor("#0D1117")
-window.navigationBarColor = android.graphics.Color.parseColor("#1E1E22")
-WindowCompat.getInsetsController(window, window.decorView).apply {
-    isAppearanceLightStatusBars = false
-    isAppearanceLightNavigationBars = false
-}
-val store = Store(applicationContext)
+        window.statusBarColor = android.graphics.Color.parseColor("#0D1117")
+        window.navigationBarColor = android.graphics.Color.parseColor("#1E1E22")
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = false
+        }
+        val store = Store(applicationContext)
         setContent {
-           MaterialTheme(colorScheme = AppDarkColors) {
-    AppRoot(store)
-}
+            MaterialTheme(colorScheme = AppDarkColors) {
+                AppRoot(store)
+            }
         }
     }
 }
@@ -127,7 +120,7 @@ fun AppContent(store: Store) {
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-                bottomBar = {
+        bottomBar = {
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -221,7 +214,18 @@ fun AppContent(store: Store) {
                     allCards = cards,
                     onSetActive = { id -> scope.launch { store.setActiveDeck(id) } },
                     onCreateDeck = { name -> scope.launch { store.createDeck(name) } },
-                    onDeleteDeck = { id -> scope.launch { store.deleteDeck(id) } }
+                    onDeleteDeck = { id -> scope.launch { store.deleteDeck(id) } },
+                    onImportDecks = { parsed, fallbackName ->
+                        scope.launch {
+                            try {
+                                val total = store.importDecks(parsed, fallbackName)
+                                snackbarHostState.showSnackbar(t.decksUploaded(parsed.size, total))
+                            } catch (e: Exception) {
+                                snackbarHostState.showSnackbar(t.errorPrefix(e.message))
+                            }
+                        }
+                    },
+                    onMessage = { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } }
                 )
 
                 AppScreen.SETTINGS -> SettingsScreen(
@@ -232,6 +236,7 @@ fun AppContent(store: Store) {
         }
     }
 }
+
 @Composable
 private fun NavButton(
     selected: Boolean,

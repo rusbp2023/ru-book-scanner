@@ -59,17 +59,22 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.lerp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.rubookscanner.app.data.AiClient
 import com.rubookscanner.app.data.AiSettings
 import com.rubookscanner.app.data.Flashcard
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** A kivágott téglalap a képernyő méretéhez viszonyítva (0..1 közötti arányok). */
 private data class ScanHighlight(val l: Float, val t: Float, val r: Float, val b: Float)
+
+/** Becsült téglalap a képernyő közepén: ide indulnak a fénycsíkok, amíg a valódi szóhely nem ismert. */
+private val EstimateRect = ScanHighlight(0.325f, 0.44f, 0.675f, 0.56f)
 
 @Composable
 fun ScannerScreen(
@@ -140,29 +145,55 @@ private fun CameraScanContent(
     var isCapturing by remember { mutableStateOf(false) }
     var isTranslating by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
+
     val listState = rememberLazyListState()
     LaunchedEffect(pendingCrops.size) {
         if (pendingCrops.isNotEmpty()) {
             listState.animateScrollToItem(pendingCrops.size - 1)
         }
     }
-    var highlight by remember { mutableStateOf<ScanHighlight?>(null) }
+
+    // --- Scan animáció állapota ---
+    var scanActive by remember { mutableStateOf(false) }
+    var scanTarget by remember { mutableStateOf(EstimateRect) }
+    var animJob by remember { mutableStateOf<Job?>(null) }
     val beam = remember { Animatable(0f) }
+    val morph = remember { Animatable(0f) }
     val frame = remember { Animatable(0f) }
     val sweep = remember { Animatable(0f) }
     val fade = remember { Animatable(0f) }
 
-    LaunchedEffect(highlight) {
-        if (highlight != null) {
+    /** Gombnyomásra azonnal indul: a fénycsíkok a becsült téglalap sarkai felé futnak. */
+    fun startScanAnim() {
+        animJob?.cancel()
+        animJob = scope.launch {
+            scanActive = true
+            scanTarget = EstimateRect
             beam.snapTo(0f)
+            morph.snapTo(0f)
             frame.snapTo(0f)
             sweep.snapTo(0f)
             fade.snapTo(1f)
-            beam.animateTo(1f, tween(200, easing = FastOutSlowInEasing))
-            frame.animateTo(1f, tween(150))
-            sweep.animateTo(1f, tween(350, easing = LinearEasing))
-            fade.animateTo(0f, tween(250))
-            highlight = null
+            beam.animateTo(1f, tween(130, easing = FastOutSlowInEasing))
+        }
+    }
+
+    /** Ha megvan a valódi szóhely: átsimul rá, majd keret + letapogatás + kifakulás. null = hiba. */
+    fun finishScanAnim(target: ScanHighlight?) {
+        val beamJob = animJob
+        animJob = scope.launch {
+            beamJob?.join()
+            if (target == null) {
+                fade.animateTo(0f, tween(150))
+                scanActive = false
+                return@launch
+            }
+            scanTarget = target
+            morph.animateTo(1f, tween(120))
+            frame.animateTo(1f, tween(100))
+            sweep.animateTo(1f, tween(220, easing = LinearEasing))
+            fade.animateTo(0f, tween(180))
+            scanActive = false
         }
     }
 
@@ -186,14 +217,15 @@ private fun CameraScanContent(
                 .border(2.dp, Color.Yellow, CircleShape)
         )
 
-        highlight?.let { h ->
+        if (scanActive) {
             Canvas(Modifier.fillMaxSize()) {
                 val w = size.width
                 val hh = size.height
-                val l = h.l * w
-                val tp = h.t * hh
-                val r = h.r * w
-                val b = h.b * hh
+                val m = morph.value
+                val l = lerp(EstimateRect.l, scanTarget.l, m) * w
+                val tp = lerp(EstimateRect.t, scanTarget.t, m) * hh
+                val r = lerp(EstimateRect.r, scanTarget.r, m) * w
+                val b = lerp(EstimateRect.b, scanTarget.b, m) * hh
                 val origin = Offset(w / 2f, hh / 2f)
                 val glow = Color(0xFF64B5F6)
                 val bright = Color(0xFFE3F2FD)
@@ -280,7 +312,7 @@ private fun CameraScanContent(
                             t.collectedWords(pendingCrops.size),
                             style = MaterialTheme.typography.labelMedium
                         )
-                                                LazyRow(
+                        LazyRow(
                             Modifier.padding(top = 8.dp),
                             state = listState,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -356,6 +388,7 @@ private fun CameraScanContent(
                 onClick = {
                     isCapturing = true
                     errorMsg = null
+                    startScanAnim()
                     cameraController.takePicture(
                         ContextCompat.getMainExecutor(context),
                         object : androidx.camera.core.ImageCapture.OnImageCapturedCallback() {
@@ -410,9 +443,10 @@ private fun CameraScanContent(
                                             }
                                         }
                                         pendingCrops.add(cropBitmap)
-                                        highlight = newHighlight
+                                        finishScanAnim(newHighlight)
                                     } catch (e: Exception) {
                                         errorMsg = e.message ?: t.unknownError
+                                        finishScanAnim(null)
                                     } finally {
                                         isCapturing = false
                                     }
@@ -422,6 +456,7 @@ private fun CameraScanContent(
                             override fun onError(exception: androidx.camera.core.ImageCaptureException) {
                                 errorMsg = exception.message ?: t.cameraError
                                 isCapturing = false
+                                finishScanAnim(null)
                             }
                         }
                     )

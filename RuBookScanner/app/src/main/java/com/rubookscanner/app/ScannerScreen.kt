@@ -377,11 +377,13 @@ private fun CameraScanContent(
                                                 val top = (box.top - padH).coerceIn(0, screenBitmap.height - 1)
                                                 val right = (box.right + padW).coerceIn(left + 1, screenBitmap.width)
                                                 val bottom = (box.bottom + padH).coerceIn(top + 1, screenBitmap.height)
+                                                val mx = (box.width() * 0.06f).toInt().coerceAtLeast(2)
+                                                val my = (box.height() * 0.10f).toInt().coerceAtLeast(2)
                                                 newHighlight = ScanHighlight(
-                                                    left.toFloat() / screenBitmap.width,
-                                                    top.toFloat() / screenBitmap.height,
-                                                    right.toFloat() / screenBitmap.width,
-                                                    bottom.toFloat() / screenBitmap.height
+                                                    (box.left - mx).coerceAtLeast(0).toFloat() / screenBitmap.width,
+                                                    (box.top - my).coerceAtLeast(0).toFloat() / screenBitmap.height,
+                                                    (box.right + mx).coerceAtMost(screenBitmap.width).toFloat() / screenBitmap.width,
+                                                    (box.bottom + my).coerceAtMost(screenBitmap.height).toFloat() / screenBitmap.height
                                                 )
                                                 Bitmap.createBitmap(
                                                     screenBitmap, left, top, right - left, bottom - top

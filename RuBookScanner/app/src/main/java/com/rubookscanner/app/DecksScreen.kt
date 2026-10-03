@@ -1,15 +1,20 @@
 package com.rubookscanner.app
 
 import android.content.Context
+import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Divider
@@ -19,6 +24,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,10 +36,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.rubookscanner.app.data.Deck
 import com.rubookscanner.app.data.Flashcard
+import com.rubookscanner.app.data.ParsedDeck
 import com.rubookscanner.app.data.buildAllDecksExportText
 import com.rubookscanner.app.data.buildDeckExportText
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
+import com.rubookscanner.app.data.parseDecksFromText
 
 @Composable
 fun DecksScreen(
@@ -42,13 +48,16 @@ fun DecksScreen(
     allCards: List<Flashcard>,
     onSetActive: (Long) -> Unit,
     onCreateDeck: (String) -> Unit,
-    onDeleteDeck: (Long) -> Unit
+    onDeleteDeck: (Long) -> Unit,
+    onImportDecks: (List<ParsedDeck>, String) -> Unit,
+    onMessage: (String) -> Unit
 ) {
     val context = LocalContext.current
     val t = LocalStrings.current
     var newDeckName by remember { mutableStateOf("") }
     var pendingExportText by remember { mutableStateOf<String?>(null) }
     var deckToDelete by remember { mutableStateOf<Deck?>(null) }
+
     val createDocLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("text/plain")
     ) { uri ->
@@ -57,6 +66,24 @@ fun DecksScreen(
         }
         pendingExportText = null
     }
+
+    val openDocLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                val parsed = parseDecksFromText(readTextFromUri(context, uri))
+                if (parsed.sumOf { it.cards.size } == 0) {
+                    onMessage(t.uploadNothingFound)
+                } else {
+                    onImportDecks(parsed, displayNameOf(context, uri))
+                }
+            } catch (e: Exception) {
+                onMessage(t.errorPrefix(e.message))
+            }
+        }
+    }
+
     deckToDelete?.let { deck ->
         AlertDialog(
             onDismissRequest = { deckToDelete = null },
@@ -72,14 +99,14 @@ fun DecksScreen(
             }
         )
     }
+
     Column(
         Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        
         Row(
-            Modifier.padding(vertical = 12.dp),
+            Modifier.padding(bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedTextField(
@@ -106,6 +133,13 @@ fun DecksScreen(
             },
             modifier = Modifier.fillMaxWidth()
         ) { Text(t.downloadAll) }
+
+        Spacer(Modifier.height(8.dp))
+
+        OutlinedButton(
+            onClick = { openDocLauncher.launch(arrayOf("text/*", "application/octet-stream")) },
+            modifier = Modifier.fillMaxWidth()
+        ) { Text(t.uploadDeck) }
 
         Divider(Modifier.padding(vertical = 12.dp))
 
@@ -147,8 +181,22 @@ fun DecksScreen(
     }
 }
 
-private fun writeTextToUri(context: Context, uri: android.net.Uri, text: String) {
+private fun writeTextToUri(context: Context, uri: Uri, text: String) {
     context.contentResolver.openOutputStream(uri)?.use { stream ->
         stream.write(text.toByteArray(Charsets.UTF_8))
     }
+}
+
+private fun readTextFromUri(context: Context, uri: Uri): String =
+    context.contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }
+        ?: ""
+
+/** A kiválasztott fájl neve kiterjesztés nélkül (ha a fájlban nincs pakli-fejléc, ez lesz a pakli neve). */
+private fun displayNameOf(context: Context, uri: Uri): String {
+    var name: String? = null
+    context.contentResolver.query(uri, null, null, null, null)?.use { c ->
+        val idx = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+        if (idx >= 0 && c.moveToFirst()) name = c.getString(idx)
+    }
+    return (name ?: "").substringBeforeLast('.')
 }

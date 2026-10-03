@@ -215,6 +215,7 @@ fun AppContent(store: Store) {
                     onSetActive = { id -> scope.launch { store.setActiveDeck(id) } },
                     onCreateDeck = { name -> scope.launch { store.createDeck(name) } },
                     onDeleteDeck = { id -> scope.launch { store.deleteDeck(id) } },
+                    onRenameDeck = { id, name -> scope.launch { store.renameDeck(id, name) } },
                     onImportDecks = { parsed, fallbackName ->
                         scope.launch {
                             try {

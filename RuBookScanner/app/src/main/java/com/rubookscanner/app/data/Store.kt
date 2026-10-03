@@ -24,6 +24,7 @@ private object Keys {
     val FLASHCARDS = stringPreferencesKey("flashcards_json")
     val DECKS = stringPreferencesKey("decks_json")
     val ACTIVE_DECK_ID = stringPreferencesKey("active_deck_id")
+    val SHUFFLE = stringPreferencesKey("shuffle_orders_json")
     val PROVIDER = stringPreferencesKey("provider")
     val API_KEY = stringPreferencesKey("api_key")
     val MODEL = stringPreferencesKey("model")
@@ -49,6 +50,9 @@ class Store(private val context: Context) {
 
     val activeDeckIdFlow: Flow<Long?> = context.dataStore.data.map { prefs ->
         prefs[Keys.ACTIVE_DECK_ID]?.toLongOrNull()
+    }
+        val shuffleOrdersFlow: Flow<Map<Long, List<Long>>> = context.dataStore.data.map { prefs ->
+        parseShuffle(prefs[Keys.SHUFFLE] ?: "{}")
     }
 
     val settingsFlow: Flow<AiSettings> = context.dataStore.data.map { prefs ->
@@ -126,7 +130,25 @@ class Store(private val context: Context) {
         }
         return cardTotal
     }
+    suspend fun shuffleDeck(deckId: Long) {
+        context.dataStore.edit { prefs ->
+            val ids = parseFlashcards(prefs[Keys.FLASHCARDS] ?: "[]")
+                .filter { it.deckId == deckId }
+                .map { it.id }
+                .shuffled()
+            val map = parseShuffle(prefs[Keys.SHUFFLE] ?: "{}").toMutableMap()
+            map[deckId] = ids
+            prefs[Keys.SHUFFLE] = serializeShuffle(map)
+        }
+    }
 
+    suspend fun resetDeckOrder(deckId: Long) {
+        context.dataStore.edit { prefs ->
+            val map = parseShuffle(prefs[Keys.SHUFFLE] ?: "{}").toMutableMap()
+            map.remove(deckId)
+            prefs[Keys.SHUFFLE] = serializeShuffle(map)
+        }
+    }
     suspend fun setActiveDeck(id: Long) {
         context.dataStore.edit { prefs -> prefs[Keys.ACTIVE_DECK_ID] = id.toString() }
     }
@@ -146,6 +168,9 @@ class Store(private val context: Context) {
             prefs[Keys.DECKS] = serializeDecks(decks)
             val cards = parseFlashcards(prefs[Keys.FLASHCARDS] ?: "[]").filterNot { it.deckId == id }
             prefs[Keys.FLASHCARDS] = serializeFlashcards(cards)
+                        val shuffleMap = parseShuffle(prefs[Keys.SHUFFLE] ?: "{}").toMutableMap()
+            shuffleMap.remove(id)
+            prefs[Keys.SHUFFLE] = serializeShuffle(shuffleMap)
             if (prefs[Keys.ACTIVE_DECK_ID]?.toLongOrNull() == id) {
                 prefs[Keys.ACTIVE_DECK_ID] = decks.firstOrNull()?.id?.toString() ?: ""
             }
@@ -216,7 +241,27 @@ class Store(private val context: Context) {
             prefs[Keys.TARGET_LANGUAGE] = settings.targetLanguage.name
         }
     }
+    private fun parseShuffle(json: String): Map<Long, List<Long>> {
+        val obj = JSONObject(json)
+        val out = mutableMapOf<Long, List<Long>>()
+        obj.keys().forEach { key ->
+            val arr = obj.getJSONArray(key)
+            val ids = mutableListOf<Long>()
+            for (i in 0 until arr.length()) ids.add(arr.getLong(i))
+            key.toLongOrNull()?.let { out[it] = ids }
+        }
+        return out
+    }
 
+    private fun serializeShuffle(map: Map<Long, List<Long>>): String {
+        val obj = JSONObject()
+        map.forEach { (deckId, ids) ->
+            val arr = JSONArray()
+            ids.forEach { arr.put(it) }
+            obj.put(deckId.toString(), arr)
+        }
+        return obj.toString()
+    }
     private fun parseWords(json: String): List<WordItem> {
         val arr = JSONArray(json)
         val out = mutableListOf<WordItem>()

@@ -2,15 +2,13 @@ package com.rubookscanner.app
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.clickable
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,8 +24,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -49,13 +47,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.rubookscanner.app.data.AiProvider
 import com.rubookscanner.app.data.AiSettings
 import com.rubookscanner.app.data.AppLang
 import com.rubookscanner.app.data.Flashcard
-import com.rubookscanner.app.data.SourceLanguage
 import com.rubookscanner.app.data.WordItem
 import com.rubookscanner.app.data.defaultModelFor
 import kotlinx.coroutines.launch
@@ -229,7 +228,7 @@ fun FlashcardScreen(
                     contentColor = Color(0xFFEAF2FB)
                 )
             ) {
-                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
                         if (!flipped) card.translation else card.dictionaryForm,
                         style = MaterialTheme.typography.headlineMedium
@@ -295,7 +294,7 @@ fun FlashcardScreen(
             }
         )
     }
-    
+
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -326,7 +325,7 @@ private fun <T> DropdownField(
 ) {
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-                OutlinedTextField(
+        OutlinedTextField(
             value = selectedText,
             onValueChange = {},
             readOnly = true,
@@ -368,10 +367,6 @@ fun SettingsScreen(
     var targetLanguage by remember(settings) { mutableStateOf(settings.targetLanguage) }
     var uiLanguage by remember(settings) { mutableStateOf(settings.uiLanguage) }
 
-    val srcLabel: (SourceLanguage) -> String = {
-        if (it == SourceLanguage.RUSSIAN) t.langRussian else t.langEnglish
-    }
-
     Column(
         Modifier
             .fillMaxSize()
@@ -382,9 +377,9 @@ fun SettingsScreen(
         Spacer(Modifier.height(8.dp))
         DropdownField(
             label = t.bookLanguageLabel,
-            selectedText = srcLabel(sourceLanguage),
-            options = SourceLanguage.entries,
-            optionLabel = srcLabel,
+            selectedText = sourceLanguage.label,
+            options = com.rubookscanner.app.data.SourceLanguage.entries,
+            optionLabel = { it.label },
             onSelect = { sourceLanguage = it }
         )
         Spacer(Modifier.height(12.dp))
@@ -459,7 +454,7 @@ fun SettingsScreen(
             Text(t.save)
         }
         Spacer(Modifier.height(20.dp))
-                Text(t.settingsTip, style = MaterialTheme.typography.bodySmall)
+        Text(t.settingsTip, style = MaterialTheme.typography.bodySmall)
         Spacer(Modifier.height(8.dp))
         val keyUrl = when (provider) {
             AiProvider.ANTHROPIC -> "https://console.anthropic.com/settings/keys"

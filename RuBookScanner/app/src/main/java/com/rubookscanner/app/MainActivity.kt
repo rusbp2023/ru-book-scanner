@@ -107,6 +107,7 @@ fun AppContent(store: Store) {
     val decks by store.decksFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val activeDeckId by store.activeDeckIdFlow.collectAsStateWithLifecycle(initialValue = null)
     val settings by store.settingsFlow.collectAsStateWithLifecycle(initialValue = AiSettings())
+    val shuffleOrders by store.shuffleOrdersFlow.collectAsStateWithLifecycle(initialValue = emptyMap())
     val scope = rememberCoroutineScope()
     var loading by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -116,7 +117,16 @@ fun AppContent(store: Store) {
         store.ensureDefaultDeck()
     }
 
-    val cardsInActiveDeck = cards.filter { it.deckId == activeDeckId }
+        val baseCards = cards.filter { it.deckId == activeDeckId }
+    val savedOrder = activeDeckId?.let { shuffleOrders[it] }
+    val cardsInActiveDeck = if (savedOrder == null) {
+        baseCards
+    } else {
+        val byId = baseCards.associateBy { it.id }
+        val inOrder = savedOrder.toSet()
+        savedOrder.mapNotNull { byId[it] } + baseCards.filter { it.id !in inOrder }
+    }
+    val isShuffled = savedOrder != null
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -205,7 +215,10 @@ fun AppContent(store: Store) {
                     cards = cardsInActiveDeck,
                     onDelete = { id -> scope.launch { store.deleteFlashcard(id) } },
                     onToggleKnown = { c -> scope.launch { store.updateFlashcard(c.copy(known = !c.known)) } },
-                    onEdit = { c -> scope.launch { store.updateFlashcard(c) } }
+                    onEdit = { c -> scope.launch { store.updateFlashcard(c) } },
+                    isShuffled = isShuffled,
+                    onShuffle = { activeDeckId?.let { id -> scope.launch { store.shuffleDeck(id) } } },
+                    onResetOrder = { activeDeckId?.let { id -> scope.launch { store.resetDeckOrder(id) } } }
                 )
 
                 AppScreen.DECKS -> DecksScreen(

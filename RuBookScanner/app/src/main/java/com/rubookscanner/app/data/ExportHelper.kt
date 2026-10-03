@@ -8,8 +8,10 @@ fun buildDeckExportText(deckName: String, cards: List<Flashcard>, emptyText: Str
     if (cards.isEmpty()) {
         sb.append(emptyText).append("\n")
     } else {
+        val width = cards.maxOf { it.dictionaryForm.length }.coerceAtMost(40)
         cards.forEach { c ->
-            sb.append("${c.dictionaryForm} — ${c.translation}\n")
+            val pad = (width - c.dictionaryForm.length).coerceAtLeast(0) + 10
+            sb.append(c.dictionaryForm).append(" ".repeat(pad)).append(c.translation).append("\n")
         }
     }
     return sb.toString()
@@ -34,8 +36,20 @@ private fun isUnderline(line: String): Boolean {
     return s.isNotEmpty() && s.all { it == '=' }
 }
 
+private val columnSeparator = Regex("\\t+| {2,}")
+
 private fun parseCardLine(line: String): Pair<String, String>? {
     if (line.isEmpty()) return null
+
+    // Új formátum: a két szót tabulátor vagy legalább két szóköz választja el.
+    val m = columnSeparator.find(line)
+    if (m != null && m.range.first > 0) {
+        val first = line.substring(0, m.range.first).trim()
+        val second = line.substring(m.range.last + 1).trim()
+        if (first.isNotEmpty() && second.isNotEmpty()) return first to second
+    }
+
+    // Régi formátum (gondolatjeles) is beolvasható marad.
     val separators = listOf(" — ", " – ", " - ")
     for (sep in separators) {
         val idx = line.indexOf(sep)

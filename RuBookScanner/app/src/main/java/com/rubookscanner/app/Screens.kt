@@ -1,7 +1,12 @@
 package com.rubookscanner.app
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -45,18 +50,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp as lerpColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.rubookscanner.app.data.AiProvider
 import com.rubookscanner.app.data.AiSettings
 import com.rubookscanner.app.data.AppLang
 import com.rubookscanner.app.data.Flashcard
 import com.rubookscanner.app.data.WordItem
 import com.rubookscanner.app.data.defaultModelFor
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.sin
 import kotlinx.coroutines.launch
 
 @Composable
@@ -160,15 +170,32 @@ fun FlashcardScreen(
     var showEditDialog by remember { mutableStateOf(false) }
     var widthPx by remember { mutableStateOf(0f) }
     var animating by remember { mutableStateOf(false) }
+    var slideIn by remember { mutableStateOf(false) }
     val dragX = remember { Animatable(0f) }
+
+    // animációk állapota
+    val delAnim = remember { Animatable(0f) }
+    var deletingId by remember { mutableStateOf<Long?>(null) }
+    val knownFlash = remember { Animatable(0f) }
+    val checkScale = remember { Animatable(0f) }
+    val checkAlpha = remember { Animatable(0f) }
+    val shuffleAnim = remember { Animatable(0f) }
 
     val safeIndex = index.coerceIn(0, cards.size - 1)
     val card = cards[safeIndex]
 
-    // dir = +1: következő kártya (a mostani balra kicsúszik, az új jobbról jön)
-    // dir = -1: előző kártya (a mostani jobbra csúszik ki, az új balról jön)
+    val deleting = deletingId == card.id
+    val delProgress = if (deleting) delAnim.value else 0f
+    val dragProg = if (widthPx > 0f && !slideIn) (abs(dragX.value) / widthPx).coerceIn(0f, 1f) else 0f
+    // 0..1: mennyire "emelkedik előre" a mögöttes kártya
+    val prog = maxOf(dragProg, delProgress)
+    val shuf = shuffleAnim.value
+    val frontScale = 1f - 0.3f * delProgress
+
+    // dir = +1: következő kártya (a mostani balra kicsúszik, a mögötte lévő előre jön)
+    // dir = -1: előző kártya (a mostani jobbra csúszik ki, az új balról jön be)
     fun go(dir: Int) {
-        if (animating) return
+        if (animating || deleting) return
         if (cards.size < 2 || widthPx <= 0f) {
             scope.launch { dragX.animateTo(0f, tween(150)) }
             return
@@ -177,10 +204,40 @@ fun FlashcardScreen(
             animating = true
             dragX.animateTo(-dir * widthPx, tween(180))
             flipped = false
-            index = (safeIndex + dir + cards.size) % cards.size
-            dragX.snapTo(dir * widthPx)
-            dragX.animateTo(0f, tween(220))
+            if (dir > 0) {
+                index = (safeIndex + 1) % cards.size
+                dragX.snapTo(0f)
+            } else {
+                slideIn = true
+                index = (safeIndex - 1 + cards.size) % cards.size
+                dragX.snapTo(-widthPx)
+                dragX.animateTo(0f, tween(220))
+                slideIn = false
+            }
             animating = false
+        }
+    }
+
+    fun playShuffle() {
+        scope.launch {
+            shuffleAnim.snapTo(0f)
+            shuffleAnim.animateTo(1f, tween(500, easing = FastOutSlowInEasing))
+        }
+    }
+
+    fun playKnown() {
+        scope.launch {
+            knownFlash.snapTo(1f)
+            knownFlash.animateTo(0f, tween(500))
+        }
+        scope.launch {
+            checkAlpha.snapTo(1f)
+            checkScale.snapTo(0.2f)
+            checkScale.animateTo(
+                1f,
+                spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
+            )
+            checkAlpha.animateTo(0f, tween(250))
         }
     }
 
@@ -190,12 +247,13 @@ fun FlashcardScreen(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-                        Box(Modifier.fillMaxWidth()) {
+        Box(Modifier.fillMaxWidth()) {
             OutlinedButton(
                 onClick = {
                     if (isShuffled) onResetOrder() else onShuffle()
                     index = 0
                     flipped = false
+                    playShuffle()
                 },
                 modifier = Modifier.align(Alignment.CenterStart)
             ) {
@@ -213,22 +271,22 @@ fun FlashcardScreen(
                 .fillMaxWidth()
                 .weight(1f)
                 .onSizeChanged { widthPx = it.width.toFloat() }
-                .pointerInput(safeIndex, cards.size) {
+                .pointerInput(safeIndex, cards.size, deleting) {
                     detectHorizontalDragGestures(
                         onDragEnd = {
                             val threshold = widthPx * 0.25f
                             when {
-                                animating -> {}
+                                animating || deleting -> {}
                                 dragX.value < -threshold -> go(1)
                                 dragX.value > threshold -> go(-1)
                                 else -> scope.launch { dragX.animateTo(0f, tween(150)) }
                             }
                         },
                         onDragCancel = {
-                            if (!animating) scope.launch { dragX.animateTo(0f, tween(150)) }
+                            if (!animating && !deleting) scope.launch { dragX.animateTo(0f, tween(150)) }
                         },
                         onHorizontalDrag = { change, dragAmount ->
-                            if (!animating) {
+                            if (!animating && !deleting) {
                                 change.consume()
                                 scope.launch { dragX.snapTo(dragX.value + dragAmount) }
                             }
@@ -236,21 +294,86 @@ fun FlashcardScreen(
                     )
                 }
         ) {
+            val frontColor = Color(0xFF16263A)
+            val edgeColor = Color(0xFF0F1A27)
+            val edgeBorder = BorderStroke(1.dp, Color(0xFF2A3B50))
+
+            // a pakli mögöttes kártyái (a legtávolabbi van legalul)
+            for (depth in minOf(2, cards.size - 1) downTo 1) {
+                val eff = depth - prog
+                val backCard = cards[(safeIndex + depth) % cards.size]
+                Card(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 8.dp, bottom = 32.dp)
+                        .graphicsLayer {
+                            val s = 1f - 0.05f * eff
+                            scaleX = s
+                            scaleY = s
+                            translationY = 22.dp.toPx() * eff
+                            rotationZ = -5f * sin(PI.toFloat() * 5f * shuf) * (1f - shuf)
+                        },
+                    colors = CardDefaults.cardColors(
+                        containerColor = lerpColor(frontColor, edgeColor, (eff * 0.45f).coerceIn(0f, 1f)),
+                        contentColor = Color(0xFFEAF2FB)
+                    ),
+                    border = edgeBorder
+                ) {
+                    if (depth == 1) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(
+                                backCard.translation,
+                                style = MaterialTheme.typography.headlineMedium,
+                                modifier = Modifier.graphicsLayer { alpha = prog }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // az első (aktuális) kártya
             Card(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(vertical = 8.dp)
-                    .graphicsLayer { translationX = dragX.value },
+                    .padding(top = 8.dp, bottom = 32.dp)
+                    .graphicsLayer {
+                        translationX = dragX.value
+                        scaleX = frontScale
+                        scaleY = frontScale
+                        alpha = (1f - delProgress) * (1f - 0.65f * sin(PI.toFloat() * shuf))
+                        rotationY = 360f * shuf
+                        rotationZ = 5f * sin(PI.toFloat() * 5f * shuf) * (1f - shuf)
+                        cameraDistance = 12f * density
+                    },
                 onClick = { flipped = !flipped },
                 colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFF16263A),
+                    containerColor = frontColor,
                     contentColor = Color(0xFFEAF2FB)
-                )
+                ),
+                border = edgeBorder
             ) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    // zöld felvillanás "tudom" jelölésnél
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .graphicsLayer { alpha = knownFlash.value }
+                            .background(Color(0x4D66BB6A))
+                    )
                     Text(
                         if (!flipped) card.translation else card.dictionaryForm,
                         style = MaterialTheme.typography.headlineMedium
+                    )
+                    // rugózó zöld pipa
+                    Text(
+                        "✓",
+                        fontSize = 110.sp,
+                        color = Color(0xFF81C784),
+                        modifier = Modifier.graphicsLayer {
+                            scaleX = checkScale.value
+                            scaleY = checkScale.value
+                            alpha = checkAlpha.value
+                        }
                     )
                     IconButton(
                         onClick = { showEditDialog = true },
@@ -263,7 +386,11 @@ fun FlashcardScreen(
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             OutlinedButton(onClick = { showDeleteDialog = true }) { Text(t.delete) }
-            OutlinedButton(onClick = { onToggleKnown(card) }) {
+            OutlinedButton(onClick = {
+                val becomingKnown = !card.known
+                onToggleKnown(card)
+                if (becomingKnown) playKnown()
+            }) {
                 Text(if (card.known) t.known else t.markKnown)
             }
         }
@@ -322,8 +449,15 @@ fun FlashcardScreen(
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteDialog = false
-                    onDelete(card.id)
-                    flipped = false
+                    val idToDelete = card.id
+                    deletingId = idToDelete
+                    scope.launch {
+                        // a kártya összezsugorodik és eltűnik, a mögötte lévő előre jön
+                        delAnim.snapTo(0f)
+                        delAnim.animateTo(1f, tween(220))
+                        onDelete(idToDelete)
+                        flipped = false
+                    }
                 }) { Text(t.yesDelete) }
             },
             dismissButton = {

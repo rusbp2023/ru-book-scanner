@@ -50,6 +50,7 @@ fun DecksScreen(
     onSetActive: (Long) -> Unit,
     onCreateDeck: (String) -> Unit,
     onDeleteDeck: (Long) -> Unit,
+    onRenameDeck: (Long, String) -> Unit,
     onImportDecks: (List<ParsedDeck>, String) -> Unit,
     onMessage: (String) -> Unit
 ) {
@@ -58,7 +59,7 @@ fun DecksScreen(
     var newDeckName by remember { mutableStateOf("") }
     var pendingExportText by remember { mutableStateOf<String?>(null) }
     var deckToDelete by remember { mutableStateOf<Deck?>(null) }
-
+    var deckToRename by remember { mutableStateOf<Deck?>(null) }
     val createDocLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("text/plain")
     ) { uri ->
@@ -100,7 +101,33 @@ fun DecksScreen(
             }
         )
     }
-
+    deckToRename?.let { deck ->
+        var renameText by remember(deck.id) { mutableStateOf(deck.name) }
+        AlertDialog(
+            onDismissRequest = { deckToRename = null },
+            title = { Text(t.renameDeck) },
+            text = {
+                OutlinedTextField(
+                    value = renameText,
+                    onValueChange = { renameText = it },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = renameText.isNotBlank(),
+                    onClick = {
+                        onRenameDeck(deck.id, renameText.trim())
+                        deckToRename = null
+                    }
+                ) { Text(t.save) }
+            },
+            dismissButton = {
+                TextButton(onClick = { deckToRename = null }) { Text(t.cancel) }
+            }
+        )
+    }
     Column(
         Modifier
             .fillMaxSize()
@@ -169,6 +196,7 @@ fun DecksScreen(
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
+                        IconButton(onClick = { deckToRename = deck }) { Text("✎", fontSize = 22.sp) }
                         IconButton(onClick = {
                             val cardsForDeck = allCards.filter { it.deckId == deck.id }
                             pendingExportText = buildDeckExportText(deck.name, cardsForDeck, t.emptyDeck)

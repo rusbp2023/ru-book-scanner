@@ -135,7 +135,10 @@ fun FlashcardScreen(
     cards: List<Flashcard>,
     onDelete: (Long) -> Unit,
     onToggleKnown: (Flashcard) -> Unit,
-    onEdit: (Flashcard) -> Unit
+    onEdit: (Flashcard) -> Unit,
+    isShuffled: Boolean,
+    onShuffle: () -> Unit,
+    onResetOrder: () -> Unit
 ) {
     val t = LocalStrings.current
 
@@ -187,8 +190,28 @@ fun FlashcardScreen(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("${safeIndex + 1} / ${cards.size}", style = MaterialTheme.typography.labelLarge)
-        Spacer(Modifier.height(16.dp))
+                Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            IconButton(onClick = {
+                onShuffle()
+                index = 0
+                flipped = false
+            }) { Text("🔀", style = MaterialTheme.typography.titleLarge) }
+            Text("${safeIndex + 1} / ${cards.size}", style = MaterialTheme.typography.labelLarge)
+            if (isShuffled) {
+                IconButton(onClick = {
+                    onResetOrder()
+                    index = 0
+                    flipped = false
+                }) { Text("↺", style = MaterialTheme.typography.titleLarge) }
+            } else {
+                Spacer(Modifier.size(48.dp))
+            }
+        }
+        Spacer(Modifier.height(4.dp))
         Box(
             modifier = Modifier
                 .fillMaxWidth()

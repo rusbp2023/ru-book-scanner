@@ -190,26 +190,22 @@ fun FlashcardScreen(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-                Row(
-            Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            IconButton(onClick = {
-                onShuffle()
-                index = 0
-                flipped = false
-            }) { Text("🔀", style = MaterialTheme.typography.titleLarge) }
-            Text("${safeIndex + 1} / ${cards.size}", style = MaterialTheme.typography.labelLarge)
-            if (isShuffled) {
-                IconButton(onClick = {
-                    onResetOrder()
+                        Box(Modifier.fillMaxWidth()) {
+            OutlinedButton(
+                onClick = {
+                    if (isShuffled) onResetOrder() else onShuffle()
                     index = 0
                     flipped = false
-                }) { Text("↺", style = MaterialTheme.typography.titleLarge) }
-            } else {
-                Spacer(Modifier.size(48.dp))
+                },
+                modifier = Modifier.align(Alignment.CenterStart)
+            ) {
+                Text(if (isShuffled) t.originalOrder else t.shuffle)
             }
+            Text(
+                "${safeIndex + 1} / ${cards.size}",
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.align(Alignment.Center)
+            )
         }
         Spacer(Modifier.height(4.dp))
         Box(

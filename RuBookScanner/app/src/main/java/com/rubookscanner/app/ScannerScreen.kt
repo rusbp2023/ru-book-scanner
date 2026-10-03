@@ -14,7 +14,6 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,12 +48,16 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
@@ -65,6 +68,10 @@ import androidx.core.content.ContextCompat
 import com.rubookscanner.app.data.AiClient
 import com.rubookscanner.app.data.AiSettings
 import com.rubookscanner.app.data.Flashcard
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.random.Random
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -75,6 +82,22 @@ private data class ScanHighlight(val l: Float, val t: Float, val r: Float, val b
 
 /** Becsült téglalap a képernyő közepén: ide indulnak a fénycsíkok, amíg a valódi szóhely nem ismert. */
 private val EstimateRect = ScanHighlight(0.325f, 0.44f, 0.675f, 0.56f)
+
+/** A scannelés kimenetele: OK = szó megtalálva, MISS = nem talált szót (tartalék kivágás), ERROR = hiba. */
+private enum class ScanResult { OK, MISS, ERROR }
+
+/** Szín párok a végső körbefutó fényhez: (izzás, fényes). */
+private val OkColors = Color(0xFF66BB6A) to Color(0xFFC8E6C9)
+private val MissColors = Color(0xFFFFB74D) to Color(0xFFFFE0B2)
+
+/** Egy fényporszem: melyik sarokból indul, merre, milyen gyorsan, mekkora. */
+private data class Particle(
+    val corner: Int,
+    val angle: Float,
+    val speed: Float,
+    val radius: Float,
+    val green: Boolean
+)
 
 @Composable
 fun ScannerScreen(
@@ -155,44 +178,85 @@ private fun CameraScanContent(
 
     // --- Scan animáció állapota ---
     var scanActive by remember { mutableStateOf(false) }
+    var scanError by remember { mutableStateOf(false) }
     var scanTarget by remember { mutableStateOf(EstimateRect) }
+    var runnerColors by remember { mutableStateOf(OkColors) }
     var animJob by remember { mutableStateOf<Job?>(null) }
+    val reticle = remember { Animatable(1f) }
     val beam = remember { Animatable(0f) }
     val morph = remember { Animatable(0f) }
     val frame = remember { Animatable(0f) }
     val sweep = remember { Animatable(0f) }
+    val runner = remember { Animatable(0f) }
+    val burst = remember { Animatable(0f) }
+    val shake = remember { Animatable(0f) }
     val fade = remember { Animatable(0f) }
 
-    /** Gombnyomásra azonnal indul: a fénycsíkok a becsült téglalap sarkai felé futnak. */
+    val particles = remember {
+        val bases = listOf(-2.356f, -0.785f, 2.356f, 0.785f) // kifelé mutató irányok a 4 sarokból
+        List(28) { i ->
+            Particle(
+                corner = i % 4,
+                angle = bases[i % 4] + (Random.nextFloat() - 0.5f) * 2.4f,
+                speed = 0.5f + Random.nextFloat(),
+                radius = 1.5f + Random.nextFloat() * 2f,
+                green = i % 2 == 0
+            )
+        }
+    }
+
+    /** Gombnyomásra azonnal indul: célkereszt-összehúzódás + a fénycsíkok a becsült téglalap felé. */
     fun startScanAnim() {
+        scope.launch {
+            reticle.animateTo(0.55f, tween(80))
+            reticle.animateTo(1.3f, tween(100))
+            reticle.animateTo(1f, tween(110))
+        }
         animJob?.cancel()
         animJob = scope.launch {
             scanActive = true
+            scanError = false
             scanTarget = EstimateRect
             beam.snapTo(0f)
             morph.snapTo(0f)
             frame.snapTo(0f)
             sweep.snapTo(0f)
+            runner.snapTo(0f)
+            burst.snapTo(0f)
+            shake.snapTo(0f)
             fade.snapTo(1f)
             beam.animateTo(1f, tween(130, easing = FastOutSlowInEasing))
         }
     }
 
-    /** Ha megvan a valódi szóhely: átsimul rá, majd keret + letapogatás + kifakulás. null = hiba. */
-    fun finishScanAnim(target: ScanHighlight?) {
+    /** Ha megvan a valódi szóhely: átsimul rá, keret + letapogatás + körbefutó jelzés + részecskék. */
+    fun finishScanAnim(target: ScanHighlight?, result: ScanResult) {
         val beamJob = animJob
         animJob = scope.launch {
             beamJob?.join()
-            if (target == null) {
-                fade.animateTo(0f, tween(150))
+            if (result == ScanResult.ERROR) {
+                scanError = true
+                frame.snapTo(1f)
+                shake.snapTo(0f)
+                shake.animateTo(1f, tween(380, easing = LinearEasing))
+                fade.animateTo(0f, tween(160))
                 scanActive = false
+                scanError = false
                 return@launch
             }
-            scanTarget = target
+            scanTarget = target ?: EstimateRect
+            runnerColors = if (result == ScanResult.OK) OkColors else MissColors
+            launch { frame.animateTo(1f, tween(100)) }
             morph.animateTo(1f, tween(120))
-            frame.animateTo(1f, tween(100))
-            sweep.animateTo(1f, tween(220, easing = LinearEasing))
-            fade.animateTo(0f, tween(180))
+            sweep.animateTo(1f, tween(200, easing = LinearEasing))
+            val burstJob = if (result == ScanResult.OK) {
+                launch { burst.animateTo(1f, tween(450, easing = LinearEasing)) }
+            } else {
+                null
+            }
+            runner.animateTo(1.3f, tween(180, easing = LinearEasing))
+            fade.animateTo(0f, tween(160))
+            burstJob?.join()
             scanActive = false
         }
     }
@@ -210,10 +274,15 @@ private fun CameraScanContent(
         )
 
         // Statikus, sárga, üres kör a képernyő közepén — ide célozd a szót.
+        // Gombnyomáskor összehúzódik, kitágul, majd visszaáll (autófókusz hatás).
         Box(
             Modifier
                 .align(Alignment.Center)
                 .size(30.dp)
+                .graphicsLayer {
+                    scaleX = reticle.value
+                    scaleY = reticle.value
+                }
                 .border(2.dp, Color.Yellow, CircleShape)
         )
 
@@ -222,13 +291,19 @@ private fun CameraScanContent(
                 val w = size.width
                 val hh = size.height
                 val m = morph.value
-                val l = lerp(EstimateRect.l, scanTarget.l, m) * w
+                // hiba esetén a téglalap oldalirányban rezeg
+                val dx = if (scanError) {
+                    sin(shake.value * PI.toFloat() * 7f) * (1f - shake.value) * 12.dp.toPx()
+                } else {
+                    0f
+                }
+                val l = lerp(EstimateRect.l, scanTarget.l, m) * w + dx
                 val tp = lerp(EstimateRect.t, scanTarget.t, m) * hh
-                val r = lerp(EstimateRect.r, scanTarget.r, m) * w
+                val r = lerp(EstimateRect.r, scanTarget.r, m) * w + dx
                 val b = lerp(EstimateRect.b, scanTarget.b, m) * hh
                 val origin = Offset(w / 2f, hh / 2f)
-                val glow = Color(0xFF64B5F6)
-                val bright = Color(0xFFE3F2FD)
+                val glow = if (scanError) Color(0xFFEF5350) else Color(0xFF64B5F6)
+                val bright = if (scanError) Color(0xFFFFCDD2) else Color(0xFFE3F2FD)
                 val a = fade.value
 
                 // 1) fénycsíkok a körből a négy sarok felé
@@ -288,6 +363,56 @@ private fun CameraScanContent(
                         )
                     }
                     drawLine(bright, Offset(l, y), Offset(r, y), strokeWidth = 2.dp.toPx(), alpha = 0.9f * a)
+                }
+
+                // 4) eredmény-jelzés: zöld (siker) vagy narancs (nem talált szót) fény fut körbe a kereten
+                val q = runner.value
+                if (q > 0f) {
+                    val (runGlow, runBright) = runnerColors
+                    val rectPath = Path().apply { addRect(Rect(l, tp, r, b)) }
+                    val pm = PathMeasure()
+                    pm.setPath(rectPath, false)
+                    val len = pm.length
+                    val head = minOf(q, 1f) * len
+                    val tail = maxOf(0f, q - 0.3f) * len
+                    if (head > tail) {
+                        val seg = Path()
+                        pm.getSegment(tail, head, seg, true)
+                        drawPath(
+                            seg, runGlow, alpha = 0.45f * a,
+                            style = Stroke(width = 9.dp.toPx(), cap = StrokeCap.Round)
+                        )
+                        drawPath(
+                            seg, runBright, alpha = a,
+                            style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+                        )
+                    }
+                    val pulse = sin(PI.toFloat() * (q / 1.3f)).coerceAtLeast(0f)
+                    drawRect(
+                        runGlow, Offset(l, tp), Size(r - l, b - tp),
+                        alpha = 0.5f * pulse * a, style = Stroke(width = 4.dp.toPx())
+                    )
+                }
+
+                // 5) fényporszemek a téglalap sarkaiból
+                val bp = burst.value
+                if (bp > 0f && bp < 1f) {
+                    val e = 1f - (1f - bp) * (1f - bp)
+                    val corners = listOf(Offset(l, tp), Offset(r, tp), Offset(l, b), Offset(r, b))
+                    val dist = 46.dp.toPx()
+                    particles.forEach { pt ->
+                        val c = corners[pt.corner]
+                        val pos = Offset(
+                            c.x + cos(pt.angle) * pt.speed * dist * e,
+                            c.y + sin(pt.angle) * pt.speed * dist * e
+                        )
+                        drawCircle(
+                            color = if (pt.green) Color(0xFFA5D6A7) else Color(0xFFE3F2FD),
+                            radius = pt.radius.dp.toPx() * (1f - 0.6f * bp),
+                            center = pos,
+                            alpha = 1f - bp
+                        )
+                    }
                 }
             }
         }
@@ -405,12 +530,14 @@ private fun CameraScanContent(
                                 scope.launch {
                                     try {
                                         var newHighlight: ScanHighlight? = null
+                                        var wordFound = false
                                         val cropBitmap = withContext(Dispatchers.Default) {
                                             val centerX = screenBitmap.width / 2
                                             val centerY = screenBitmap.height / 2
                                             val text = recognizeTextOnDevice(screenBitmap)
                                             val box = findWordBoxNearPoint(text, centerX, centerY)
                                             if (box != null) {
+                                                wordFound = true
                                                 val padW = (box.width() * 0.4f).toInt().coerceAtLeast(4)
                                                 val padH = (box.height() * 0.4f).toInt().coerceAtLeast(4)
                                                 val left = (box.left - padW).coerceIn(0, screenBitmap.width - 1)
@@ -443,10 +570,13 @@ private fun CameraScanContent(
                                             }
                                         }
                                         pendingCrops.add(cropBitmap)
-                                        finishScanAnim(newHighlight)
+                                        finishScanAnim(
+                                            newHighlight,
+                                            if (wordFound) ScanResult.OK else ScanResult.MISS
+                                        )
                                     } catch (e: Exception) {
                                         errorMsg = e.message ?: t.unknownError
-                                        finishScanAnim(null)
+                                        finishScanAnim(null, ScanResult.ERROR)
                                     } finally {
                                         isCapturing = false
                                     }
@@ -456,7 +586,7 @@ private fun CameraScanContent(
                             override fun onError(exception: androidx.camera.core.ImageCaptureException) {
                                 errorMsg = exception.message ?: t.cameraError
                                 isCapturing = false
-                                finishScanAnim(null)
+                                finishScanAnim(null, ScanResult.ERROR)
                             }
                         }
                     )

@@ -517,6 +517,7 @@ object StringsRu : Strings {
 
     override val newDeckName = "Название новой колоды"
     override val create = "Создать"
+    override val renameDeck = "Переименовать колоду"
     override val downloadAll = "Скачать все колоды"
     override val uploadDeck = "Загрузить колоду"
     override fun decksUploaded(decks: Int, cards: Int) =

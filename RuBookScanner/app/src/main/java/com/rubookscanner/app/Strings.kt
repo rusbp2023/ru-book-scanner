@@ -35,6 +35,8 @@ interface Strings {
     val translationLabel: String
     val previous: String
     val next: String
+    val shuffle: String
+    val originalOrder: String
 
     val newDeckName: String
     val create: String
@@ -100,6 +102,8 @@ object StringsHu : Strings {
     override val translationLabel = "Fordítás"
     override val previous = "◀ Előző"
     override val next = "Következő ▶"
+    override val shuffle = "Keverés"
+    override val originalOrder = "Eredeti sorrend"
 
     override val newDeckName = "Új pakli neve"
     override val create = "Létrehozás"
@@ -169,6 +173,8 @@ object StringsEn : Strings {
     override val translationLabel = "Translation"
     override val previous = "◀ Previous"
     override val next = "Next ▶"
+    override val shuffle = "Shuffle"
+    override val originalOrder = "Original order"
 
     override val newDeckName = "New deck name"
     override val create = "Create"
@@ -238,6 +244,8 @@ object StringsDe : Strings {
     override val translationLabel = "Übersetzung"
     override val previous = "◀ Zurück"
     override val next = "Weiter ▶"
+    override val shuffle = "Mischen"
+    override val originalOrder = "Ursprüngliche Reihenfolge"
 
     override val newDeckName = "Name des neuen Decks"
     override val create = "Erstellen"
@@ -307,6 +315,8 @@ object StringsIt : Strings {
     override val translationLabel = "Traduzione"
     override val previous = "◀ Precedente"
     override val next = "Successiva ▶"
+    override val shuffle = "Mescola"
+    override val originalOrder = "Ordine originale"
 
     override val newDeckName = "Nome del nuovo mazzo"
     override val create = "Crea"
@@ -376,6 +386,8 @@ object StringsFr : Strings {
     override val translationLabel = "Traduction"
     override val previous = "◀ Précédent"
     override val next = "Suivant ▶"
+    override val shuffle = "Mélanger"
+    override val originalOrder = "Ordre d'origine"
 
     override val newDeckName = "Nom du nouveau paquet"
     override val create = "Créer"
@@ -445,6 +457,8 @@ object StringsEs : Strings {
     override val translationLabel = "Traducción"
     override val previous = "◀ Anterior"
     override val next = "Siguiente ▶"
+    override val shuffle = "Barajar"
+    override val originalOrder = "Orden original"
 
     override val newDeckName = "Nombre del nuevo mazo"
     override val create = "Crear"
@@ -514,6 +528,8 @@ object StringsRu : Strings {
     override val translationLabel = "Перевод"
     override val previous = "◀ Назад"
     override val next = "Далее ▶"
+    override val shuffle = "Перемешать"
+    override val originalOrder = "Исходный порядок"
 
     override val newDeckName = "Название новой колоды"
     override val create = "Создать"

@@ -117,7 +117,7 @@ object StringsHu : Strings {
     override fun translateN(n: Int) = "Lefordítás ($n)"
 
     override val languagesTitle = "Nyelvek"
-    override val bookLanguageLabel = "Könyv nyelve"
+    override val bookLanguageLabel = "Forrásnyelv"
     override val translationLanguageLabel = "Fordítás nyelve"
     override val appLanguageLabel = "App nyelve"
     override val aiProviderTitle = "AI szolgáltató"
@@ -185,7 +185,7 @@ object StringsEn : Strings {
     override fun translateN(n: Int) = "Translate ($n)"
 
     override val languagesTitle = "Languages"
-    override val bookLanguageLabel = "Book language"
+    override val bookLanguageLabel = "Source language"
     override val translationLanguageLabel = "Translation language"
     override val appLanguageLabel = "App language"
     override val aiProviderTitle = "AI provider"
@@ -253,7 +253,7 @@ object StringsDe : Strings {
     override fun translateN(n: Int) = "Übersetzen ($n)"
 
     override val languagesTitle = "Sprachen"
-    override val bookLanguageLabel = "Sprache des Buches"
+    override val bookLanguageLabel = "Ausgangssprache"
     override val translationLanguageLabel = "Sprache der Übersetzung"
     override val appLanguageLabel = "Sprache der App"
     override val aiProviderTitle = "KI-Anbieter"
@@ -321,7 +321,7 @@ object StringsIt : Strings {
     override fun translateN(n: Int) = "Traduci ($n)"
 
     override val languagesTitle = "Lingue"
-    override val bookLanguageLabel = "Lingua del libro"
+    override val bookLanguageLabel = "Lingua di origine"
     override val translationLanguageLabel = "Lingua della traduzione"
     override val appLanguageLabel = "Lingua dell'app"
     override val aiProviderTitle = "Provider IA"
@@ -389,7 +389,7 @@ object StringsFr : Strings {
     override fun translateN(n: Int) = "Traduire ($n)"
 
     override val languagesTitle = "Langues"
-    override val bookLanguageLabel = "Langue du livre"
+    override val bookLanguageLabel = "Langue source"
     override val translationLanguageLabel = "Langue de traduction"
     override val appLanguageLabel = "Langue de l'application"
     override val aiProviderTitle = "Fournisseur d'IA"
@@ -457,7 +457,7 @@ object StringsEs : Strings {
     override fun translateN(n: Int) = "Traducir ($n)"
 
     override val languagesTitle = "Idiomas"
-    override val bookLanguageLabel = "Idioma del libro"
+    override val bookLanguageLabel = "Idioma de origen"
     override val translationLanguageLabel = "Idioma de la traducción"
     override val appLanguageLabel = "Idioma de la app"
     override val aiProviderTitle = "Proveedor de IA"
@@ -525,7 +525,7 @@ object StringsRu : Strings {
     override fun translateN(n: Int) = "Перевести ($n)"
 
     override val languagesTitle = "Языки"
-    override val bookLanguageLabel = "Язык книги"
+    override val bookLanguageLabel = "Исходный язык"
     override val translationLanguageLabel = "Язык перевода"
     override val appLanguageLabel = "Язык приложения"
     override val aiProviderTitle = "Поставщик ИИ"

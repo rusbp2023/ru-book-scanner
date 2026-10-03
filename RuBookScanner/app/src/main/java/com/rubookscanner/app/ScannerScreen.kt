@@ -152,10 +152,10 @@ private fun CameraScanContent(
             frame.snapTo(0f)
             sweep.snapTo(0f)
             fade.snapTo(1f)
-            beam.animateTo(1f, tween(350, easing = FastOutSlowInEasing))
-            frame.animateTo(1f, tween(250))
-            sweep.animateTo(1f, tween(650, easing = LinearEasing))
-            fade.animateTo(0f, tween(450))
+            beam.animateTo(1f, tween(200, easing = FastOutSlowInEasing))
+            frame.animateTo(1f, tween(150))
+            sweep.animateTo(1f, tween(350, easing = LinearEasing))
+            fade.animateTo(0f, tween(250))
             highlight = null
         }
     }

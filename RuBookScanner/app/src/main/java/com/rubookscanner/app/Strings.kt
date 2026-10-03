@@ -38,6 +38,7 @@ interface Strings {
 
     val newDeckName: String
     val create: String
+    val renameDeck: String
     val downloadAll: String
     val uploadDeck: String
     fun decksUploaded(decks: Int, cards: Int): String
@@ -102,6 +103,7 @@ object StringsHu : Strings {
 
     override val newDeckName = "Új pakli neve"
     override val create = "Létrehozás"
+    override val renameDeck = "Pakli átnevezése"
     override val downloadAll = "Összes pakli letöltése"
     override val uploadDeck = "Pakli feltöltése"
     override fun decksUploaded(decks: Int, cards: Int) =
@@ -170,6 +172,7 @@ object StringsEn : Strings {
 
     override val newDeckName = "New deck name"
     override val create = "Create"
+    override val renameDeck = "Rename deck"
     override val downloadAll = "Download all decks"
     override val uploadDeck = "Upload deck"
     override fun decksUploaded(decks: Int, cards: Int) =
@@ -238,6 +241,7 @@ object StringsDe : Strings {
 
     override val newDeckName = "Name des neuen Decks"
     override val create = "Erstellen"
+    override val renameDeck = "Deck umbenennen"
     override val downloadAll = "Alle Decks herunterladen"
     override val uploadDeck = "Deck hochladen"
     override fun decksUploaded(decks: Int, cards: Int) =
@@ -306,6 +310,7 @@ object StringsIt : Strings {
 
     override val newDeckName = "Nome del nuovo mazzo"
     override val create = "Crea"
+    override val renameDeck = "Rinomina mazzo"
     override val downloadAll = "Scarica tutti i mazzi"
     override val uploadDeck = "Carica mazzo"
     override fun decksUploaded(decks: Int, cards: Int) =
@@ -374,6 +379,7 @@ object StringsFr : Strings {
 
     override val newDeckName = "Nom du nouveau paquet"
     override val create = "Créer"
+    override val renameDeck = "Renommer le paquet"
     override val downloadAll = "Télécharger tous les paquets"
     override val uploadDeck = "Importer un paquet"
     override fun decksUploaded(decks: Int, cards: Int) =
@@ -442,6 +448,7 @@ object StringsEs : Strings {
 
     override val newDeckName = "Nombre del nuevo mazo"
     override val create = "Crear"
+    override val renameDeck = "Renombrar mazo"
     override val downloadAll = "Descargar todos los mazos"
     override val uploadDeck = "Subir mazo"
     override fun decksUploaded(decks: Int, cards: Int) =

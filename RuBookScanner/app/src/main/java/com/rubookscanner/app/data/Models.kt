@@ -19,14 +19,28 @@ data class Flashcard(
 )
 
 enum class AiProvider { ANTHROPIC, OPENAI, GEMINI }
+
+/** A könyv nyelve. A label a nyelv saját neve, a promptName az AI-nak szóló kérésben szerepel. */
 enum class SourceLanguage(val label: String, val promptName: String) {
-    RUSSIAN("Orosz", "orosz"),
-    ENGLISH("Angol", "angol")
+    RUSSIAN("Русский", "orosz"),
+    ENGLISH("English", "angol"),
+    GERMAN("Deutsch", "német"),
+    ITALIAN("Italiano", "olasz"),
+    FRENCH("Français", "francia"),
+    SPANISH("Español", "spanyol")
 }
+
+/** A fordítás nyelve és az app felületének nyelve. */
 enum class AppLang(val label: String, val promptName: String) {
     HUNGARIAN("Magyar", "magyar"),
-    ENGLISH("English", "angol")
+    ENGLISH("English", "angol"),
+    GERMAN("Deutsch", "német"),
+    ITALIAN("Italiano", "olasz"),
+    FRENCH("Français", "francia"),
+    SPANISH("Español", "spanyol"),
+    RUSSIAN("Русский", "orosz")
 }
+
 data class AiSettings(
     val provider: AiProvider = AiProvider.GEMINI,
     val apiKey: String = "",

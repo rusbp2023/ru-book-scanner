@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -139,7 +140,12 @@ private fun CameraScanContent(
     var isCapturing by remember { mutableStateOf(false) }
     var isTranslating by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
-
+    val listState = rememberLazyListState()
+    LaunchedEffect(pendingCrops.size) {
+        if (pendingCrops.isNotEmpty()) {
+            listState.animateScrollToItem(pendingCrops.size - 1)
+        }
+    }
     var highlight by remember { mutableStateOf<ScanHighlight?>(null) }
     val beam = remember { Animatable(0f) }
     val frame = remember { Animatable(0f) }
@@ -274,8 +280,9 @@ private fun CameraScanContent(
                             t.collectedWords(pendingCrops.size),
                             style = MaterialTheme.typography.labelMedium
                         )
-                        LazyRow(
+                                                LazyRow(
                             Modifier.padding(top = 8.dp),
+                            state = listState,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(pendingCrops.size) { idx ->

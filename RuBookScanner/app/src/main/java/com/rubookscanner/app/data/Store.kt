@@ -11,12 +11,14 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 val Context.dataStore by preferencesDataStore(name = "ru_flashcards")
+
 private inline fun <reified T : Enum<T>> enumOrDefault(name: String?, default: T): T =
     try {
         if (name == null) default else enumValueOf<T>(name)
     } catch (e: Exception) {
         default
     }
+
 private object Keys {
     val WORDS = stringPreferencesKey("words_json")
     val FLASHCARDS = stringPreferencesKey("flashcards_json")
@@ -59,7 +61,7 @@ class Store(private val context: Context) {
             provider = provider,
             apiKey = prefs[Keys.API_KEY] ?: "",
             model = prefs[Keys.MODEL] ?: defaultModelFor(provider),
-                                   baseUrl = prefs[Keys.BASE_URL] ?: "",
+            baseUrl = prefs[Keys.BASE_URL] ?: "",
             sourceLanguage = enumOrDefault(prefs[Keys.SOURCE_LANGUAGE], SourceLanguage.RUSSIAN),
             uiLanguage = enumOrDefault(prefs[Keys.UI_LANGUAGE], AppLang.HUNGARIAN),
             targetLanguage = enumOrDefault(prefs[Keys.TARGET_LANGUAGE], AppLang.HUNGARIAN)
@@ -88,6 +90,41 @@ class Store(private val context: Context) {
             prefs[Keys.ACTIVE_DECK_ID] = newId.toString()
         }
         return newId
+    }
+
+    /**
+     * Feltöltött paklik létrehozása. Mindig új paklik jönnek létre (azonos név esetén is),
+     * a meglévőket nem érinti. Visszaadja a létrehozott kártyák számát.
+     */
+    suspend fun importDecks(parsed: List<ParsedDeck>, fallbackName: String): Int {
+        var cardTotal = 0
+        context.dataStore.edit { prefs ->
+            val decks = parseDecks(prefs[Keys.DECKS] ?: "[]").toMutableList()
+            val cards = parseFlashcards(prefs[Keys.FLASHCARDS] ?: "[]").toMutableList()
+            var nextDeckId = (decks.maxOfOrNull { it.id } ?: 0L) + 1
+            var nextCardId = (cards.maxOfOrNull { it.id } ?: 0L) + 1
+            parsed.forEach { p ->
+                val deckName = p.name.ifBlank { fallbackName }.ifBlank { "Névtelen pakli" }
+                val deck = Deck(nextDeckId, deckName)
+                nextDeckId++
+                decks.add(deck)
+                p.cards.forEach { pair ->
+                    cards.add(
+                        Flashcard(
+                            id = nextCardId,
+                            dictionaryForm = pair.first,
+                            translation = pair.second,
+                            deckId = deck.id
+                        )
+                    )
+                    nextCardId++
+                    cardTotal++
+                }
+            }
+            prefs[Keys.DECKS] = serializeDecks(decks)
+            prefs[Keys.FLASHCARDS] = serializeFlashcards(cards)
+        }
+        return cardTotal
     }
 
     suspend fun setActiveDeck(id: Long) {

@@ -5,6 +5,7 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -172,7 +173,7 @@ fun DecksScreen(
                             val cardsForDeck = allCards.filter { it.deckId == deck.id }
                             pendingExportText = buildDeckExportText(deck.name, cardsForDeck, t.emptyDeck)
                             createDocLauncher.launch("${deck.name}.txt")
-                        }) { Text("⬇") }
+                             }) { Text("⬇", fontSize = 26.sp) }
                         IconButton(onClick = { deckToDelete = deck }) { Text("✕") }
                     }
                 }

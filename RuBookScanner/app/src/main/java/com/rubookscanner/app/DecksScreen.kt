@@ -238,8 +238,8 @@ private fun displayNameOf(context: Context, uri: Uri): String {
     return (name ?: "").substringBeforeLast('.')
 }
 /**
- * Térhatású, lekerekített "deszka" forma a paklinak: felső felület + kissé lejjebb
- * csúsztatott, keskenyebb alsó felület, a kettőt összekötő vonalakkal.
+ * Térhatású, lekerekített "deszka" forma a paklinak: felső felület + egy kicsit lejjebb és
+ * jobbra tolt, ugyanolyan széles alsó felület, a kettőt összekötő egy-egy kis vonallal.
  */
 @Composable
 private fun DeckSlab(
@@ -247,31 +247,32 @@ private fun DeckSlab(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
-    val depth = 10.dp
-    val inset = 6.dp
+    val depth = 7.dp    // ennyivel van lejjebb az alsó felület
+    val shift = 6.dp    // ennyivel van jobbra az alsó felület
     val radius = 14.dp
     val faceColor = Color(0xFF16263A)
     val bottomColor = Color(0xFF0F1A27)
     val edgeColor = if (selected) Color(0xFF64B5F6) else Color(0xFF3F5F80)
     Box(
         modifier = modifier
-            .padding(bottom = depth + 2.dp)
+            .padding(end = shift, bottom = depth + 2.dp)
             .drawBehind {
-                val d = depth.toPx()
-                val ins = inset.toPx()
+                val dy = depth.toPx()
+                val dx = shift.toPx()
                 val rad = radius.toPx()
                 val corner = CornerRadius(rad, rad)
-                val line = Stroke(width = 1.5.dp.toPx())
+                val lineW = 1.5.dp.toPx()
+                val line = Stroke(width = lineW)
                 val w = size.width
                 val h = size.height
 
-                // alsó felület (kicsit keskenyebb és lejjebb van)
-                drawRoundRect(bottomColor, Offset(ins, d), Size(w - 2 * ins, h), corner)
-                drawRoundRect(edgeColor, Offset(ins, d), Size(w - 2 * ins, h), corner, style = line)
+                // alsó felület (lejjebb és jobbra tolva)
+                drawRoundRect(bottomColor, Offset(dx, dy), Size(w, h), corner)
+                drawRoundRect(edgeColor, Offset(dx, dy), Size(w, h), corner, style = line)
 
-                // összekötő vonalak a két felület között (bal és jobb oldalon)
-                drawLine(edgeColor, Offset(0f, h - rad), Offset(ins, h - rad + d), strokeWidth = 1.5.dp.toPx())
-                drawLine(edgeColor, Offset(w, h - rad), Offset(w - ins, h - rad + d), strokeWidth = 1.5.dp.toPx())
+                // a két szintet összekötő kis vonalak: bal oldalon lent, jobb oldalon fent
+                drawLine(edgeColor, Offset(0f, h - rad), Offset(dx, h - rad + dy), lineW)
+                drawLine(edgeColor, Offset(w, rad), Offset(w + dx, rad + dy), lineW)
 
                 // felső felület
                 drawRoundRect(faceColor, Offset(0f, 0f), Size(w, h), corner)

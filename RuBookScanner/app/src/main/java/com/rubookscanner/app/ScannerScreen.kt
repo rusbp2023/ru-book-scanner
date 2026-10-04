@@ -89,7 +89,7 @@ private val OkColors = Color(0xFF66BB6A) to Color(0xFFC8E6C9)
 private val MissColors = Color(0xFFFFB74D) to Color(0xFFFFE0B2)
 
 /** A középső célzó négyzet színe. */
-private val AimColor = Color(0xFF81D4FA)
+private val AimColor = Color(0xFFFFF176)
 
 /** Egy fényporszem: melyik sarokból indul, merre, milyen gyorsan, mekkora. */
 private data class Particle(
@@ -402,7 +402,7 @@ private fun CameraScanContent(
                                         modifier = Modifier
                                             .align(Alignment.TopEnd)
                                             .size(20.dp)
-                                    ) { Text("✕", color = Color.Red) }
+                                    ) { Text("✕", color = AimColor) }
                                 }
                             }
                         }

@@ -10,6 +10,24 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import kotlin.random.Random
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -179,9 +197,10 @@ fun DecksScreen(
         Divider(Modifier.padding(vertical = 12.dp))
 
         LazyColumn(Modifier.fillMaxSize()) {
-            items(decks, key = { it.id }) { deck ->
+                items(decks, key = { it.id }) { deck ->
                 val count = allCards.count { it.deckId == deck.id }
-                    DeckSlab(
+                val ink = Color(0xFF3E3226)
+                DeckSlab(
                     selected = deck.id == activeDeckId,
                     modifier = Modifier
                         .padding(vertical = 6.dp)
@@ -190,27 +209,54 @@ fun DecksScreen(
                     Row(
                         Modifier
                             .fillMaxWidth()
-                            .padding(12.dp),
+                            .padding(horizontal = 10.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(
                             selected = deck.id == activeDeckId,
-                            onClick = { onSetActive(deck.id) }
-                        )
-                        Column(Modifier.weight(1f)) {
-                            Text(deck.name, style = MaterialTheme.typography.bodyLarge)
-                            Text(
-                                t.cardCount(count),
-                                style = MaterialTheme.typography.bodySmall
+                            onClick = { onSetActive(deck.id) },
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = Color(0xFF1565C0),
+                                unselectedColor = ink
                             )
+                        )
+                        // fehér címke, mint a kartonon
+                        Box(
+                            Modifier
+                                .weight(1f)
+                                .padding(horizontal = 6.dp)
+                                .background(Color(0xFFF7F4EC), RoundedCornerShape(3.dp))
+                                .border(1.5.dp, ink, RoundedCornerShape(3.dp))
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    deck.name,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ink,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    t.cardCount(count),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF6B5B4A)
+                                )
+                            }
                         }
-                        IconButton(onClick = { deckToRename = deck }) { Text("✎", fontSize = 22.sp) }
+                        IconButton(onClick = { deckToRename = deck }) {
+                            Text("✎", fontSize = 22.sp, color = ink)
+                        }
                         IconButton(onClick = {
                             val cardsForDeck = allCards.filter { it.deckId == deck.id }
                             pendingExportText = buildDeckExportText(deck.name, cardsForDeck, t.emptyDeck)
                             createDocLauncher.launch("${deck.name}.txt")
-                             }) { Text("⬇", fontSize = 26.sp) }
-                        IconButton(onClick = { deckToDelete = deck }) { Text("✕") }
+                        }) { Text("⬇", fontSize = 26.sp, color = ink) }
+                        IconButton(onClick = { deckToDelete = deck }) {
+                            Text("✕", color = ink)
+                        }
                     }
                 }
             }
@@ -238,8 +284,8 @@ private fun displayNameOf(context: Context, uri: Uri): String {
     return (name ?: "").substringBeforeLast('.')
 }
 /**
- * Térhatású, lekerekített "deszka" forma a paklinak: felső felület + egy kicsit lejjebb és
- * jobbra tolt, ugyanolyan széles alsó felület, a kettőt összekötő egy-egy kis vonallal.
+ * Fektetett, kartonba csomagolt pakli: felső felület papír/karton textúrával, alatta
+ * egy kicsit lejjebb és jobbra tolt alsó felület, a kettőt összekötő egy-egy kis vonallal.
  */
 @Composable
 private fun DeckSlab(
@@ -247,12 +293,13 @@ private fun DeckSlab(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
-    val depth = 7.dp    // ennyivel van lejjebb az alsó felület
+    val depth = 8.dp    // ennyivel van lejjebb az alsó felület
     val shift = 6.dp    // ennyivel van jobbra az alsó felület
-    val radius = 14.dp
-    val faceColor = Color(0xFF16263A)
-    val bottomColor = Color(0xFF0F1A27)
-    val edgeColor = if (selected) Color(0xFF64B5F6) else Color(0xFF3F5F80)
+    val radius = 12.dp
+    val topLight = Color(0xFFD6C4A6)
+    val topDark = Color(0xFFC6B08D)
+    val bottomColor = Color(0xFF9C8765)
+    val edgeColor = if (selected) Color(0xFF1565C0) else Color(0xFF6D5A43)
     Box(
         modifier = modifier
             .padding(end = shift, bottom = depth + 2.dp)
@@ -261,7 +308,7 @@ private fun DeckSlab(
                 val dx = shift.toPx()
                 val rad = radius.toPx()
                 val corner = CornerRadius(rad, rad)
-                val lineW = 1.5.dp.toPx()
+                val lineW = if (selected) 2.5.dp.toPx() else 1.5.dp.toPx()
                 val line = Stroke(width = lineW)
                 val w = size.width
                 val h = size.height
@@ -274,8 +321,39 @@ private fun DeckSlab(
                 drawLine(edgeColor, Offset(0f, h - rad), Offset(dx, h - rad + dy), lineW)
                 drawLine(edgeColor, Offset(w, rad), Offset(w + dx, rad + dy), lineW)
 
-                // felső felület
-                drawRoundRect(faceColor, Offset(0f, 0f), Size(w, h), corner)
+                // felső felület: karton alapszín enyhe színátmenettel
+                drawRoundRect(
+                    brush = Brush.verticalGradient(listOf(topLight, topDark), startY = 0f, endY = h),
+                    topLeft = Offset(0f, 0f),
+                    size = Size(w, h),
+                    cornerRadius = corner
+                )
+
+                // papírszálak és apró pöttyök (mindig ugyanaz a minta, a felületen belül)
+                val faceShape = Path().apply { addRoundRect(RoundRect(0f, 0f, w, h, rad, rad)) }
+                clipPath(faceShape) {
+                    val rnd = Random(7)
+                    repeat(170) {
+                        val x = rnd.nextFloat() * w
+                        val y = rnd.nextFloat() * h
+                        val len = (6 + rnd.nextFloat() * 24).dp.toPx()
+                        val dark = rnd.nextBoolean()
+                        drawLine(
+                            if (dark) Color(0x22604A2E) else Color(0x33FFFFFF),
+                            Offset(x, y),
+                            Offset(x + len, y + (rnd.nextFloat() - 0.5f) * 2.dp.toPx()),
+                            0.8.dp.toPx()
+                        )
+                    }
+                    repeat(130) {
+                        drawCircle(
+                            Color(0x2A3E2A12),
+                            radius = (0.5f + rnd.nextFloat()).dp.toPx(),
+                            center = Offset(rnd.nextFloat() * w, rnd.nextFloat() * h)
+                        )
+                    }
+                }
+
                 drawRoundRect(edgeColor, Offset(0f, 0f), Size(w, h), corner, style = line)
             }
     ) {

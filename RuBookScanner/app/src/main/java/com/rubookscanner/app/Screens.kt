@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -284,6 +285,7 @@ fun FlashcardScreen(
                 }
         ) {
             val frontColor = Color(0xFF16263A)
+            val backColor = Color(0xFF1F3752)
             val edgeColor = Color(0xFF0F1A27)
             val edgeBorder = BorderStroke(1.dp, Color(0xFF2A3B50))
 
@@ -302,10 +304,13 @@ fun FlashcardScreen(
                         rotationY = 360f * shuf
                         rotationZ = 5f * sin(PI.toFloat() * 5f * shuf) * (1f - shuf)
                         cameraDistance = 12f * density
-                    },
-                onClick = { flipped = !flipped },
+                    }
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { flipped = !flipped },
                 colors = CardDefaults.cardColors(
-                    containerColor = frontColor,
+                    containerColor = if (flipped) backColor else frontColor,
                     contentColor = Color(0xFFEAF2FB)
                 ),
                 border = edgeBorder

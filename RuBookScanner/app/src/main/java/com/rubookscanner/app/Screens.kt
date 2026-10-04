@@ -170,7 +170,6 @@ fun FlashcardScreen(
     var showEditDialog by remember { mutableStateOf(false) }
     var widthPx by remember { mutableStateOf(0f) }
     var animating by remember { mutableStateOf(false) }
-    var slideIn by remember { mutableStateOf(false) }
     val dragX = remember { Animatable(0f) }
 
     // animációk állapota
@@ -186,9 +185,6 @@ fun FlashcardScreen(
 
     val deleting = deletingId == card.id
     val delProgress = if (deleting) delAnim.value else 0f
-    val dragProg = if (widthPx > 0f && !slideIn) (abs(dragX.value) / widthPx).coerceIn(0f, 1f) else 0f
-    // 0..1: mennyire "emelkedik előre" a mögöttes kártya
-    val prog = maxOf(dragProg, delProgress)
     val shuf = shuffleAnim.value
     val frontScale = 1f - 0.3f * delProgress
 
@@ -204,16 +200,9 @@ fun FlashcardScreen(
             animating = true
             dragX.animateTo(-dir * widthPx, tween(180))
             flipped = false
-            if (dir > 0) {
-                index = (safeIndex + 1) % cards.size
-                dragX.snapTo(0f)
-            } else {
-                slideIn = true
-                index = (safeIndex - 1 + cards.size) % cards.size
-                dragX.snapTo(-widthPx)
-                dragX.animateTo(0f, tween(220))
-                slideIn = false
-            }
+            index = (safeIndex + dir + cards.size) % cards.size
+            dragX.snapTo(dir * widthPx)
+            dragX.animateTo(0f, tween(220))
             animating = false
         }
     }
@@ -298,44 +287,13 @@ fun FlashcardScreen(
             val edgeColor = Color(0xFF0F1A27)
             val edgeBorder = BorderStroke(1.dp, Color(0xFF2A3B50))
 
-            // a pakli mögöttes kártyái (a legtávolabbi van legalul)
-            for (depth in minOf(2, cards.size - 1) downTo 1) {
-                val eff = depth - prog
-                val backCard = cards[(safeIndex + depth) % cards.size]
-                Card(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(top = 8.dp, bottom = 32.dp)
-                        .graphicsLayer {
-                            val s = 1f - 0.05f * eff
-                            scaleX = s
-                            scaleY = s
-                            translationY = 22.dp.toPx() * eff
-                            rotationZ = -5f * sin(PI.toFloat() * 5f * shuf) * (1f - shuf)
-                        },
-                    colors = CardDefaults.cardColors(
-                        containerColor = lerpColor(frontColor, edgeColor, (eff * 0.45f).coerceIn(0f, 1f)),
-                        contentColor = Color(0xFFEAF2FB)
-                    ),
-                    border = edgeBorder
-                ) {
-                    if (depth == 1) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(
-                                backCard.translation,
-                                style = MaterialTheme.typography.headlineMedium,
-                                modifier = Modifier.graphicsLayer { alpha = prog }
-                            )
-                        }
-                    }
-                }
-            }
+            
 
             // az első (aktuális) kártya
             Card(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = 8.dp, bottom = 32.dp)
+                    .padding(vertical = 8.dp)
                     .graphicsLayer {
                         translationX = dragX.value
                         scaleX = frontScale
@@ -365,15 +323,18 @@ fun FlashcardScreen(
                         style = MaterialTheme.typography.headlineMedium
                     )
                     // rugózó zöld pipa
-                    Text(
+                                        Text(
                         "✓",
-                        fontSize = 110.sp,
+                        fontSize = 72.sp,
                         color = Color(0xFF81C784),
-                        modifier = Modifier.graphicsLayer {
-                            scaleX = checkScale.value
-                            scaleY = checkScale.value
-                            alpha = checkAlpha.value
-                        }
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(16.dp)
+                            .graphicsLayer {
+                                scaleX = checkScale.value
+                                scaleY = checkScale.value
+                                alpha = checkAlpha.value
+                            }
                     )
                     IconButton(
                         onClick = { showEditDialog = true },

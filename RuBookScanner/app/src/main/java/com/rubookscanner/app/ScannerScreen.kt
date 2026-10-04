@@ -8,6 +8,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
@@ -189,6 +195,18 @@ private fun CameraScanContent(
     val burst = remember { Animatable(0f) }
     val shake = remember { Animatable(0f) }
     val fade = remember { Animatable(0f) }
+    
+    // A célzó négyzet körüli pulzáló keret, amíg a keresés tart.
+    val pulseTransition = rememberInfiniteTransition(label = "searchPulse")
+    val pulse = pulseTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(650, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse"
+    )
 
     val particles = remember {
         val bases = listOf(-2.356f, -0.785f, 2.356f, 0.785f) // kifelé mutató irányok a 4 sarokból
@@ -206,10 +224,10 @@ private fun CameraScanContent(
     /** Ha megvan a valódi szóhely: felizzik a keret, letapogatás, körbefutó jelzés, részecskék. */
     fun finishScanAnim(target: ScanHighlight?, result: ScanResult) {
         animJob?.cancel()
+        scanActive = true
         animJob = scope.launch {
             scanTarget = target ?: EstimateRect
             scanError = result == ScanResult.ERROR
-            scanActive = true
             frame.snapTo(0f)
             sweep.snapTo(0f)
             runner.snapTo(0f)
@@ -252,12 +270,30 @@ private fun CameraScanContent(
         )
 
         // Statikus, világoskék, üres négyzet a képernyő közepén — ide célozd a szót.
-        Box(
-            Modifier
-                .align(Alignment.Center)
-                .size(30.dp)
-                .border(2.dp, AimColor, RectangleShape)
-        )
+                // A négyzet csak akkor látszik, amikor nem fut a scan animáció.
+        if (!scanActive) {
+            Box(
+                Modifier
+                    .align(Alignment.Center)
+                    .size(30.dp)
+                    .border(2.dp, AimColor, RectangleShape)
+            )
+            // Keresés közben halvány keret pulzál a négyzet körül.
+            if (isCapturing) {
+                Box(
+                    Modifier
+                        .align(Alignment.Center)
+                        .size(30.dp)
+                        .graphicsLayer {
+                            val s = 1.3f + 0.7f * pulse.value
+                            scaleX = s
+                            scaleY = s
+                            alpha = 0.7f - 0.5f * pulse.value
+                        }
+                        .border(2.dp, AimColor, RectangleShape)
+                )
+            }
+        }
 
         if (scanActive) {
             Canvas(Modifier.fillMaxSize()) {

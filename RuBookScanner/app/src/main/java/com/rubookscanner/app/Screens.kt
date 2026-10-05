@@ -7,9 +7,11 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,15 +20,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,12 +39,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,14 +53,19 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.lerp as lerpColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rubookscanner.app.data.AiProvider
@@ -66,9 +75,61 @@ import com.rubookscanner.app.data.Flashcard
 import com.rubookscanner.app.data.WordItem
 import com.rubookscanner.app.data.defaultModelFor
 import kotlin.math.PI
-import kotlin.math.abs
 import kotlin.math.sin
 import kotlinx.coroutines.launch
+
+/**
+ * Egységes, domború (gradienses) gomb az egész apphoz: kicsit világosabb a háttérnél,
+ * felül fényes, alul sötétebb, nyomáskor besüllyed.
+ */
+@Composable
+fun WButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable () -> Unit
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val shape = RoundedCornerShape(10.dp)
+    val top = if (pressed) Color(0xFF1B232F) else Color(0xFF34425A)
+    val bottom = if (pressed) Color(0xFF2B374A) else Color(0xFF182029)
+    val rimTop = if (pressed) Color(0xFF222C3A) else Color(0xFF6182A6)
+    val rimBottom = if (pressed) Color(0xFF4F6A8A) else Color(0xFF222C3A)
+    Box(
+        modifier = modifier
+            .heightIn(min = 44.dp)
+            .alpha(if (enabled) 1f else 0.4f)
+            .clip(shape)
+            .background(Brush.verticalGradient(listOf(top, bottom)))
+            .border(1.dp, Brush.verticalGradient(listOf(rimTop, rimBottom)), shape)
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                enabled = enabled,
+                onClick = onClick
+            )
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        CompositionLocalProvider(LocalContentColor provides Color(0xFF64B5F6)) {
+            content()
+        }
+    }
+}
+
+/** Az egységes gombok felirata: középre igazított, legfeljebb két soros. */
+@Composable
+fun WLabel(text: String) {
+    Text(
+        text,
+        textAlign = TextAlign.Center,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        fontSize = 14.sp,
+        fontWeight = FontWeight.SemiBold
+    )
+}
 
 @Composable
 fun WordListScreen(
@@ -97,10 +158,13 @@ fun WordListScreen(
                 modifier = Modifier.weight(1f)
             )
             Spacer(Modifier.width(8.dp))
-            Button(onClick = {
-                onAddManual(manualText)
-                manualText = ""
-            }) { Text("+") }
+            WButton(
+                onClick = {
+                    onAddManual(manualText)
+                    manualText = ""
+                },
+                modifier = Modifier.size(56.dp)
+            ) { Text("+", fontSize = 22.sp, fontWeight = FontWeight.Bold) }
         }
         Spacer(Modifier.height(12.dp))
         LazyColumn(Modifier.weight(1f)) {
@@ -121,20 +185,27 @@ fun WordListScreen(
             }
         }
         Spacer(Modifier.height(12.dp))
-        Row {
-            OutlinedButton(onClick = onClear, modifier = Modifier.weight(1f)) {
-                Text(t.clearList)
-            }
-            Spacer(Modifier.width(8.dp))
-            Button(
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            WButton(
+                onClick = onClear,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(56.dp)
+            ) { WLabel(t.clearList) }
+            WButton(
                 onClick = onGenerate,
                 enabled = words.isNotEmpty() && !loading,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .height(56.dp)
             ) {
                 if (loading) {
-                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
                 } else {
-                    Text(t.generateCards(words.size))
+                    WLabel(t.generateCards(words.size))
                 }
             }
         }
@@ -189,7 +260,7 @@ fun FlashcardScreen(
     val shuf = shuffleAnim.value
     val frontScale = 1f - 0.3f * delProgress
 
-    // dir = +1: következő kártya (a mostani balra kicsúszik, a mögötte lévő előre jön)
+    // dir = +1: következő kártya (a mostani balra kicsúszik, az új jobbról jön be)
     // dir = -1: előző kártya (a mostani jobbra csúszik ki, az új balról jön be)
     fun go(dir: Int) {
         if (animating || deleting) return
@@ -238,7 +309,7 @@ fun FlashcardScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(Modifier.fillMaxWidth()) {
-            OutlinedButton(
+            WButton(
                 onClick = {
                     if (isShuffled) onResetOrder() else onShuffle()
                     index = 0
@@ -247,7 +318,7 @@ fun FlashcardScreen(
                 },
                 modifier = Modifier.align(Alignment.CenterStart)
             ) {
-                Text(if (isShuffled) t.originalOrder else t.shuffle)
+                WLabel(if (isShuffled) t.originalOrder else t.shuffle)
             }
             Text(
                 "${safeIndex + 1} / ${cards.size}",
@@ -286,12 +357,9 @@ fun FlashcardScreen(
         ) {
             val frontColor = Color(0xFF16263A)
             val backColor = Color(0xFF1F3752)
-            val edgeColor = Color(0xFF0F1A27)
             val edgeBorder = BorderStroke(1.dp, Color(0xFF2A3B50))
 
-            
-
-            // az első (aktuális) kártya
+            // az aktuális kártya
             Card(
                 modifier = Modifier
                     .fillMaxSize()
@@ -327,8 +395,8 @@ fun FlashcardScreen(
                         if (!flipped) card.translation else card.dictionaryForm,
                         style = MaterialTheme.typography.headlineMedium
                     )
-                    // rugózó zöld pipa
-                                        Text(
+                    // rugózó zöld pipa a kártya jobb alsó részén
+                    Text(
                         "✓",
                         fontSize = 72.sp,
                         color = Color(0xFF81C784),
@@ -350,20 +418,45 @@ fun FlashcardScreen(
                 }
             }
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            OutlinedButton(onClick = { showDeleteDialog = true }) { Text(t.delete) }
-            OutlinedButton(onClick = {
-                val becomingKnown = !card.known
-                onToggleKnown(card)
-                if (becomingKnown) playKnown()
-            }) {
-                Text(if (card.known) t.known else t.markKnown)
-            }
+        Spacer(Modifier.height(8.dp))
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            WButton(
+                onClick = { showDeleteDialog = true },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(52.dp)
+            ) { WLabel(t.delete) }
+            WButton(
+                onClick = {
+                    val becomingKnown = !card.known
+                    onToggleKnown(card)
+                    if (becomingKnown) playKnown()
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(52.dp)
+            ) { WLabel(if (card.known) t.known else t.markKnown) }
         }
         Spacer(Modifier.height(12.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Button(onClick = { go(-1) }) { Text(t.previous) }
-            Button(onClick = { go(1) }) { Text(t.next) }
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            WButton(
+                onClick = { go(-1) },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(52.dp)
+            ) { WLabel(t.previous) }
+            WButton(
+                onClick = { go(1) },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(52.dp)
+            ) { WLabel(t.next) }
         }
     }
 
@@ -418,7 +511,7 @@ fun FlashcardScreen(
                     val idToDelete = card.id
                     deletingId = idToDelete
                     scope.launch {
-                        // a kártya összezsugorodik és eltűnik, a mögötte lévő előre jön
+                        // a kártya összezsugorodik és eltűnik
                         delAnim.snapTo(0f)
                         delAnim.animateTo(1f, tween(220))
                         onDelete(idToDelete)
@@ -554,7 +647,7 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(20.dp))
-        Button(
+        WButton(
             onClick = {
                 onSave(
                     AiSettings(
@@ -568,9 +661,11 @@ fun SettingsScreen(
                     )
                 )
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
         ) {
-            Text(t.save)
+            WLabel(t.save)
         }
         Spacer(Modifier.height(20.dp))
         Text(t.settingsTip, style = MaterialTheme.typography.bodySmall)

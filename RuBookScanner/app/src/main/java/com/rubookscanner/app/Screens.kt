@@ -7,8 +7,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -17,6 +15,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,10 +25,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -57,12 +58,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -79,6 +86,9 @@ import com.rubookscanner.app.data.defaultModelFor
 import kotlin.math.PI
 import kotlin.math.sin
 import kotlinx.coroutines.launch
+
+/** A felső (képernyőn lévő) gombok feliratának színe: világos, enyhén meleg szürke. */
+private val ButtonTextColor = Color(0xFFE6DDD3)
 
 /**
  * Egységes, domború (gradienses) gomb az egész apphoz: kicsit világosabb a háttérnél,
@@ -115,7 +125,7 @@ fun WButton(
             .padding(contentPadding),
         contentAlignment = Alignment.Center
     ) {
-        CompositionLocalProvider(LocalContentColor provides Color(0xFF64B5F6)) {
+        CompositionLocalProvider(LocalContentColor provides ButtonTextColor) {
             content()
         }
     }
@@ -134,10 +144,70 @@ fun WLabel(text: String) {
     )
 }
 
+/**
+ * Egyvonalas szövegmező besüllyesztett, térhatású kinézettel: sötétebb a háttérnél,
+ * felül belső árnyék, a keret alul világosabb. Fix 56 dp magas, így a gombokkal egy vonalba illik.
+ */
+@Composable
+fun WTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(10.dp)
+    Box(
+        modifier = modifier
+            .height(56.dp)
+            .clip(shape)
+            .background(Brush.verticalGradient(listOf(Color(0xFF05080C), Color(0xFF0E151D))))
+            .drawBehind {
+                // belső árnyék a felső élnél
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        listOf(Color(0x99000000), Color(0x00000000)),
+                        startY = 0f,
+                        endY = 10.dp.toPx()
+                    ),
+                    size = Size(size.width, 10.dp.toPx())
+                )
+            }
+            .border(
+                1.dp,
+                Brush.verticalGradient(listOf(Color(0xFF080B0F), Color(0xFF3A4C63))),
+                shape
+            )
+            .padding(horizontal = 14.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            singleLine = true,
+            textStyle = TextStyle(color = Color(0xFFE6EDF3), fontSize = 16.sp),
+            cursorBrush = SolidColor(Color(0xFF64B5F6)),
+            modifier = Modifier.fillMaxWidth(),
+            decorationBox = { inner ->
+                if (value.isEmpty()) {
+                    Text(
+                        placeholder,
+                        color = Color(0xFF7D8B9B),
+                        fontSize = 16.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                inner()
+            }
+        )
+    }
+}
+
 @Composable
 fun WordListScreen(
     words: List<WordItem>,
     loading: Boolean,
+    activeDeckName: String,
     onDelete: (Long) -> Unit,
     onClear: () -> Unit,
     onAddManual: (String) -> Unit,
@@ -151,13 +221,32 @@ fun WordListScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(t.wordsHint, style = MaterialTheme.typography.bodyMedium)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+            Text(
+                t.wordsHint,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f)
+            )
+            if (activeDeckName.isNotBlank()) {
+                Spacer(Modifier.width(12.dp))
+                // jobb felső sarok: melyik pakliba kerülnek a kártyák
+                Text(
+                    "${t.deckShort}: $activeDeckName",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFFB74D),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = 140.dp)
+                )
+            }
+        }
         Spacer(Modifier.height(12.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
+            WTextField(
                 value = manualText,
                 onValueChange = { manualText = it },
-                label = { Text(t.addWordManually) },
+                placeholder = t.addWordManually,
                 modifier = Modifier.weight(1f)
             )
             Spacer(Modifier.width(8.dp))

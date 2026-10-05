@@ -7,14 +7,17 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -63,6 +66,7 @@ fun DecksScreen(
     activeDeckId: Long?,
     allCards: List<Flashcard>,
     onSetActive: (Long) -> Unit,
+    onOpenDeck: (Long) -> Unit,
     onCreateDeck: (String) -> Unit,
     onDeleteDeck: (Long) -> Unit,
     onRenameDeck: (Long, String) -> Unit,
@@ -207,7 +211,7 @@ fun DecksScreen(
                         Row(
                             Modifier
                                 .fillMaxWidth()
-                                .heightIn(min = 84.dp)
+                                .height(84.dp)
                                 .padding(start = 10.dp, end = 44.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -215,11 +219,13 @@ fun DecksScreen(
                                 selected = deck.id == activeDeckId,
                                 onClick = { onSetActive(deck.id) }
                             )
-                            Column(
-                                Modifier
+                            // a név rész besüllyeszthető gomb: megnyomva a Kártya fülre ugrik
+                            DeckNameButton(
+                                onClick = { onOpenDeck(deck.id) },
+                                modifier = Modifier
                                     .weight(1f)
-                                    .padding(horizontal = 12.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                                    .fillMaxHeight()
+                                    .padding(horizontal = 6.dp, vertical = 10.dp)
                             ) {
                                 Text(
                                     deck.name,
@@ -401,6 +407,71 @@ private fun DeckSlab(
             }
     ) {
         content()
+    }
+}
+
+/**
+ * A pakli neve körüli besüllyesztett, gombszerű rész: balra és jobbra egy-egy függőleges
+ * szegéllyel (árok), enyhén sötétebb belsővel. Megnyomva mélyebbre süllyed.
+ */
+@Composable
+private fun DeckNameButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    Box(
+        modifier = modifier
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                role = Role.Button,
+                onClick = onClick
+            )
+            .drawBehind {
+                val w = size.width
+                val h = size.height
+                val r = 8.dp.toPx()
+                val lw = 1.5.dp.toPx()
+                val inner = lw * 1.5f + 1.dp.toPx()
+                val y1 = r
+                val y2 = h - r
+
+                // besüllyesztett belső, felül belső árnyékkal
+                drawRoundRect(
+                    if (pressed) Color(0x66000000) else Color(0x33000000),
+                    Offset(0f, 0f),
+                    Size(w, h),
+                    CornerRadius(r, r)
+                )
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        listOf(if (pressed) Color(0x80000000) else Color(0x59000000), Color(0x00000000)),
+                        startY = 0f,
+                        endY = 8.dp.toPx()
+                    ),
+                    topLeft = Offset(r, 0f),
+                    size = Size(w - 2 * r, 8.dp.toPx())
+                )
+
+                // bal szegély: sötét külső + halvány fényes belső vonal
+                drawLine(Color(0xB3000000), Offset(lw / 2, y1), Offset(lw / 2, y2), lw)
+                drawLine(Color(0x40FFC8B4), Offset(inner, y1), Offset(inner, y2), 1.dp.toPx())
+                // jobb szegély: halvány fényes belső + sötét külső vonal
+                drawLine(Color(0x40FFC8B4), Offset(w - inner, y1), Offset(w - inner, y2), 1.dp.toPx())
+                drawLine(Color(0xB3000000), Offset(w - lw / 2, y1), Offset(w - lw / 2, y2), lw)
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 12.dp)
+                .offset(y = if (pressed) 1.dp else 0.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            content = content
+        )
     }
 }
 

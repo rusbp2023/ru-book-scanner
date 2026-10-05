@@ -245,7 +245,13 @@ fun AppContent(store: Store) {
 
                 AppScreen.SETTINGS -> SettingsScreen(
                     settings = settings,
-                    onSave = { s -> scope.launch { store.saveSettings(s) } }
+                    onSave = { s ->
+                        scope.launch {
+                            store.saveSettings(s)
+                            // visszajelzés az új (esetleg épp átváltott) app nyelven
+                            snackbarHostState.showSnackbar(stringsFor(s.uiLanguage).settingsSaved)
+                        }
+                    }
                 )
             }
         }

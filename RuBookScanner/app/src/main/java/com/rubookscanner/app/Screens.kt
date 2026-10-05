@@ -75,6 +75,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rubookscanner.app.data.AiProvider
@@ -203,6 +204,21 @@ fun WTextField(
     }
 }
 
+/** Az aktív pakli jelzése ("P: pakli neve") a Szó és a Kártya fül jobb felső sarkában. */
+@Composable
+fun ActiveDeckLabel(name: String, modifier: Modifier = Modifier, maxWidth: Dp = 120.dp) {
+    val t = LocalStrings.current
+    Text(
+        "${t.deckShort}: $name",
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.Bold,
+        color = Color(0xFFFFB74D),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier.widthIn(max = maxWidth)
+    )
+}
+
 @Composable
 fun WordListScreen(
     words: List<WordItem>,
@@ -230,15 +246,7 @@ fun WordListScreen(
             if (activeDeckName.isNotBlank()) {
                 Spacer(Modifier.width(12.dp))
                 // jobb felső sarok: melyik pakliba kerülnek a kártyák
-                Text(
-                    "${t.deckShort}: $activeDeckName",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFFFB74D),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.widthIn(max = 140.dp)
-                )
+                ActiveDeckLabel(activeDeckName, maxWidth = 140.dp)
             }
         }
         Spacer(Modifier.height(12.dp))
@@ -313,6 +321,7 @@ fun WordListScreen(
 @Composable
 fun FlashcardScreen(
     cards: List<Flashcard>,
+    activeDeckName: String,
     onDelete: (Long) -> Unit,
     onToggleKnown: (Flashcard) -> Unit,
     onEdit: (Flashcard) -> Unit,
@@ -423,6 +432,13 @@ fun FlashcardScreen(
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.align(Alignment.Center)
             )
+            if (activeDeckName.isNotBlank()) {
+                ActiveDeckLabel(
+                    activeDeckName,
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                    maxWidth = 110.dp
+                )
+            }
         }
         Spacer(Modifier.height(4.dp))
         Box(

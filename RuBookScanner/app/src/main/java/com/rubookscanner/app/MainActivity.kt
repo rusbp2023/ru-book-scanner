@@ -178,6 +178,7 @@ fun AppContent(store: Store) {
                 AppScreen.WORDS -> WordListScreen(
                     words = words,
                     loading = loading,
+                    activeDeckName = decks.firstOrNull { it.id == activeDeckId }?.name.orEmpty(),
                     onDelete = { id -> scope.launch { store.removeWord(id) } },
                     onClear = { scope.launch { store.clearWords() } },
                     onAddManual = { text -> scope.launch { store.addWord(text) } },

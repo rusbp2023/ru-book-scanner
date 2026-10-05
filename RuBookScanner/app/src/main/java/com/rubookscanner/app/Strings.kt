@@ -66,6 +66,7 @@ interface Strings {
     val baseUrlLabel: String
     val save: String
     val settingsTip: String
+    val settingsSaved: String
 }
 
 object StringsHu : Strings {
@@ -135,6 +136,7 @@ object StringsHu : Strings {
     override val baseUrlLabel = "Egyedi API végpont (opcionális)"
     override val save = "Mentés"
     override val settingsTip = "Ingyenes API kulcs beszerzése:"
+    override val settingsSaved = "Beállítások mentve"
 }
 
 object StringsEn : Strings {
@@ -204,6 +206,7 @@ object StringsEn : Strings {
     override val baseUrlLabel = "Custom API endpoint (optional)"
     override val save = "Save"
     override val settingsTip = "Get a free API key:"
+    override val settingsSaved = "Settings saved"
 }
 
 object StringsDe : Strings {
@@ -273,6 +276,7 @@ object StringsDe : Strings {
     override val baseUrlLabel = "Eigener API-Endpunkt (optional)"
     override val save = "Speichern"
     override val settingsTip = "Kostenlosen API-Schlüssel erhalten:"
+    override val settingsSaved = "Einstellungen gespeichert"
 }
 
 object StringsIt : Strings {
@@ -342,6 +346,7 @@ object StringsIt : Strings {
     override val baseUrlLabel = "Endpoint API personalizzato (facoltativo)"
     override val save = "Salva"
     override val settingsTip = "Ottieni una chiave API gratuita:"
+    override val settingsSaved = "Impostazioni salvate"
 }
 
 object StringsFr : Strings {
@@ -411,6 +416,7 @@ object StringsFr : Strings {
     override val baseUrlLabel = "Point de terminaison API personnalisé (facultatif)"
     override val save = "Enregistrer"
     override val settingsTip = "Obtenir une clé API gratuite :"
+    override val settingsSaved = "Paramètres enregistrés"
 }
 
 object StringsEs : Strings {
@@ -480,6 +486,7 @@ object StringsEs : Strings {
     override val baseUrlLabel = "Endpoint de API personalizado (opcional)"
     override val save = "Guardar"
     override val settingsTip = "Obtener una clave API gratuita:"
+    override val settingsSaved = "Ajustes guardados"
 }
 
 object StringsRu : Strings {
@@ -549,6 +556,7 @@ object StringsRu : Strings {
     override val baseUrlLabel = "Свой API-адрес (необязательно)"
     override val save = "Сохранить"
     override val settingsTip = "Получить бесплатный API-ключ:"
+    override val settingsSaved = "Настройки сохранены"
 }
 
 val LocalStrings = staticCompositionLocalOf<Strings> { StringsHu }

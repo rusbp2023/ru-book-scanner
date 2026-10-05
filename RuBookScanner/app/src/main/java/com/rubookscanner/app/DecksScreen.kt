@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -193,7 +194,7 @@ fun DecksScreen(
         Divider(Modifier.padding(vertical = 12.dp))
 
         LazyColumn(Modifier.fillMaxSize()) {
-                                        items(decks, key = { it.id }) { deck ->
+                                                    items(decks, key = { it.id }) { deck ->
                 val count = allCards.count { it.deckId == deck.id }
                 val ink = Color(0xFFEDE6DA)
                 val paperInk = Color(0xFF2E2A26)
@@ -202,56 +203,78 @@ fun DecksScreen(
                         .padding(vertical = 6.dp)
                         .fillMaxWidth()
                 ) {
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        DeckRadio(
-                            selected = deck.id == activeDeckId,
-                            onClick = { onSetActive(deck.id) }
-                        )
-                        // a papírcsík ezen a részen fut körbe a pakli borítóján
-                        Box(
+                    Box(Modifier.fillMaxWidth()) {
+                        Row(
                             Modifier
-                                .weight(1f)
-                                .padding(horizontal = 12.dp),
-                            contentAlignment = Alignment.Center
+                                .fillMaxWidth()
+                                .heightIn(min = 84.dp)
+                                .padding(start = 10.dp, end = 44.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column(
-                                Modifier.graphicsLayer { rotationZ = -2.5f },
-                                horizontalAlignment = Alignment.CenterHorizontally
+                            DeckRadio(
+                                selected = deck.id == activeDeckId,
+                                onClick = { onSetActive(deck.id) }
+                            )
+                            // a papírcsík ezen a részen fut körbe a pakli borítóján
+                            Box(
+                                Modifier
+                                    .weight(1f)
+                                    .padding(horizontal = 12.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    deck.name,
-                                    fontFamily = FontFamily.Serif,
-                                    fontStyle = FontStyle.Italic,
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 20.sp,
-                                    color = paperInk,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Text(
-                                    t.cardCount(count),
-                                    fontFamily = FontFamily.Serif,
-                                    fontStyle = FontStyle.Italic,
-                                    fontSize = 12.sp,
-                                    color = Color(0xFF55504A)
-                                )
+                                Column(
+                                    Modifier.graphicsLayer { rotationZ = -2.5f },
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        deck.name,
+                                        fontFamily = FontFamily.Serif,
+                                        fontStyle = FontStyle.Italic,
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 20.sp,
+                                        color = paperInk,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        t.cardCount(count),
+                                        fontFamily = FontFamily.Serif,
+                                        fontStyle = FontStyle.Italic,
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF55504A)
+                                    )
+                                }
+                            }
+                            IconButton(
+                                onClick = { deckToRename = deck },
+                                modifier = Modifier.size(44.dp)
+                            ) {
+                                Text("✎", fontSize = 22.sp, color = ink)
                             }
                         }
-                        IconButton(onClick = { deckToRename = deck }) {
-                            Text("✎", fontSize = 22.sp, color = ink)
-                        }
-                        IconButton(onClick = {
-                            val cardsForDeck = allCards.filter { it.deckId == deck.id }
-                            pendingExportText = buildDeckExportText(deck.name, cardsForDeck, t.emptyDeck)
-                            createDocLauncher.launch("${deck.name}.txt")
-                        }) { Text("⬇", fontSize = 26.sp, color = ink) }
-                        IconButton(onClick = { deckToDelete = deck }) {
+                        // jobb felső sarok: törlés
+                        IconButton(
+                            onClick = { deckToDelete = deck },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(top = 2.dp, end = 4.dp)
+                                .size(40.dp)
+                        ) {
                             Text("✕", color = ink)
+                        }
+                        // jobb alsó sarok: letöltés
+                        IconButton(
+                            onClick = {
+                                val cardsForDeck = allCards.filter { it.deckId == deck.id }
+                                pendingExportText = buildDeckExportText(deck.name, cardsForDeck, t.emptyDeck)
+                                createDocLauncher.launch("${deck.name}.txt")
+                            },
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(bottom = 2.dp, end = 4.dp)
+                                .size(40.dp)
+                        ) {
+                            Text("⬇", fontSize = 22.sp, color = ink)
                         }
                     }
                 }
@@ -280,20 +303,19 @@ private fun displayNameOf(context: Context, uri: Uri): String {
     return (name ?: "").substringBeforeLast('.')
 }
 /**
- * Fektetett, tégla alakú pakli: sötét, barnás-kékes bársony borítás, rajta a rádiógomb és az
- * ikonok közötti részen körbefutó szürkés papírcsík (a felső és az oldalfelületen is).
- * A bandStart / bandEndInset a papírcsík helye: balról ennyire kezdődik, jobbról ennyi marad ki
- * (a rádiógomb és a három ikon helye).
+ * Fektetett, tégla alakú pakli éles sarkokkal: sötét, barnás-kékes bársony felső felület,
+ * alatta az elülső oldalfelület adja a vastagságot. A rádiógomb és a ceruza ikon közötti részen
+ * szürkés papírcsík fut körbe (a felső és az oldalfelületen is).
+ * A bandStart / bandEndInset a papírcsík helye: balról ennyire kezdődik, jobbról ennyi marad ki.
  */
 @Composable
 private fun DeckSlab(
     modifier: Modifier = Modifier,
     bandStart: Dp = 58.dp,
-    bandEndInset: Dp = 154.dp,
+    bandEndInset: Dp = 88.dp,
     content: @Composable () -> Unit
 ) {
-    val depth = 10.dp   // az oldalfelület vastagsága
-    val radius = 14.dp
+    val depth = 12.dp   // az oldalfelület vastagsága
     val velvetLight = Color(0xFF3A4054)
     val velvetDark = Color(0xFF262B3A)
     val sideLight = Color(0xFF1F2330)
@@ -308,36 +330,26 @@ private fun DeckSlab(
             .padding(bottom = depth + 1.dp)
             .drawBehind {
                 val dy = depth.toPx()
-                val rad = radius.toPx()
-                val corner = CornerRadius(rad, rad)
                 val line = Stroke(width = 1.dp.toPx())
                 val w = size.width
                 val h = size.height
                 val x1 = bandStart.toPx()
                 val x2 = w - bandEndInset.toPx()
 
-                // 1) oldalfelület (vastagság)
-                drawRoundRect(
-                    brush = Brush.verticalGradient(
-                        listOf(sideLight, sideDark),
-                        startY = h - rad,
-                        endY = h + dy
-                    ),
-                    topLeft = Offset(0f, 0f),
-                    size = Size(w, h + dy),
-                    cornerRadius = corner
+                // 1) elülső oldalfelület (vastagság)
+                drawRect(
+                    Brush.verticalGradient(listOf(sideLight, sideDark), startY = h, endY = h + dy),
+                    Offset(0f, h),
+                    Size(w, dy)
                 )
-                drawRoundRect(edgeColor, Offset(0f, 0f), Size(w, h + dy), corner, style = line)
 
                 // 2) bársony felső felület
-                drawRoundRect(
-                    brush = Brush.verticalGradient(listOf(velvetLight, velvetDark), startY = 0f, endY = h),
-                    topLeft = Offset(0f, 0f),
-                    size = Size(w, h),
-                    cornerRadius = corner
+                drawRect(
+                    Brush.verticalGradient(listOf(velvetLight, velvetDark), startY = 0f, endY = h),
+                    Offset(0f, 0f),
+                    Size(w, h)
                 )
-                val faceShape = Path().apply { addRoundRect(RoundRect(0f, 0f, w, h, rad, rad)) }
-                clipPath(faceShape) {
+                clipRect(0f, 0f, w, h) {
                     // puha fényes sáv középen + felül, finom bársony-"szőr" pöttyökkel
                     drawRect(
                         brush = Brush.horizontalGradient(
@@ -364,7 +376,10 @@ private fun DeckSlab(
                         )
                     }
                 }
-                drawRoundRect(edgeColor, Offset(0f, 0f), Size(w, h), corner, style = line)
+
+                // halvány élek: külső körvonal + a felső és az elülső felület találkozása (megvilágított él)
+                drawRect(edgeColor, Offset(0f, 0f), Size(w, h + dy), style = line)
+                drawLine(Color(0x40FFFFFF), Offset(0f, h), Offset(w, h), 1.dp.toPx())
 
                 // 3) körbefutó papírcsík
                 if (x2 - x1 > 20f) {

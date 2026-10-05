@@ -7,6 +7,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -87,11 +89,12 @@ fun WButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    shape: Shape = RoundedCornerShape(10.dp),
+    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
     content: @Composable () -> Unit
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val shape = RoundedCornerShape(10.dp)
     val top = if (pressed) Color(0xFF1B232F) else Color(0xFF34425A)
     val bottom = if (pressed) Color(0xFF2B374A) else Color(0xFF182029)
     val rimTop = if (pressed) Color(0xFF222C3A) else Color(0xFF6182A6)
@@ -109,7 +112,7 @@ fun WButton(
                 enabled = enabled,
                 onClick = onClick
             )
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(contentPadding),
         contentAlignment = Alignment.Center
     ) {
         CompositionLocalProvider(LocalContentColor provides Color(0xFF64B5F6)) {

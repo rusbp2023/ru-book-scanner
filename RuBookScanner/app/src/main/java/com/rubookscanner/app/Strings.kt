@@ -132,10 +132,7 @@ object StringsHu : Strings {
     override val modelLabel = "Modell neve"
     override val baseUrlLabel = "Egyedi API végpont (opcionális)"
     override val save = "Mentés"
-    override val settingsTip =
-        "Tipp: az API kulcsot a szolgáltató oldalán kapod (pl. console.anthropic.com, " +
-            "platform.openai.com, aistudio.google.com). A kulcs csak a telefonodon tárolódik, " +
-            "az AI-nak közvetlenül a telefon küldi el a kéréseket."
+    override val settingsTip = "Ingyenes API kulcs beszerzése:"
 }
 
 object StringsEn : Strings {
@@ -203,10 +200,7 @@ object StringsEn : Strings {
     override val modelLabel = "Model name"
     override val baseUrlLabel = "Custom API endpoint (optional)"
     override val save = "Save"
-    override val settingsTip =
-        "Tip: you get the API key on the provider's website (e.g. console.anthropic.com, " +
-            "platform.openai.com, aistudio.google.com). The key is stored only on your phone, " +
-            "and the phone sends requests to the AI directly."
+    override val settingsTip = "Get a free API key:"
 }
 
 object StringsDe : Strings {
@@ -274,10 +268,7 @@ object StringsDe : Strings {
     override val modelLabel = "Modellname"
     override val baseUrlLabel = "Eigener API-Endpunkt (optional)"
     override val save = "Speichern"
-    override val settingsTip =
-        "Tipp: Den API-Schlüssel bekommst du auf der Website des Anbieters (z. B. console.anthropic.com, " +
-            "platform.openai.com, aistudio.google.com). Der Schlüssel wird nur auf deinem Handy gespeichert, " +
-            "und das Handy sendet die Anfragen direkt an die KI."
+    override val settingsTip = "Kostenlosen API-Schlüssel erhalten:"
 }
 
 object StringsIt : Strings {
@@ -345,10 +336,7 @@ object StringsIt : Strings {
     override val modelLabel = "Nome del modello"
     override val baseUrlLabel = "Endpoint API personalizzato (facoltativo)"
     override val save = "Salva"
-    override val settingsTip =
-        "Suggerimento: la chiave API si ottiene sul sito del provider (ad es. console.anthropic.com, " +
-            "platform.openai.com, aistudio.google.com). La chiave viene salvata solo sul telefono " +
-            "e il telefono invia le richieste direttamente all'IA."
+    override val settingsTip = "Ottieni una chiave API gratuita:"
 }
 
 object StringsFr : Strings {
@@ -416,10 +404,7 @@ object StringsFr : Strings {
     override val modelLabel = "Nom du modèle"
     override val baseUrlLabel = "Point de terminaison API personnalisé (facultatif)"
     override val save = "Enregistrer"
-    override val settingsTip =
-        "Astuce : la clé API s'obtient sur le site du fournisseur (par ex. console.anthropic.com, " +
-            "platform.openai.com, aistudio.google.com). La clé n'est stockée que sur ton téléphone, " +
-            "qui envoie les requêtes directement à l'IA."
+    override val settingsTip = "Obtenir une clé API gratuite :"
 }
 
 object StringsEs : Strings {
@@ -487,10 +472,7 @@ object StringsEs : Strings {
     override val modelLabel = "Nombre del modelo"
     override val baseUrlLabel = "Endpoint de API personalizado (opcional)"
     override val save = "Guardar"
-    override val settingsTip =
-        "Consejo: la clave API se obtiene en el sitio web del proveedor (p. ej. console.anthropic.com, " +
-            "platform.openai.com, aistudio.google.com). La clave solo se guarda en tu teléfono, " +
-            "y el teléfono envía las solicitudes directamente a la IA."
+    override val settingsTip = "Obtener una clave API gratuita:"
 }
 
 object StringsRu : Strings {
@@ -558,10 +540,7 @@ object StringsRu : Strings {
     override val modelLabel = "Название модели"
     override val baseUrlLabel = "Свой API-адрес (необязательно)"
     override val save = "Сохранить"
-    override val settingsTip =
-        "Совет: API-ключ можно получить на сайте поставщика (например, console.anthropic.com, " +
-            "platform.openai.com, aistudio.google.com). Ключ хранится только на твоём телефоне, " +
-            "и телефон отправляет запросы прямо ИИ."
+    override val settingsTip = "Получить бесплатный API-ключ:"
 }
 
 val LocalStrings = staticCompositionLocalOf<Strings> { StringsHu }

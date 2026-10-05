@@ -228,6 +228,12 @@ fun AppContent(store: Store) {
                     activeDeckId = activeDeckId,
                     allCards = cards,
                     onSetActive = { id -> scope.launch { store.setActiveDeck(id) } },
+                    onOpenDeck = { id ->
+                        scope.launch {
+                            store.setActiveDeck(id)
+                            screen = AppScreen.CARDS
+                        }
+                    },
                     onCreateDeck = { name -> scope.launch { store.createDeck(name) } },
                     onDeleteDeck = { id -> scope.launch { store.deleteDeck(id) } },
                     onRenameDeck = { id, name -> scope.launch { store.renameDeck(id, name) } },

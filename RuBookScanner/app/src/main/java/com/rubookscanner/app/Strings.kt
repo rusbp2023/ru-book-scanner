@@ -48,6 +48,7 @@ interface Strings {
     val allDecksFileName: String
     fun cardCount(n: Int): String
     val emptyDeck: String
+    val deckShort: String
 
     val cameraPermissionNeeded: String
     val allowCamera: String
@@ -116,6 +117,7 @@ object StringsHu : Strings {
     override val allDecksFileName = "osszes_pakli.txt"
     override fun cardCount(n: Int) = "$n kártya"
     override val emptyDeck = "(nincs még kártya ebben a pakliban)"
+    override val deckShort = "P"
 
     override val cameraPermissionNeeded = "A szófelismeréshez szükség van a kamera engedélyre."
     override val allowCamera = "Kamera engedélyezése"
@@ -184,6 +186,7 @@ object StringsEn : Strings {
     override val allDecksFileName = "all_decks.txt"
     override fun cardCount(n: Int) = "$n cards"
     override val emptyDeck = "(no cards in this deck yet)"
+    override val deckShort = "D"
 
     override val cameraPermissionNeeded = "Camera permission is required for word recognition."
     override val allowCamera = "Allow camera"
@@ -252,6 +255,7 @@ object StringsDe : Strings {
     override val allDecksFileName = "alle_decks.txt"
     override fun cardCount(n: Int) = "$n Karten"
     override val emptyDeck = "(noch keine Karten in diesem Deck)"
+    override val deckShort = "D"
 
     override val cameraPermissionNeeded = "Für die Worterkennung wird die Kameraberechtigung benötigt."
     override val allowCamera = "Kamera erlauben"
@@ -320,6 +324,7 @@ object StringsIt : Strings {
     override val allDecksFileName = "tutti_i_mazzi.txt"
     override fun cardCount(n: Int) = "$n schede"
     override val emptyDeck = "(nessuna scheda in questo mazzo)"
+    override val deckShort = "M"
 
     override val cameraPermissionNeeded = "Per il riconoscimento delle parole serve il permesso della fotocamera."
     override val allowCamera = "Consenti fotocamera"
@@ -388,6 +393,7 @@ object StringsFr : Strings {
     override val allDecksFileName = "tous_les_paquets.txt"
     override fun cardCount(n: Int) = "$n cartes"
     override val emptyDeck = "(aucune carte dans ce paquet pour l'instant)"
+    override val deckShort = "P"
 
     override val cameraPermissionNeeded = "L'autorisation de l'appareil photo est nécessaire pour la reconnaissance des mots."
     override val allowCamera = "Autoriser l'appareil photo"
@@ -456,6 +462,7 @@ object StringsEs : Strings {
     override val allDecksFileName = "todos_los_mazos.txt"
     override fun cardCount(n: Int) = "$n tarjetas"
     override val emptyDeck = "(todavía no hay tarjetas en este mazo)"
+    override val deckShort = "M"
 
     override val cameraPermissionNeeded = "Se necesita el permiso de la cámara para reconocer palabras."
     override val allowCamera = "Permitir cámara"
@@ -524,6 +531,7 @@ object StringsRu : Strings {
     override val allDecksFileName = "vse_kolody.txt"
     override fun cardCount(n: Int) = "Карточек: $n"
     override val emptyDeck = "(в этой колоде пока нет карточек)"
+    override val deckShort = "К"
 
     override val cameraPermissionNeeded = "Для распознавания слов нужно разрешение на использование камеры."
     override val allowCamera = "Разрешить камеру"

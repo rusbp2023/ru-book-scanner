@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Divider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -33,13 +32,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
@@ -147,14 +148,15 @@ fun DecksScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
+        // az új pakli neve és a létrehozás gomb egy vonalban, egyforma (56 dp) magasan
         Row(
             Modifier.padding(bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            OutlinedTextField(
+            WTextField(
                 value = newDeckName,
                 onValueChange = { newDeckName = it },
-                label = { Text(t.newDeckName) },
+                placeholder = t.newDeckName,
                 modifier = Modifier.weight(1f)
             )
             WButton(
@@ -189,13 +191,13 @@ fun DecksScreen(
                 .height(48.dp)
         ) { WLabel(t.uploadDeck) }
 
-        Divider(Modifier.padding(vertical = 12.dp))
+        Spacer(Modifier.height(12.dp))
 
         LazyColumn(Modifier.fillMaxSize()) {
             items(decks, key = { it.id }) { deck ->
                 val count = allCards.count { it.deckId == deck.id }
                 val ink = Color(0xFFEDE6DA)
-                val inkSoft = Color(0xFFB9B2A6)
+                val inkSoft = Color(0xFFD2BBB0)
                 DeckSlab(
                     modifier = Modifier
                         .padding(vertical = 6.dp)
@@ -296,103 +298,109 @@ private fun displayNameOf(context: Context, uri: Uri): String {
 }
 
 /**
- * Fektetett, tégla alakú pakli éles sarkokkal: sötét, barnás-kékes bársony felső felület,
- * alatta az elülső oldalfelület adja a vastagságot, jobb oldalon pedig egy keskeny, ferde
- * élű oldalfelület látszik (dobozszerű 3D hatás).
+ * Lapos, de kissé domború pakli: mélyvörös-barnás bársony felület, gradienses élekkel
+ * (felül világosabb, alul és oldalt sötétedő), finom bársony-"szőrrel" és halvány árnyékkal.
  */
 @Composable
 private fun DeckSlab(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
-    val depth = 12.dp       // az elülső oldalfelület vastagsága
-    val sideWidth = 14.dp   // a jobb oldali keskeny oldalfelület szélessége
-    val slant = 6.dp        // a jobb oldalfelület felső és alsó élének dőlése
-    val velvetLight = Color(0xFF3A4054)
-    val velvetDark = Color(0xFF262B3A)
-    val frontLight = Color(0xFF1F2330)
-    val frontDark = Color(0xFF14171F)
-    val rightLight = Color(0xFF181B26)
-    val rightDark = Color(0xFF0E1016)
-    val edgeColor = Color(0x2EFFFFFF)
+    val radius = 14.dp
+    val velvetLight = Color(0xFF63302F)
+    val velvetDark = Color(0xFF3A1717)
     Box(
         modifier = modifier
-            .padding(bottom = depth + 1.dp)
+            .padding(bottom = 4.dp)
             .drawBehind {
-                val dy = depth.toPx()
-                val sd = sideWidth.toPx()
-                val sl = slant.toPx()
-                val line = Stroke(width = 1.dp.toPx())
-                val w = size.width - sd   // a felső felület szélessége
-                val h = size.height       // a felső felület magassága
+                val w = size.width
+                val h = size.height
+                val rad = radius.toPx()
+                val corner = CornerRadius(rad, rad)
 
-                // 1) elülső oldalfelület (vastagság)
-                drawRect(
-                    Brush.verticalGradient(listOf(frontLight, frontDark), startY = h, endY = h + dy),
-                    Offset(0f, h),
-                    Size(w, dy)
+                // halvány árnyék a pakli alatt
+                drawRoundRect(Color(0x66000000), Offset(0f, 3.dp.toPx()), Size(w, h), corner)
+
+                // bársony alap, enyhe függőleges színátmenettel
+                drawRoundRect(
+                    brush = Brush.verticalGradient(listOf(velvetLight, velvetDark), startY = 0f, endY = h),
+                    topLeft = Offset(0f, 0f),
+                    size = Size(w, h),
+                    cornerRadius = corner
                 )
 
-                // 2) jobb oldali keskeny oldalfelület: ferde felső és alsó éllel
-                val rightFace = Path().apply {
-                    moveTo(w, 0f)
-                    lineTo(w + sd, sl)
-                    lineTo(w + sd, h + dy - sl)
-                    lineTo(w, h + dy)
-                    close()
-                }
-                drawPath(
-                    rightFace,
-                    Brush.horizontalGradient(listOf(rightLight, rightDark), startX = w, endX = w + sd)
-                )
-
-                // 3) bársony felső felület
-                drawRect(
-                    Brush.verticalGradient(listOf(velvetLight, velvetDark), startY = 0f, endY = h),
-                    Offset(0f, 0f),
-                    Size(w, h)
-                )
-                clipRect(0f, 0f, w, h) {
-                    // puha fényes sáv középen + felül, finom bársony-"szőr" pöttyökkel
+                val shape = Path().apply { addRoundRect(RoundRect(0f, 0f, w, h, rad, rad)) }
+                clipPath(shape) {
+                    // puha fényes sáv középen (bársony fényvisszaverés)
                     drawRect(
                         brush = Brush.horizontalGradient(
-                            listOf(Color(0x00FFFFFF), Color(0x1AFFFFFF), Color(0x00FFFFFF)),
+                            listOf(Color(0x00FFFFFF), Color(0x1AFFC8B4), Color(0x00FFFFFF)),
                             startX = 0f,
                             endX = w
                         ),
                         size = Size(w, h)
                     )
+                    // domborúság: felül világosabb, alul sötétedő
                     drawRect(
                         brush = Brush.verticalGradient(
-                            listOf(Color(0x16FFFFFF), Color(0x00FFFFFF)),
+                            listOf(Color(0x2EFFFFFF), Color(0x00FFFFFF)),
                             startY = 0f,
-                            endY = h * 0.55f
+                            endY = h * 0.45f
                         ),
                         size = Size(w, h)
                     )
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            listOf(Color(0x00000000), Color(0x4D000000)),
+                            startY = h * 0.55f,
+                            endY = h
+                        ),
+                        size = Size(w, h)
+                    )
+                    // oldalt sötétedő élek (a domborúság lekerekedése)
+                    val edgeW = 18.dp.toPx()
+                    drawRect(
+                        brush = Brush.horizontalGradient(
+                            listOf(Color(0x66000000), Color(0x00000000)),
+                            startX = 0f,
+                            endX = edgeW
+                        ),
+                        size = Size(w, h)
+                    )
+                    drawRect(
+                        brush = Brush.horizontalGradient(
+                            listOf(Color(0x00000000), Color(0x66000000)),
+                            startX = w - edgeW,
+                            endX = w
+                        ),
+                        size = Size(w, h)
+                    )
+                    // finom bársony-"szőr" pöttyök
                     val rnd = Random(11)
                     repeat(420) {
                         drawCircle(
-                            if (rnd.nextBoolean()) Color(0x14FFFFFF) else Color(0x1F000000),
+                            if (rnd.nextBoolean()) Color(0x16FFD2C0) else Color(0x22000000),
                             radius = (0.4f + rnd.nextFloat() * 0.5f).dp.toPx(),
                             center = Offset(rnd.nextFloat() * w, rnd.nextFloat() * h)
                         )
                     }
                 }
 
-                // 4) halvány élek
-                drawRect(edgeColor, Offset(0f, 0f), Size(w, h), style = line)
-                drawRect(edgeColor, Offset(0f, h), Size(w, dy), style = line)
-                drawPath(rightFace, edgeColor, style = line)
-                // megvilágított élek: a felső és az elülső felület találkozása, valamint a ferde felső él
-                drawLine(Color(0x40FFFFFF), Offset(0f, h), Offset(w, h), 1.dp.toPx())
-                drawLine(Color(0x33FFFFFF), Offset(w, 0f), Offset(w + sd, sl), 1.dp.toPx())
+                // gradienses perem: felül világos, alul sötét
+                drawRoundRect(
+                    brush = Brush.verticalGradient(
+                        listOf(Color(0x66FFC8B4), Color(0x14FFFFFF), Color(0x80000000)),
+                        startY = 0f,
+                        endY = h
+                    ),
+                    topLeft = Offset(0f, 0f),
+                    size = Size(w, h),
+                    cornerRadius = corner,
+                    style = Stroke(width = 1.5.dp.toPx())
+                )
             }
     ) {
-        // a tartalom csak a felső felületen belül marad (a jobb oldalfelület helyét kihagyjuk)
-        Box(Modifier.padding(end = sideWidth)) {
-            content()
-        }
+        content()
     }
 }
 

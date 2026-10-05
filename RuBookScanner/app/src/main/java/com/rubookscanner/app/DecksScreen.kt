@@ -476,8 +476,8 @@ private fun DeckNameButton(
 }
 
 /**
- * Sárga, kiemelkedő, gombszerű rádiógomb. Aktívan fényes és kiemelkedik (kis fényfolttal és
- * árnyékkal), inaktívan sötétebb és lesüllyedt a foglalatába.
+ * Kristálygömb-szerű rádiógomb: aktívan mélykék, áttetsző, fényes üveggömb ragyogással,
+ * inaktívan sötét, halvány üveggömb a foglalatában.
  */
 @Composable
 private fun DeckRadio(selected: Boolean, onClick: () -> Unit) {
@@ -498,33 +498,60 @@ private fun DeckRadio(selected: Boolean, onClick: () -> Unit) {
                 drawCircle(Color(0xFF111319), radius = socket, center = c)
                 drawCircle(Color(0x22FFFFFF), radius = socket, center = c, style = Stroke(1.dp.toPx()))
                 if (selected) {
-                    // halvány ragyogás, árnyék, domború gomb, fényfolt
-                    drawCircle(Color(0x33FFD600), radius = socket + 3.dp.toPx(), center = c)
+                    // mélykék, áttetsző kristálygömb: kék ragyogás, árnyék, üvegtest,
+                    // belső fénytörés, peremfény és csillanás
+                    drawCircle(Color(0x222F6BFF), radius = socket + 5.dp.toPx(), center = c)
+                    drawCircle(Color(0x442F6BFF), radius = socket + 2.dp.toPx(), center = c)
                     drawCircle(Color(0x66000000), radius = r, center = c + Offset(0f, 2.dp.toPx()))
+                    // üvegtest: felül világosabb, szélén mélykék, enyhén áttetsző
                     drawCircle(
                         brush = Brush.radialGradient(
-                            colors = listOf(Color(0xFFFFF59D), Color(0xFFFFD600), Color(0xFFC49A00)),
-                            center = c + Offset(-r * 0.35f, -r * 0.4f),
-                            radius = r * 1.7f
+                            colors = listOf(Color(0xE6A8C8FF), Color(0xCC2F67E8), Color(0xF20B1E66)),
+                            center = c + Offset(-r * 0.3f, -r * 0.35f),
+                            radius = r * 1.5f
                         ),
                         radius = r,
                         center = c
                     )
-                    drawCircle(
-                        Color(0x99FFFFFF),
-                        radius = r * 0.28f,
-                        center = c + Offset(-r * 0.4f, -r * 0.45f)
-                    )
-                } else {
-                    // lesüllyedt, sötét sárga
+                    // belső fénytörés lent jobbra (a gömbön átszűrődő fény)
                     drawCircle(
                         brush = Brush.radialGradient(
-                            colors = listOf(Color(0xFF6B5F22), Color(0xFF3D3715)),
-                            center = c,
+                            colors = listOf(Color(0x992F9BFF), Color(0x002F9BFF)),
+                            center = c + Offset(r * 0.3f, r * 0.35f),
+                            radius = r * 0.6f
+                        ),
+                        radius = r * 0.6f,
+                        center = c + Offset(r * 0.3f, r * 0.35f)
+                    )
+                    // peremfény
+                    drawCircle(Color(0x66BBD8FF), radius = r, center = c, style = Stroke(1.dp.toPx()))
+                    // csillanás
+                    drawCircle(
+                        Color(0xCCFFFFFF),
+                        radius = r * 0.24f,
+                        center = c + Offset(-r * 0.4f, -r * 0.45f)
+                    )
+                    drawCircle(
+                        Color(0x66FFFFFF),
+                        radius = r * 0.1f,
+                        center = c + Offset(r * 0.38f, r * 0.5f)
+                    )
+                } else {
+                    // inaktív: sötét, áttetsző üveggömb a foglalatában
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(Color(0xFF263247), Color(0xFF0E131C)),
+                            center = c + Offset(-r * 0.2f, -r * 0.25f),
                             radius = r
                         ),
                         radius = r * 0.8f,
                         center = c
+                    )
+                    drawCircle(Color(0x33BBD8FF), radius = r * 0.8f, center = c, style = Stroke(1.dp.toPx()))
+                    drawCircle(
+                        Color(0x40FFFFFF),
+                        radius = r * 0.14f,
+                        center = c + Offset(-r * 0.3f, -r * 0.35f)
                     )
                 }
             }

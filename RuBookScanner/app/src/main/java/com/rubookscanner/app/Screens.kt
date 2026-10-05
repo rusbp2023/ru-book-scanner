@@ -174,7 +174,7 @@ fun WTextField(
             }
             .border(
                 1.dp,
-                Brush.verticalGradient(listOf(Color(0xFF080B0F), Color(0xFF3A4C63))),
+                Brush.verticalGradient(listOf(Color(0xFF2B3748), Color(0xFF51677F))),
                 shape
             )
             .padding(horizontal = 14.dp),
@@ -242,7 +242,12 @@ fun WordListScreen(
             }
         }
         Spacer(Modifier.height(12.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             WTextField(
                 value = manualText,
                 onValueChange = { manualText = it },
@@ -255,7 +260,8 @@ fun WordListScreen(
                     onAddManual(manualText)
                     manualText = ""
                 },
-                modifier = Modifier.size(56.dp)
+                modifier = Modifier.size(56.dp),
+                contentPadding = PaddingValues(0.dp)
             ) { Text("+", fontSize = 22.sp, fontWeight = FontWeight.Bold) }
         }
         Spacer(Modifier.height(12.dp))

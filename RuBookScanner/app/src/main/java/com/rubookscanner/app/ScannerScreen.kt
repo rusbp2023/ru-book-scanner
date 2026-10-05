@@ -152,8 +152,8 @@ private fun PermissionRequiredScreen(onRequest: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(t.cameraPermissionNeeded)
-            Button(onClick = onRequest) {
-                Text(t.allowCamera)
+            WButton(onClick = onRequest) {
+                WLabel(t.allowCamera)
             }
         }
     }
@@ -446,17 +446,25 @@ private fun CameraScanContent(
                             Modifier
                                 .padding(top = 8.dp)
                                 .fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            OutlinedButton(onClick = { pendingCrops.clear() }) {
-                                Text(t.clearList)
+                            WButton(
+                                onClick = { pendingCrops.clear() },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                            ) {
+                                WLabel(t.clearList)
                             }
-                            Button(
+                            WButton(
                                 enabled = !isTranslating,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
                                 onClick = {
                                     if (settings.apiKey.isBlank()) {
                                         errorMsg = t.enterApiKeyFirst
-                                        return@Button
+                                        return@WButton
                                     }
                                     isTranslating = true
                                     errorMsg = null
@@ -481,9 +489,9 @@ private fun CameraScanContent(
                                 }
                             ) {
                                 if (isTranslating) {
-                                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                                    CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
                                 } else {
-                                    Text(t.translateN(pendingCrops.size))
+                                    WLabel(t.translateN(pendingCrops.size))
                                 }
                             }
                         }
@@ -491,7 +499,7 @@ private fun CameraScanContent(
                 }
             }
 
-            Button(
+            WButton(
                 onClick = {
                     isCapturing = true
                     errorMsg = null

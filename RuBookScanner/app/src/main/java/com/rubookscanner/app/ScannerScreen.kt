@@ -269,21 +269,21 @@ private fun CameraScanContent(
             modifier = Modifier.fillMaxSize()
         )
 
-        // Statikus, világoskék, üres négyzet a képernyő közepén — ide célozd a szót.
-                // A négyzet csak akkor látszik, amikor nem fut a scan animáció.
+        // Statikus, üres sárga téglalap a képernyő közepén (vízszintes) — ide célozd a szót.
+                // A téglalap csak akkor látszik, amikor nem fut a scan animáció.
         if (!scanActive) {
             Box(
                 Modifier
                     .align(Alignment.Center)
-                    .size(30.dp)
+                    .size(width = 52.dp, height = 26.dp)
                     .border(2.dp, AimColor, RectangleShape)
             )
-            // Keresés közben halvány keret pulzál a négyzet körül.
+            // Keresés közben halvány keret pulzál a téglalap körül.
             if (isCapturing) {
                 Box(
                     Modifier
                         .align(Alignment.Center)
-                        .size(30.dp)
+                        .size(width = 52.dp, height = 26.dp)
                         .graphicsLayer {
                             val s = 1.3f + 0.7f * pulse.value
                             scaleX = s

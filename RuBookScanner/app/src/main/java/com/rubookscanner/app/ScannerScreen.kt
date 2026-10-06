@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -64,6 +65,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -72,6 +74,7 @@ import androidx.core.content.ContextCompat
 import com.rubookscanner.app.data.AiClient
 import com.rubookscanner.app.data.AiSettings
 import com.rubookscanner.app.data.Flashcard
+import com.rubookscanner.app.data.HandMode
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -172,6 +175,17 @@ private fun CameraScanContent(
     val previewView = remember { PreviewView(context) }
     val cameraController = remember { LifecycleCameraController(context) }
 
+    // Kezesség: a sárga téglalap fél centit (~32 dp) arrébb kerül, a fotó gomb felmegy oldalra.
+    val density = LocalDensity.current
+    val aimOffsetDp = when (settings.handMode) {
+        HandMode.RIGHT -> (-32).dp
+        HandMode.LEFT -> 32.dp
+        HandMode.CENTER -> 0.dp
+    }
+    /** A téglalap középpontjának eltolása a képernyő szélességéhez viszonyítva (a kivágás is ide igazodik). */
+    fun aimShift(): Float =
+        if (previewView.width > 0) with(density) { aimOffsetDp.toPx() } / previewView.width else 0f
+
     var isCapturing by remember { mutableStateOf(false) }
     var isTranslating by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
@@ -226,7 +240,10 @@ private fun CameraScanContent(
         animJob?.cancel()
         scanActive = true
         animJob = scope.launch {
-            scanTarget = target ?: EstimateRect
+            val sh = aimShift()
+            scanTarget = target ?: ScanHighlight(
+                EstimateRect.l + sh, EstimateRect.t, EstimateRect.r + sh, EstimateRect.b
+            )
             scanError = result == ScanResult.ERROR
             frame.snapTo(0f)
             sweep.snapTo(0f)
@@ -257,6 +274,103 @@ private fun CameraScanContent(
         }
     }
 
+    val captureButton: @Composable (Modifier) -> Unit = { mod ->
+            WButton(
+                onClick = {
+                    isCapturing = true
+                    errorMsg = null
+                    cameraController.takePicture(
+                        ContextCompat.getMainExecutor(context),
+                        object : androidx.camera.core.ImageCapture.OnImageCapturedCallback() {
+                            override fun onCaptureSuccess(image: androidx.camera.core.ImageProxy) {
+                                val rawBitmap = imageProxyToUprightBitmap(image)
+                                image.close()
+                                val screenAspect = if (previewView.height > 0) {
+                                    previewView.width.toFloat() / previewView.height.toFloat()
+                                } else {
+                                    rawBitmap.width.toFloat() / rawBitmap.height.toFloat()
+                                }
+                                val screenBitmap = centerCropToAspect(rawBitmap, screenAspect)
+                                val shiftFrac = aimShift()
+
+                                scope.launch {
+                                    try {
+                                        var newHighlight: ScanHighlight? = null
+                                        var wordFound = false
+                                        val cropBitmap = withContext(Dispatchers.Default) {
+                                            val centerX = (screenBitmap.width * (0.5f + shiftFrac)).toInt()
+                                                .coerceIn(0, screenBitmap.width - 1)
+                                            val centerY = screenBitmap.height / 2
+                                            val text = recognizeTextOnDevice(screenBitmap)
+                                            val box = findWordBoxNearPoint(text, centerX, centerY)
+                                            if (box != null) {
+                                                wordFound = true
+                                                val padW = (box.width() * 0.4f).toInt().coerceAtLeast(4)
+                                                val padH = (box.height() * 0.4f).toInt().coerceAtLeast(4)
+                                                val left = (box.left - padW).coerceIn(0, screenBitmap.width - 1)
+                                                val top = (box.top - padH).coerceIn(0, screenBitmap.height - 1)
+                                                val right = (box.right + padW).coerceIn(left + 1, screenBitmap.width)
+                                                val bottom = (box.bottom + padH).coerceIn(top + 1, screenBitmap.height)
+                                                val mx = (box.width() * 0.06f).toInt().coerceAtLeast(2)
+                                                val my = (box.height() * 0.10f).toInt().coerceAtLeast(2)
+                                                newHighlight = ScanHighlight(
+                                                    (box.left - mx).coerceAtLeast(0).toFloat() / screenBitmap.width,
+                                                    (box.top - my).coerceAtLeast(0).toFloat() / screenBitmap.height,
+                                                    (box.right + mx).coerceAtMost(screenBitmap.width).toFloat() / screenBitmap.width,
+                                                    (box.bottom + my).coerceAtMost(screenBitmap.height).toFloat() / screenBitmap.height
+                                                )
+                                                Bitmap.createBitmap(
+                                                    screenBitmap, left, top, right - left, bottom - top
+                                                )
+                                            } else {
+                                                val fw = (screenBitmap.width * 0.35f).toInt().coerceAtLeast(1)
+                                                val fh = (screenBitmap.height * 0.12f).toInt().coerceAtLeast(1)
+                                                val left = (centerX - fw / 2).coerceIn(0, screenBitmap.width - fw)
+                                                val top = (centerY - fh / 2).coerceIn(0, screenBitmap.height - fh)
+                                                newHighlight = ScanHighlight(
+                                                    left.toFloat() / screenBitmap.width,
+                                                    top.toFloat() / screenBitmap.height,
+                                                    (left + fw).toFloat() / screenBitmap.width,
+                                                    (top + fh).toFloat() / screenBitmap.height
+                                                )
+                                                Bitmap.createBitmap(screenBitmap, left, top, fw, fh)
+                                            }
+                                        }
+                                        pendingCrops.add(cropBitmap)
+                                        finishScanAnim(
+                                            newHighlight,
+                                            if (wordFound) ScanResult.OK else ScanResult.MISS
+                                        )
+                                    } catch (e: Exception) {
+                                        errorMsg = e.message ?: t.unknownError
+                                        finishScanAnim(null, ScanResult.ERROR)
+                                    } finally {
+                                        isCapturing = false
+                                    }
+                                }
+                            }
+
+                            override fun onError(exception: androidx.camera.core.ImageCaptureException) {
+                                errorMsg = exception.message ?: t.cameraError
+                                isCapturing = false
+                                finishScanAnim(null, ScanResult.ERROR)
+                            }
+                        }
+                    )
+                },
+                enabled = !isCapturing,
+                modifier = mod.size(80.dp),
+                shape = CircleShape,
+                contentPadding = PaddingValues(0.dp)
+            ) {
+                if (isCapturing) {
+                    CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 3.dp)
+                } else {
+                    Text("📷", fontSize = 38.sp)
+                }
+            }
+    }
+
     LaunchedEffect(Unit) {
         cameraController.setEnabledUseCases(CameraController.IMAGE_CAPTURE)
         cameraController.bindToLifecycle(lifecycleOwner)
@@ -275,6 +389,7 @@ private fun CameraScanContent(
             Box(
                 Modifier
                     .align(Alignment.Center)
+                    .offset(x = aimOffsetDp)
                     .size(width = 52.dp, height = 26.dp)
                     .border(2.dp, AimColor, RectangleShape)
             )
@@ -283,6 +398,7 @@ private fun CameraScanContent(
                 Box(
                     Modifier
                         .align(Alignment.Center)
+                        .offset(x = aimOffsetDp)
                         .size(width = 52.dp, height = 26.dp)
                         .graphicsLayer {
                             val s = 1.3f + 0.7f * pulse.value
@@ -499,98 +615,18 @@ private fun CameraScanContent(
                 }
             }
 
-            WButton(
-                onClick = {
-                    isCapturing = true
-                    errorMsg = null
-                    cameraController.takePicture(
-                        ContextCompat.getMainExecutor(context),
-                        object : androidx.camera.core.ImageCapture.OnImageCapturedCallback() {
-                            override fun onCaptureSuccess(image: androidx.camera.core.ImageProxy) {
-                                val rawBitmap = imageProxyToUprightBitmap(image)
-                                image.close()
-                                val screenAspect = if (previewView.height > 0) {
-                                    previewView.width.toFloat() / previewView.height.toFloat()
-                                } else {
-                                    rawBitmap.width.toFloat() / rawBitmap.height.toFloat()
-                                }
-                                val screenBitmap = centerCropToAspect(rawBitmap, screenAspect)
-
-                                scope.launch {
-                                    try {
-                                        var newHighlight: ScanHighlight? = null
-                                        var wordFound = false
-                                        val cropBitmap = withContext(Dispatchers.Default) {
-                                            val centerX = screenBitmap.width / 2
-                                            val centerY = screenBitmap.height / 2
-                                            val text = recognizeTextOnDevice(screenBitmap)
-                                            val box = findWordBoxNearPoint(text, centerX, centerY)
-                                            if (box != null) {
-                                                wordFound = true
-                                                val padW = (box.width() * 0.4f).toInt().coerceAtLeast(4)
-                                                val padH = (box.height() * 0.4f).toInt().coerceAtLeast(4)
-                                                val left = (box.left - padW).coerceIn(0, screenBitmap.width - 1)
-                                                val top = (box.top - padH).coerceIn(0, screenBitmap.height - 1)
-                                                val right = (box.right + padW).coerceIn(left + 1, screenBitmap.width)
-                                                val bottom = (box.bottom + padH).coerceIn(top + 1, screenBitmap.height)
-                                                val mx = (box.width() * 0.06f).toInt().coerceAtLeast(2)
-                                                val my = (box.height() * 0.10f).toInt().coerceAtLeast(2)
-                                                newHighlight = ScanHighlight(
-                                                    (box.left - mx).coerceAtLeast(0).toFloat() / screenBitmap.width,
-                                                    (box.top - my).coerceAtLeast(0).toFloat() / screenBitmap.height,
-                                                    (box.right + mx).coerceAtMost(screenBitmap.width).toFloat() / screenBitmap.width,
-                                                    (box.bottom + my).coerceAtMost(screenBitmap.height).toFloat() / screenBitmap.height
-                                                )
-                                                Bitmap.createBitmap(
-                                                    screenBitmap, left, top, right - left, bottom - top
-                                                )
-                                            } else {
-                                                val fw = (screenBitmap.width * 0.35f).toInt().coerceAtLeast(1)
-                                                val fh = (screenBitmap.height * 0.12f).toInt().coerceAtLeast(1)
-                                                val left = (centerX - fw / 2).coerceIn(0, screenBitmap.width - fw)
-                                                val top = (centerY - fh / 2).coerceIn(0, screenBitmap.height - fh)
-                                                newHighlight = ScanHighlight(
-                                                    left.toFloat() / screenBitmap.width,
-                                                    top.toFloat() / screenBitmap.height,
-                                                    (left + fw).toFloat() / screenBitmap.width,
-                                                    (top + fh).toFloat() / screenBitmap.height
-                                                )
-                                                Bitmap.createBitmap(screenBitmap, left, top, fw, fh)
-                                            }
-                                        }
-                                        pendingCrops.add(cropBitmap)
-                                        finishScanAnim(
-                                            newHighlight,
-                                            if (wordFound) ScanResult.OK else ScanResult.MISS
-                                        )
-                                    } catch (e: Exception) {
-                                        errorMsg = e.message ?: t.unknownError
-                                        finishScanAnim(null, ScanResult.ERROR)
-                                    } finally {
-                                        isCapturing = false
-                                    }
-                                }
-                            }
-
-                            override fun onError(exception: androidx.camera.core.ImageCaptureException) {
-                                errorMsg = exception.message ?: t.cameraError
-                                isCapturing = false
-                                finishScanAnim(null, ScanResult.ERROR)
-                            }
-                        }
-                    )
-                },
-                enabled = !isCapturing,
-                modifier = Modifier.size(80.dp),
-                shape = CircleShape,
-                contentPadding = PaddingValues(0.dp)
-            ) {
-                if (isCapturing) {
-                    CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 3.dp)
-                } else {
-                    Text("📷", fontSize = 38.sp)
-                }
+            if (settings.handMode == HandMode.CENTER) {
+                captureButton(Modifier)
             }
+        }
+
+        // jobb / bal kezes mód: a fotó gomb felül az oldalon, kb. 1 cm-rel a sarok alatt
+        if (settings.handMode != HandMode.CENTER) {
+            Box(
+                Modifier
+                    .align(if (settings.handMode == HandMode.RIGHT) Alignment.TopEnd else Alignment.TopStart)
+                    .padding(top = 63.dp, start = 16.dp, end = 16.dp)
+            ) { captureButton(Modifier) }
         }
     }
 }

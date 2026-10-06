@@ -82,6 +82,11 @@ interface Strings {
     val helpDownloadBody: String
     val helpUploadTitle: String
     val helpUploadBody: String
+    val cardFrontLabel: String
+    val infoTitle: String
+    val infoBody: String
+    val testKey: String
+    val keyOk: String
 
     /** A nyelv neve az app (felulet) nyelven. */
     fun langName(l: AppLang): String
@@ -170,6 +175,11 @@ object StringsHu : Strings {
     override val helpDownloadBody = "Egy pakli letöltése: a pakli jobb alsó sarkában lévő ⬇ gombbal. Az „Összes pakli letöltése” gomb az összes paklit egyetlen fájlba menti, egymás után.\n\nA fájl sima .txt (UTF-8). A mentés helyét a rendszer fájlválasztója kérdezi meg, külön tároló-engedély nem kell.\n\nFormátum:\n• a pakli neve külön sorban\n• alatta egy ==== vonal, majd egy üres sor\n• soronként egy kártya: a szótári alak, szóközökkel oszlopba rendezve, utána a fordítás\n\nPélda:\nAlap\n====\n\nдом          ház\n\nA fájlt bármilyen szövegszerkesztőben módosíthatod, majd visszatöltheted."
     override val helpUploadTitle = "Feltöltés"
     override val helpUploadBody = "A „Pakli feltöltése” gomb a letöltött .txt formátumot olvassa vissza. Egy- vagy többpaklis fájl is jó (az „Összes pakli letöltése” fájlja is).\n\n• Mindig új pakli jön létre, még azonos név esetén is, a meglévő paklikat nem érinti.\n• A kártyák „nem tudom” állapotban érkeznek.\n• Ha a fájlban nincs pakli-fejléc (név és alatta ==== vonal), a fájl neve lesz a pakli neve.\n• Egy kártya sorában a szótári alakot és a fordítást tabulátor vagy legalább két szóköz válassza el. A régi, gondolatjeles forma („szó - fordítás”) is működik."
+    override val cardFrontLabel = "Kártya előlapja"
+    override val infoTitle = "Tudnivalók"
+    override val infoBody = "Tipp: érdemes több szót összegyűjteni, és egyszerre lefordítani, nem egyesével.\n\n• Az összes összegyűjtött szó egyetlen AI-kérésben megy el, így kevesebb kérést használsz fel. Az ingyenes API kulcsoknak általában kérésszám-korlátjuk van (percenként és naponta), így ez tovább tart.\n• Fotózz le egymás után több szót, majd nyomd meg a „Lefordítás” gombot.\n• A fotó gomb helyét átviheted: nyomd hosszan, és húzd az egyik halványkék körre (jobb kezes / bal kezes / közép). A célzó téglalap vele együtt mozdul.\n• A zseblámpa gomb gyenge fényben segít."
+    override val testKey = "Kulcs tesztelése"
+    override val keyOk = "A kulcs működik ✓"
 
     override fun langName(l: AppLang): String = when (l) {
         AppLang.HUNGARIAN -> "Magyar"
@@ -265,6 +275,11 @@ object StringsEn : Strings {
     override val helpDownloadBody = "Download one deck with the ⬇ button in the bottom right corner of the deck. “Download all decks” saves every deck into a single file, one after another.\n\nThe file is plain .txt (UTF-8). The system file picker asks where to save it; no storage permission is needed.\n\nFormat:\n• the deck name on its own line\n• below it a ==== line, then an empty line\n• then one card per line: the dictionary form, padded with spaces into a column, then the translation\n\nExample:\nBasic\n====\n\nдом          house\n\nYou can edit the file in any text editor and upload it again."
     override val helpUploadTitle = "Upload"
     override val helpUploadBody = "“Upload deck” reads back the downloaded .txt format. A file with one or several decks works (including the “Download all decks” file).\n\n• It always creates a new deck, even if the name already exists; your existing decks are not touched.\n• Cards arrive as not known.\n• If the file has no deck header (a name with a ==== line under it), the file name becomes the deck name.\n• On a card line, the dictionary form and the translation must be separated by a tab or at least two spaces. The old dash format (“word - translation”) also works."
+    override val cardFrontLabel = "Card front"
+    override val infoTitle = "Info"
+    override val infoBody = "Tip: collect several words and translate them together instead of one by one.\n\n• All collected words go out in a single AI request, so you use fewer requests. Free API keys usually have a request limit (per minute and per day), so this makes them last longer.\n• Photograph several words in a row, then press “Translate”.\n• You can move the camera button: press and hold it, then drag it onto one of the light-blue circles (right-handed / left-handed / center). The aiming rectangle moves with it.\n• The flashlight button helps in dim light."
+    override val testKey = "Test key"
+    override val keyOk = "The key works ✓"
 
     override fun langName(l: AppLang): String = when (l) {
         AppLang.HUNGARIAN -> "Hungarian"
@@ -360,6 +375,11 @@ object StringsDe : Strings {
     override val helpDownloadBody = "Ein einzelnes Deck lädst du mit dem ⬇-Button unten rechts am Deck herunter. „Alle Decks herunterladen“ speichert alle Decks nacheinander in einer einzigen Datei.\n\nDie Datei ist eine einfache .txt-Datei (UTF-8). Den Speicherort fragt die Dateiauswahl des Systems ab, eine Speicherberechtigung ist nicht nötig.\n\nFormat:\n• der Deckname in einer eigenen Zeile\n• darunter eine ====-Linie, danach eine Leerzeile\n• dann pro Zeile eine Karte: die Grundform, mit Leerzeichen in eine Spalte ausgerichtet, danach die Übersetzung\n\nBeispiel:\nGrundstock\n====\n\nдом          Haus\n\nDie Datei kannst du in einem beliebigen Texteditor bearbeiten und wieder hochladen."
     override val helpUploadTitle = "Hochladen"
     override val helpUploadBody = "„Deck hochladen“ liest das heruntergeladene .txt-Format wieder ein. Eine Datei mit einem oder mehreren Decks funktioniert (auch die Datei von „Alle Decks herunterladen“).\n\n• Es entsteht immer ein neues Deck, auch bei gleichem Namen; bestehende Decks bleiben unberührt.\n• Die Karten kommen als „nicht gekonnt“ an.\n• Hat die Datei keine Deck-Kopfzeile (Name mit ====-Linie darunter), wird der Dateiname zum Decknamen.\n• In einer Kartenzeile müssen Grundform und Übersetzung durch einen Tabulator oder mindestens zwei Leerzeichen getrennt sein. Das alte Format mit Bindestrich („Wort - Übersetzung“) funktioniert ebenfalls."
+    override val cardFrontLabel = "Vorderseite der Karte"
+    override val infoTitle = "Hinweise"
+    override val infoBody = "Tipp: Sammle mehrere Wörter und übersetze sie gemeinsam statt einzeln.\n\n• Alle gesammelten Wörter gehen in einer einzigen KI-Anfrage raus, du verbrauchst also weniger Anfragen. Kostenlose API-Schlüssel haben meist ein Anfragelimit (pro Minute und pro Tag), so halten sie länger.\n• Fotografiere mehrere Wörter hintereinander und tippe dann auf „Übersetzen“.\n• Du kannst den Kamera-Button verschieben: lange drücken und auf einen der hellblauen Kreise ziehen (Rechtshänder / Linkshänder / Mitte). Das Zielrechteck wandert mit.\n• Die Taschenlampe hilft bei schwachem Licht."
+    override val testKey = "Schlüssel testen"
+    override val keyOk = "Der Schlüssel funktioniert ✓"
 
     override fun langName(l: AppLang): String = when (l) {
         AppLang.HUNGARIAN -> "Ungarisch"
@@ -455,6 +475,11 @@ object StringsIt : Strings {
     override val helpDownloadBody = "Scarichi un singolo mazzo con il pulsante ⬇ in basso a destra del mazzo. «Scarica tutti i mazzi» salva tutti i mazzi uno dopo l'altro in un unico file.\n\nIl file è un semplice .txt (UTF-8). Il punto di salvataggio si sceglie con il selettore di file del sistema, non serve il permesso di archiviazione.\n\nFormato:\n• il nome del mazzo su una riga a sé\n• sotto una linea ====, poi una riga vuota\n• poi una scheda per riga: la forma base, allineata in colonna con degli spazi, poi la traduzione\n\nEsempio:\nBase\n====\n\nдом          casa\n\nPuoi modificare il file con qualsiasi editor di testo e ricaricarlo."
     override val helpUploadTitle = "Caricamento"
     override val helpUploadBody = "«Carica mazzo» rilegge il formato .txt scaricato. Va bene un file con uno o più mazzi (anche quello di «Scarica tutti i mazzi»).\n\n• Crea sempre un nuovo mazzo, anche se il nome esiste già; i mazzi esistenti non vengono toccati.\n• Le schede arrivano come non conosciute.\n• Se il file non ha un'intestazione di mazzo (un nome con una linea ==== sotto), il nome del file diventa il nome del mazzo.\n• In una riga di scheda, forma base e traduzione devono essere separate da una tabulazione o da almeno due spazi. Funziona anche il vecchio formato con il trattino («parola - traduzione»)."
+    override val cardFrontLabel = "Fronte della scheda"
+    override val infoTitle = "Informazioni"
+    override val infoBody = "Consiglio: raccogli più parole e traducile insieme invece che una per una.\n\n• Tutte le parole raccolte partono in un'unica richiesta IA, quindi usi meno richieste. Le chiavi API gratuite di solito hanno un limite di richieste (al minuto e al giorno), così durano di più.\n• Fotografa più parole di fila, poi premi «Traduci».\n• Puoi spostare il pulsante della fotocamera: tienilo premuto e trascinalo su uno dei cerchi azzurri (destrorso / mancino / centro). Il rettangolo di mira si sposta con lui.\n• La torcia aiuta con poca luce."
+    override val testKey = "Prova la chiave"
+    override val keyOk = "La chiave funziona ✓"
 
     override fun langName(l: AppLang): String = when (l) {
         AppLang.HUNGARIAN -> "Ungherese"
@@ -550,6 +575,11 @@ object StringsFr : Strings {
     override val helpDownloadBody = "Tu télécharges un seul paquet avec le bouton ⬇ en bas à droite du paquet. « Télécharger tous les paquets » enregistre tous les paquets les uns après les autres dans un seul fichier.\n\nLe fichier est un simple .txt (UTF-8). Le sélecteur de fichiers du système demande où l'enregistrer, aucune autorisation de stockage n'est nécessaire.\n\nFormat :\n• le nom du paquet sur sa propre ligne\n• en dessous une ligne ====, puis une ligne vide\n• ensuite une carte par ligne : la forme de base, alignée en colonne avec des espaces, puis la traduction\n\nExemple :\nBase\n====\n\nдом          maison\n\nTu peux modifier le fichier dans n'importe quel éditeur de texte, puis le réimporter."
     override val helpUploadTitle = "Importation"
     override val helpUploadBody = "« Importer un paquet » relit le format .txt téléchargé. Un fichier avec un ou plusieurs paquets convient (y compris celui de « Télécharger tous les paquets »).\n\n• Un nouveau paquet est toujours créé, même si le nom existe déjà ; les paquets existants ne sont pas modifiés.\n• Les cartes arrivent comme non connues.\n• Si le fichier n'a pas d'en-tête de paquet (un nom avec une ligne ==== en dessous), le nom du fichier devient le nom du paquet.\n• Sur une ligne de carte, la forme de base et la traduction doivent être séparées par une tabulation ou au moins deux espaces. L'ancien format avec tiret (« mot - traduction ») fonctionne aussi."
+    override val cardFrontLabel = "Recto de la carte"
+    override val infoTitle = "Infos"
+    override val infoBody = "Astuce : rassemble plusieurs mots et traduis-les ensemble plutôt qu'un par un.\n\n• Tous les mots collectés partent dans une seule requête IA, tu utilises donc moins de requêtes. Les clés API gratuites ont généralement une limite de requêtes (par minute et par jour), elles durent ainsi plus longtemps.\n• Photographie plusieurs mots à la suite, puis appuie sur « Traduire ».\n• Tu peux déplacer le bouton de l'appareil photo : appuie longuement dessus et fais-le glisser sur l'un des cercles bleu clair (droitier / gaucher / centre). Le rectangle de visée se déplace avec lui.\n• La lampe torche aide quand il y a peu de lumière."
+    override val testKey = "Tester la clé"
+    override val keyOk = "La clé fonctionne ✓"
 
     override fun langName(l: AppLang): String = when (l) {
         AppLang.HUNGARIAN -> "Hongrois"
@@ -645,6 +675,11 @@ object StringsEs : Strings {
     override val helpDownloadBody = "Descargas un solo mazo con el botón ⬇ de la esquina inferior derecha del mazo. «Descargar todos los mazos» guarda todos los mazos uno tras otro en un único archivo.\n\nEl archivo es un .txt sencillo (UTF-8). El selector de archivos del sistema pregunta dónde guardarlo, no hace falta permiso de almacenamiento.\n\nFormato:\n• el nombre del mazo en una línea aparte\n• debajo una línea ====, luego una línea vacía\n• después una tarjeta por línea: la forma base, alineada en columna con espacios, y luego la traducción\n\nEjemplo:\nBase\n====\n\nдом          casa\n\nPuedes editar el archivo con cualquier editor de texto y volver a subirlo."
     override val helpUploadTitle = "Subida"
     override val helpUploadBody = "«Subir mazo» vuelve a leer el formato .txt descargado. Sirve un archivo con uno o varios mazos (también el de «Descargar todos los mazos»).\n\n• Siempre se crea un mazo nuevo, aunque el nombre ya exista; los mazos existentes no se tocan.\n• Las tarjetas llegan como no sabidas.\n• Si el archivo no tiene encabezado de mazo (un nombre con una línea ==== debajo), el nombre del archivo pasa a ser el nombre del mazo.\n• En la línea de una tarjeta, la forma base y la traducción deben ir separadas por un tabulador o por al menos dos espacios. El formato antiguo con guion («palabra - traducción») también funciona."
+    override val cardFrontLabel = "Anverso de la tarjeta"
+    override val infoTitle = "Información"
+    override val infoBody = "Consejo: reúne varias palabras y tradúcelas juntas en lugar de una por una.\n\n• Todas las palabras reunidas se envían en una sola petición de IA, así que usas menos peticiones. Las claves API gratuitas suelen tener un límite de peticiones (por minuto y por día), de modo que duran más.\n• Fotografía varias palabras seguidas y luego pulsa «Traducir».\n• Puedes mover el botón de la cámara: mantenlo pulsado y arrástralo a uno de los círculos azul claro (diestro / zurdo / centro). El rectángulo de puntería se mueve con él.\n• La linterna ayuda con poca luz."
+    override val testKey = "Probar la clave"
+    override val keyOk = "La clave funciona ✓"
 
     override fun langName(l: AppLang): String = when (l) {
         AppLang.HUNGARIAN -> "Húngaro"
@@ -740,6 +775,11 @@ object StringsRu : Strings {
     override val helpDownloadBody = "Одну колоду можно скачать кнопкой ⬇ в правом нижнем углу колоды. Кнопка «Скачать все колоды» сохраняет все колоды подряд в один файл.\n\nФайл — обычный .txt (UTF-8). Место сохранения спрашивает системный выбор файлов, разрешение на доступ к памяти не нужно.\n\nФормат:\n• название колоды в отдельной строке\n• под ним линия ====, затем пустая строка\n• далее по одной карточке в строке: словарная форма, выровненная пробелами в столбец, затем перевод\n\nПример:\nОсновная\n====\n\nhouse          дом\n\nФайл можно править в любом текстовом редакторе и загружать обратно."
     override val helpUploadTitle = "Загрузка"
     override val helpUploadBody = "«Загрузить колоду» читает скачанный формат .txt. Подойдёт файл с одной или несколькими колодами (в том числе файл из «Скачать все колоды»).\n\n• Всегда создаётся новая колода, даже если такое название уже есть; существующие колоды не затрагиваются.\n• Карточки приходят как «не знаю».\n• Если в файле нет заголовка колоды (название с линией ==== под ним), названием колоды станет имя файла.\n• В строке карточки словарная форма и перевод должны быть разделены табуляцией или минимум двумя пробелами. Старый формат с тире («слово - перевод») тоже работает."
+    override val cardFrontLabel = "Лицевая сторона карточки"
+    override val infoTitle = "Информация"
+    override val infoBody = "Совет: собирай несколько слов и переводи их вместе, а не по одному.\n\n• Все собранные слова уходят одним запросом к ИИ, так что ты тратишь меньше запросов. У бесплатных API-ключей обычно есть лимит запросов (в минуту и в день), поэтому так их хватает дольше.\n• Сфотографируй несколько слов подряд, затем нажми «Перевести».\n• Кнопку камеры можно переместить: нажми и удерживай её, затем перетащи на один из голубых кругов (для правшей / для левшей / по центру). Прицельный прямоугольник сдвинется вместе с ней.\n• Фонарик помогает при слабом освещении."
+    override val testKey = "Проверить ключ"
+    override val keyOk = "Ключ работает ✓"
 
     override fun langName(l: AppLang): String = when (l) {
         AppLang.HUNGARIAN -> "Венгерский"

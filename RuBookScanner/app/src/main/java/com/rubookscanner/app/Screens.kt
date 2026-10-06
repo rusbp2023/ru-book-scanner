@@ -1,918 +1,805 @@
 package com.rubookscanner.app
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.rubookscanner.app.data.AiProvider
-import com.rubookscanner.app.data.AiSettings
+import androidx.compose.runtime.staticCompositionLocalOf
 import com.rubookscanner.app.data.AppLang
-import com.rubookscanner.app.data.Deck
-import com.rubookscanner.app.data.Flashcard
-import com.rubookscanner.app.data.HandMode
-import com.rubookscanner.app.data.WordItem
-import com.rubookscanner.app.data.defaultModelFor
-import kotlin.math.PI
-import kotlin.math.sin
-import kotlinx.coroutines.launch
 
-/** A felső (képernyőn lévő) gombok feliratának színe: világos, enyhén meleg szürke. */
-private val ButtonTextColor = Color(0xFFE6DDD3)
+interface Strings {
+    val settingsDesc: String
+    val navScan: String
+    val navWord: String
+    val navCard: String
+    val navDeck: String
+    val noActiveDeck: String
+    val enterApiKeyFirst: String
+    fun cardsAdded(n: Int): String
+    fun errorPrefix(msg: String?): String
+    val unknownError: String
+    val cameraError: String
 
-/**
- * Egységes, domború (gradienses) gomb az egész apphoz: kicsit világosabb a háttérnél,
- * felül fényes, alul sötétebb, nyomáskor besüllyed.
- */
-@Composable
-fun WButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    shape: Shape = RoundedCornerShape(10.dp),
-    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-    content: @Composable () -> Unit
-) {
-    val interaction = remember { MutableInteractionSource() }
-    val pressed by interaction.collectIsPressedAsState()
-    val top = if (pressed) Color(0xFF1B232F) else Color(0xFF34425A)
-    val bottom = if (pressed) Color(0xFF2B374A) else Color(0xFF182029)
-    val rimTop = if (pressed) Color(0xFF222C3A) else Color(0xFF6182A6)
-    val rimBottom = if (pressed) Color(0xFF4F6A8A) else Color(0xFF222C3A)
-    Box(
-        modifier = modifier
-            .heightIn(min = 44.dp)
-            .alpha(if (enabled) 1f else 0.4f)
-            .clip(shape)
-            .background(Brush.verticalGradient(listOf(top, bottom)))
-            .border(1.dp, Brush.verticalGradient(listOf(rimTop, rimBottom)), shape)
-            .clickable(
-                interactionSource = interaction,
-                indication = null,
-                enabled = enabled,
-                onClick = onClick
-            )
-            .padding(contentPadding),
-        contentAlignment = Alignment.Center
-    ) {
-        CompositionLocalProvider(LocalContentColor provides ButtonTextColor) {
-            content()
-        }
+    val wordsHint: String
+    val addWordManually: String
+    val clearList: String
+    fun generateCards(n: Int): String
+    fun wordAddedToList(word: String): String
+
+    val noCardsYet: String
+    val delete: String
+    val confirmDeleteCard: String
+    fun confirmDeleteDeck(name: String): String
+    val yesDelete: String
+    val cancel: String
+    val known: String
+    val markKnown: String
+    val editCard: String
+    val dictionaryFormLabel: String
+    val translationLabel: String
+    val previous: String
+    val next: String
+    val shuffle: String
+    val originalOrder: String
+
+    val newDeckName: String
+    val create: String
+    val renameDeck: String
+    val downloadAll: String
+    val uploadDeck: String
+    fun decksUploaded(decks: Int, cards: Int): String
+    val uploadNothingFound: String
+    val allDecksFileName: String
+    fun cardCount(n: Int): String
+    val emptyDeck: String
+    val deckShort: String
+
+    val cameraPermissionNeeded: String
+    val allowCamera: String
+    fun collectedWords(n: Int): String
+    fun translateN(n: Int): String
+
+    val languagesTitle: String
+    val bookLanguageLabel: String
+    val translationLanguageLabel: String
+    val appLanguageLabel: String
+    val aiProviderTitle: String
+    val providerLabel: String
+    val apiKeyLabel: String
+    val modelLabel: String
+    val baseUrlLabel: String
+    val save: String
+    val settingsTip: String
+    val settingsSaved: String
+
+    val customizeTitle: String
+    val handModeLabel: String
+    val handRight: String
+    val handLeft: String
+    val handCenter: String
+    val showKnownLabel: String
+    val optYes: String
+    val optNo: String
+    val allKnownHidden: String
+    val closeLabel: String
+    val helpDownloadTitle: String
+    val helpDownloadBody: String
+    val helpUploadTitle: String
+    val helpUploadBody: String
+    val cardFrontLabel: String
+    val infoTitle: String
+    val infoBody: String
+    val testKey: String
+    val keyOk: String
+
+    /** A nyelv neve az app (felulet) nyelven. */
+    fun langName(l: AppLang): String
+}
+
+object StringsHu : Strings {
+    override val settingsDesc = "Beállítások"
+    override val navScan = "Scan"
+    override val navWord = "Szó"
+    override val navCard = "Kártya"
+    override val navDeck = "Pakli"
+    override val noActiveDeck = "Nincs aktív pakli — hozz létre egyet a Pakli fülön!"
+    override val enterApiKeyFirst = "Előbb add meg az API kulcsot a Beállításoknál!"
+    override fun cardsAdded(n: Int) = "$n kártya hozzáadva"
+    override fun errorPrefix(msg: String?) = "Hiba: $msg"
+    override val unknownError = "ismeretlen hiba"
+    override val cameraError = "kamera hiba"
+
+    override val wordsHint =
+        "Jelölj ki egy szót egy weboldalon vagy bármelyik appban, majd Megosztás → ez az app. " +
+            "A szó itt jelenik meg a listában."
+    override val addWordManually = "Szó kézzel hozzáadása"
+    override val clearList = "Lista ürítése"
+    override fun generateCards(n: Int) = "Kártyák generálása ($n)"
+    override fun wordAddedToList(word: String) = "Szólistához adva: $word"
+
+    override val noCardsYet =
+        "Még nincs szókártyád. Adj hozzá szavakat a Szó fülön, majd generáld le őket."
+    override val delete = "Törlés"
+    override val confirmDeleteCard = "Biztosan törlöd ezt a kártyát?"
+    override fun confirmDeleteDeck(name: String) = "Biztosan törlöd a(z) \"$name\" paklit a benne lévő összes kártyával?"
+    override val yesDelete = "Igen, törlöm"
+    override val cancel = "Mégse"
+    override val known = "Tudom ✓"
+    override val markKnown = "Megjelöl: tudom"
+    override val editCard = "Kártya szerkesztése"
+    override val dictionaryFormLabel = "Szótári alak"
+    override val translationLabel = "Fordítás"
+    override val previous = "◀ Előző"
+    override val next = "Következő ▶"
+    override val shuffle = "Keverés"
+    override val originalOrder = "Eredeti sorrend"
+
+    override val newDeckName = "Új pakli neve"
+    override val create = "Létrehozás"
+    override val renameDeck = "Pakli átnevezése"
+    override val downloadAll = "Összes pakli letöltése"
+    override val uploadDeck = "Pakli feltöltése"
+    override fun decksUploaded(decks: Int, cards: Int) =
+        if (decks == 1) "Pakli feltöltve ($cards kártya)" else "$decks pakli feltöltve ($cards kártya)"
+    override val uploadNothingFound = "Nem található kártya a fájlban."
+    override val allDecksFileName = "osszes_pakli.txt"
+    override fun cardCount(n: Int) = "$n kártya"
+    override val emptyDeck = "(nincs még kártya ebben a pakliban)"
+    override val deckShort = "P"
+
+    override val cameraPermissionNeeded = "A szófelismeréshez szükség van a kamera engedélyre."
+    override val allowCamera = "Kamera engedélyezése"
+    override fun collectedWords(n: Int) = "Összegyűjtött szavak ($n):"
+    override fun translateN(n: Int) = "Lefordítás ($n)"
+
+    override val languagesTitle = "Nyelvek"
+    override val bookLanguageLabel = "Forrásnyelv"
+    override val translationLanguageLabel = "Fordítás nyelve"
+    override val appLanguageLabel = "App nyelve"
+    override val aiProviderTitle = "AI szolgáltató"
+    override val providerLabel = "Szolgáltató"
+    override val apiKeyLabel = "API kulcs"
+    override val modelLabel = "Modell neve"
+    override val baseUrlLabel = "Egyedi API végpont (opcionális)"
+    override val save = "Mentés"
+    override val settingsTip = "Ingyenes API kulcs beszerzése:"
+    override val settingsSaved = "Beállítások mentve"
+
+    override val customizeTitle = "Testreszabás"
+    override val handModeLabel = "Mód"
+    override val handRight = "Jobb kezes"
+    override val handLeft = "Bal kezes"
+    override val handCenter = "Közép"
+    override val showKnownLabel = "„Tudom” kártyák mutatása"
+    override val optYes = "Igen"
+    override val optNo = "Nem"
+    override val allKnownHidden = "Ebben a pakliban minden kártyát tudsz, ezért el vannak rejtve. A Beállításoknál újra megjelenítheted őket."
+    override val closeLabel = "Bezár"
+    override val helpDownloadTitle = "Letöltés"
+    override val helpDownloadBody = "Egy pakli letöltése: a pakli jobb alsó sarkában lévő ⬇ gombbal. Az „Összes pakli letöltése” gomb az összes paklit egyetlen fájlba menti, egymás után.\n\nA fájl sima .txt (UTF-8). A mentés helyét a rendszer fájlválasztója kérdezi meg, külön tároló-engedély nem kell.\n\nFormátum:\n• a pakli neve külön sorban\n• alatta egy ==== vonal, majd egy üres sor\n• soronként egy kártya: a szótári alak, szóközökkel oszlopba rendezve, utána a fordítás\n\nPélda:\nAlap\n====\n\nдом          ház\n\nA fájlt bármilyen szövegszerkesztőben módosíthatod, majd visszatöltheted."
+    override val helpUploadTitle = "Feltöltés"
+    override val helpUploadBody = "A „Pakli feltöltése” gomb a letöltött .txt formátumot olvassa vissza. Egy- vagy többpaklis fájl is jó (az „Összes pakli letöltése” fájlja is).\n\n• Mindig új pakli jön létre, még azonos név esetén is, a meglévő paklikat nem érinti.\n• A kártyák „nem tudom” állapotban érkeznek.\n• Ha a fájlban nincs pakli-fejléc (név és alatta ==== vonal), a fájl neve lesz a pakli neve.\n• Egy kártya sorában a szótári alakot és a fordítást tabulátor vagy legalább két szóköz válassza el. A régi, gondolatjeles forma („szó - fordítás”) is működik."
+    override val cardFrontLabel = "Kártya előlapja"
+    override val infoTitle = "Tudnivalók"
+    override val infoBody = "Tipp: érdemes több szót összegyűjteni, és egyszerre lefordítani, nem egyesével.\n\n• Az összes összegyűjtött szó egyetlen AI-kérésben megy el, így kevesebb kérést használsz fel. Az ingyenes API kulcsoknak általában kérésszám-korlátjuk van (percenként és naponta), így ez tovább tart.\n• Fotózz le egymás után több szót, majd nyomd meg a „Lefordítás” gombot.\n• A fotó gomb helyét átviheted: nyomd hosszan, és húzd az egyik halványkék körre (jobb kezes / bal kezes / közép). A célzó téglalap vele együtt mozdul.\n• A zseblámpa gomb gyenge fényben segít."
+    override val testKey = "Kulcs tesztelése"
+    override val keyOk = "A kulcs működik ✓"
+
+    override fun langName(l: AppLang): String = when (l) {
+        AppLang.HUNGARIAN -> "Magyar"
+        AppLang.ENGLISH -> "Angol"
+        AppLang.GERMAN -> "Német"
+        AppLang.ITALIAN -> "Olasz"
+        AppLang.FRENCH -> "Francia"
+        AppLang.SPANISH -> "Spanyol"
+        AppLang.RUSSIAN -> "Orosz"
     }
 }
 
-/** Az egységes gombok felirata: középre igazított, legfeljebb két soros. */
-@Composable
-fun WLabel(text: String) {
-    Text(
-        text,
-        textAlign = TextAlign.Center,
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis,
-        fontSize = 14.sp,
-        fontWeight = FontWeight.SemiBold
-    )
-}
+object StringsEn : Strings {
+    override val settingsDesc = "Settings"
+    override val navScan = "Scan"
+    override val navWord = "Word"
+    override val navCard = "Card"
+    override val navDeck = "Deck"
+    override val noActiveDeck = "No active deck — create one on the Deck tab!"
+    override val enterApiKeyFirst = "Enter your API key in Settings first!"
+    override fun cardsAdded(n: Int) = "$n card(s) added"
+    override fun errorPrefix(msg: String?) = "Error: $msg"
+    override val unknownError = "unknown error"
+    override val cameraError = "camera error"
 
-/**
- * Egyvonalas szövegmező besüllyesztett, térhatású kinézettel: sötétebb a háttérnél,
- * felül belső árnyék, a keret alul világosabb. Fix 56 dp magas, így a gombokkal egy vonalba illik.
- */
-@Composable
-fun WTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    placeholder: String,
-    modifier: Modifier = Modifier
-) {
-    val shape = RoundedCornerShape(10.dp)
-    Box(
-        modifier = modifier
-            .height(56.dp)
-            .clip(shape)
-            .background(Brush.verticalGradient(listOf(Color(0xFF05080C), Color(0xFF0E151D))))
-            .drawBehind {
-                // belső árnyék a felső élnél
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        listOf(Color(0x99000000), Color(0x00000000)),
-                        startY = 0f,
-                        endY = 10.dp.toPx()
-                    ),
-                    size = Size(size.width, 10.dp.toPx())
-                )
-            }
-            .border(
-                1.dp,
-                Brush.verticalGradient(listOf(Color(0xFF2B3748), Color(0xFF51677F))),
-                shape
-            )
-            .padding(horizontal = 14.dp),
-        contentAlignment = Alignment.CenterStart
-    ) {
-        BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
-            singleLine = true,
-            textStyle = TextStyle(color = Color(0xFFE6EDF3), fontSize = 16.sp),
-            cursorBrush = SolidColor(Color(0xFF64B5F6)),
-            modifier = Modifier.fillMaxWidth(),
-            decorationBox = { inner ->
-                if (value.isEmpty()) {
-                    Text(
-                        placeholder,
-                        color = Color(0xFF7D8B9B),
-                        fontSize = 16.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                inner()
-            }
-        )
+    override val wordsHint =
+        "Select a word on a web page or in any app, then Share → this app. " +
+            "The word will appear in this list."
+    override val addWordManually = "Add a word manually"
+    override val clearList = "Clear list"
+    override fun generateCards(n: Int) = "Generate cards ($n)"
+    override fun wordAddedToList(word: String) = "Added to word list: $word"
+
+    override val noCardsYet =
+        "You have no flashcards yet. Add words on the Word tab, then generate them."
+    override val delete = "Delete"
+    override val confirmDeleteCard = "Are you sure you want to delete this card?"
+    override fun confirmDeleteDeck(name: String) = "Are you sure you want to delete the deck \"$name\" and all its cards?"
+    override val yesDelete = "Yes, delete"
+    override val cancel = "Cancel"
+    override val known = "Known ✓"
+    override val markKnown = "Mark as known"
+    override val editCard = "Edit card"
+    override val dictionaryFormLabel = "Dictionary form"
+    override val translationLabel = "Translation"
+    override val previous = "◀ Previous"
+    override val next = "Next ▶"
+    override val shuffle = "Shuffle"
+    override val originalOrder = "Original order"
+
+    override val newDeckName = "New deck name"
+    override val create = "Create"
+    override val renameDeck = "Rename deck"
+    override val downloadAll = "Download all decks"
+    override val uploadDeck = "Upload deck"
+    override fun decksUploaded(decks: Int, cards: Int) =
+        if (decks == 1) "Deck uploaded ($cards cards)" else "$decks decks uploaded ($cards cards)"
+    override val uploadNothingFound = "No cards were found in the file."
+    override val allDecksFileName = "all_decks.txt"
+    override fun cardCount(n: Int) = "$n cards"
+    override val emptyDeck = "(no cards in this deck yet)"
+    override val deckShort = "D"
+
+    override val cameraPermissionNeeded = "Camera permission is required for word recognition."
+    override val allowCamera = "Allow camera"
+    override fun collectedWords(n: Int) = "Collected words ($n):"
+    override fun translateN(n: Int) = "Translate ($n)"
+
+    override val languagesTitle = "Languages"
+    override val bookLanguageLabel = "Source language"
+    override val translationLanguageLabel = "Translation language"
+    override val appLanguageLabel = "App language"
+    override val aiProviderTitle = "AI provider"
+    override val providerLabel = "Provider"
+    override val apiKeyLabel = "API key"
+    override val modelLabel = "Model name"
+    override val baseUrlLabel = "Custom API endpoint (optional)"
+    override val save = "Save"
+    override val settingsTip = "Get a free API key:"
+    override val settingsSaved = "Settings saved"
+
+    override val customizeTitle = "Customization"
+    override val handModeLabel = "Mode"
+    override val handRight = "Right-handed"
+    override val handLeft = "Left-handed"
+    override val handCenter = "Center"
+    override val showKnownLabel = "Show “Known” cards"
+    override val optYes = "Yes"
+    override val optNo = "No"
+    override val allKnownHidden = "You know every card in this deck, so they are hidden. You can show them again in Settings."
+    override val closeLabel = "Close"
+    override val helpDownloadTitle = "Download"
+    override val helpDownloadBody = "Download one deck with the ⬇ button in the bottom right corner of the deck. “Download all decks” saves every deck into a single file, one after another.\n\nThe file is plain .txt (UTF-8). The system file picker asks where to save it; no storage permission is needed.\n\nFormat:\n• the deck name on its own line\n• below it a ==== line, then an empty line\n• then one card per line: the dictionary form, padded with spaces into a column, then the translation\n\nExample:\nBasic\n====\n\nдом          house\n\nYou can edit the file in any text editor and upload it again."
+    override val helpUploadTitle = "Upload"
+    override val helpUploadBody = "“Upload deck” reads back the downloaded .txt format. A file with one or several decks works (including the “Download all decks” file).\n\n• It always creates a new deck, even if the name already exists; your existing decks are not touched.\n• Cards arrive as not known.\n• If the file has no deck header (a name with a ==== line under it), the file name becomes the deck name.\n• On a card line, the dictionary form and the translation must be separated by a tab or at least two spaces. The old dash format (“word - translation”) also works."
+    override val cardFrontLabel = "Card front"
+    override val infoTitle = "Info"
+    override val infoBody = "Tip: collect several words and translate them together instead of one by one.\n\n• All collected words go out in a single AI request, so you use fewer requests. Free API keys usually have a request limit (per minute and per day), so this makes them last longer.\n• Photograph several words in a row, then press “Translate”.\n• You can move the camera button: press and hold it, then drag it onto one of the light-blue circles (right-handed / left-handed / center). The aiming rectangle moves with it.\n• The flashlight button helps in dim light."
+    override val testKey = "Test key"
+    override val keyOk = "The key works ✓"
+
+    override fun langName(l: AppLang): String = when (l) {
+        AppLang.HUNGARIAN -> "Hungarian"
+        AppLang.ENGLISH -> "English"
+        AppLang.GERMAN -> "German"
+        AppLang.ITALIAN -> "Italian"
+        AppLang.FRENCH -> "French"
+        AppLang.SPANISH -> "Spanish"
+        AppLang.RUSSIAN -> "Russian"
     }
 }
 
-/**
- * Pakli valaszto: az app sotet kek feluletebol indul, csak halvany meleg (barsony-barnas)
- * arnyalattal, es meleg feher felirattal - emlekeztet a Pakli fulre, de nem azonos vele.
- */
-@Composable
-fun DeckPicker(
-    decks: List<Deck>,
-    activeDeckId: Long?,
-    onSelect: (Long) -> Unit,
-    modifier: Modifier = Modifier,
-    maxWidth: Dp = 150.dp
-) {
-    val t = LocalStrings.current
-    var expanded by remember { mutableStateOf(false) }
-    val activeName = decks.firstOrNull { it.id == activeDeckId }?.name.orEmpty()
-    val shape = RoundedCornerShape(10.dp)
-    val warmInk = Color(0xFFEDE6DA)
-    val warmSoft = Color(0xFFB8A39A)
-    Box(modifier.widthIn(max = maxWidth)) {
-        Row(
-            Modifier
-                .clip(shape)
-                .background(Brush.verticalGradient(listOf(Color(0xFF2E2229), Color(0xFF1B1D29))))
-                .border(
-                    1.dp,
-                    Brush.verticalGradient(listOf(Color(0x55D2BBB0), Color(0x22D2BBB0))),
-                    shape
-                )
-                .clickable { expanded = true }
-                .padding(horizontal = 10.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(Modifier.weight(1f, fill = false)) {
-                Text(
-                    t.navDeck,
-                    fontSize = 11.sp,
-                    color = warmSoft,
-                    maxLines = 1
-                )
-                Text(
-                    activeName.ifBlank { "-" },
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = warmInk,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            Spacer(Modifier.width(6.dp))
-            Text("\u25BE", color = warmSoft, fontSize = 14.sp)
-        }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.background(Color(0xFF221B24))
-        ) {
-            decks.forEach { deck ->
-                val active = deck.id == activeDeckId
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            deck.name,
-                            fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
-                            color = if (active) Color(0xFFE8C4B8) else warmInk
-                        )
-                    },
-                    onClick = {
-                        onSelect(deck.id)
-                        expanded = false
-                    }
-                )
-            }
-        }
+object StringsDe : Strings {
+    override val settingsDesc = "Einstellungen"
+    override val navScan = "Scan"
+    override val navWord = "Wort"
+    override val navCard = "Karte"
+    override val navDeck = "Deck"
+    override val noActiveDeck = "Kein aktives Deck — erstelle eines im Deck-Tab!"
+    override val enterApiKeyFirst = "Gib zuerst in den Einstellungen deinen API-Schlüssel ein!"
+    override fun cardsAdded(n: Int) = "$n Karte(n) hinzugefügt"
+    override fun errorPrefix(msg: String?) = "Fehler: $msg"
+    override val unknownError = "unbekannter Fehler"
+    override val cameraError = "Kamerafehler"
+
+    override val wordsHint =
+        "Markiere auf einer Webseite oder in einer beliebigen App ein Wort und wähle dann Teilen → diese App. " +
+            "Das Wort erscheint dann in dieser Liste."
+    override val addWordManually = "Wort manuell hinzufügen"
+    override val clearList = "Liste leeren"
+    override fun generateCards(n: Int) = "Karten erstellen ($n)"
+    override fun wordAddedToList(word: String) = "Zur Wortliste hinzugefügt: $word"
+
+    override val noCardsYet =
+        "Du hast noch keine Karteikarten. Füge im Wort-Tab Wörter hinzu und erstelle dann die Karten."
+    override val delete = "Löschen"
+    override val confirmDeleteCard = "Möchtest du diese Karte wirklich löschen?"
+    override fun confirmDeleteDeck(name: String) = "Möchtest du das Deck \"$name\" mit allen Karten wirklich löschen?"
+    override val yesDelete = "Ja, löschen"
+    override val cancel = "Abbrechen"
+    override val known = "Gekonnt ✓"
+    override val markKnown = "Als gekonnt markieren"
+    override val editCard = "Karte bearbeiten"
+    override val dictionaryFormLabel = "Grundform"
+    override val translationLabel = "Übersetzung"
+    override val previous = "◀ Zurück"
+    override val next = "Weiter ▶"
+    override val shuffle = "Mischen"
+    override val originalOrder = "Ursprüngliche Reihenfolge"
+
+    override val newDeckName = "Name des neuen Decks"
+    override val create = "Erstellen"
+    override val renameDeck = "Deck umbenennen"
+    override val downloadAll = "Alle Decks herunterladen"
+    override val uploadDeck = "Deck hochladen"
+    override fun decksUploaded(decks: Int, cards: Int) =
+        if (decks == 1) "Deck hochgeladen ($cards Karten)" else "$decks Decks hochgeladen ($cards Karten)"
+    override val uploadNothingFound = "In der Datei wurden keine Karten gefunden."
+    override val allDecksFileName = "alle_decks.txt"
+    override fun cardCount(n: Int) = "$n Karten"
+    override val emptyDeck = "(noch keine Karten in diesem Deck)"
+    override val deckShort = "D"
+
+    override val cameraPermissionNeeded = "Für die Worterkennung wird die Kameraberechtigung benötigt."
+    override val allowCamera = "Kamera erlauben"
+    override fun collectedWords(n: Int) = "Gesammelte Wörter ($n):"
+    override fun translateN(n: Int) = "Übersetzen ($n)"
+
+    override val languagesTitle = "Sprachen"
+    override val bookLanguageLabel = "Ausgangssprache"
+    override val translationLanguageLabel = "Sprache der Übersetzung"
+    override val appLanguageLabel = "Sprache der App"
+    override val aiProviderTitle = "KI-Anbieter"
+    override val providerLabel = "Anbieter"
+    override val apiKeyLabel = "API-Schlüssel"
+    override val modelLabel = "Modellname"
+    override val baseUrlLabel = "Eigener API-Endpunkt (optional)"
+    override val save = "Speichern"
+    override val settingsTip = "Kostenlosen API-Schlüssel erhalten:"
+    override val settingsSaved = "Einstellungen gespeichert"
+
+    override val customizeTitle = "Anpassung"
+    override val handModeLabel = "Modus"
+    override val handRight = "Rechtshänder"
+    override val handLeft = "Linkshänder"
+    override val handCenter = "Mitte"
+    override val showKnownLabel = "„Gekonnt“-Karten anzeigen"
+    override val optYes = "Ja"
+    override val optNo = "Nein"
+    override val allKnownHidden = "In diesem Deck kennst du alle Karten, deshalb sind sie ausgeblendet. In den Einstellungen kannst du sie wieder anzeigen."
+    override val closeLabel = "Schließen"
+    override val helpDownloadTitle = "Herunterladen"
+    override val helpDownloadBody = "Ein einzelnes Deck lädst du mit dem ⬇-Button unten rechts am Deck herunter. „Alle Decks herunterladen“ speichert alle Decks nacheinander in einer einzigen Datei.\n\nDie Datei ist eine einfache .txt-Datei (UTF-8). Den Speicherort fragt die Dateiauswahl des Systems ab, eine Speicherberechtigung ist nicht nötig.\n\nFormat:\n• der Deckname in einer eigenen Zeile\n• darunter eine ====-Linie, danach eine Leerzeile\n• dann pro Zeile eine Karte: die Grundform, mit Leerzeichen in eine Spalte ausgerichtet, danach die Übersetzung\n\nBeispiel:\nGrundstock\n====\n\nдом          Haus\n\nDie Datei kannst du in einem beliebigen Texteditor bearbeiten und wieder hochladen."
+    override val helpUploadTitle = "Hochladen"
+    override val helpUploadBody = "„Deck hochladen“ liest das heruntergeladene .txt-Format wieder ein. Eine Datei mit einem oder mehreren Decks funktioniert (auch die Datei von „Alle Decks herunterladen“).\n\n• Es entsteht immer ein neues Deck, auch bei gleichem Namen; bestehende Decks bleiben unberührt.\n• Die Karten kommen als „nicht gekonnt“ an.\n• Hat die Datei keine Deck-Kopfzeile (Name mit ====-Linie darunter), wird der Dateiname zum Decknamen.\n• In einer Kartenzeile müssen Grundform und Übersetzung durch einen Tabulator oder mindestens zwei Leerzeichen getrennt sein. Das alte Format mit Bindestrich („Wort - Übersetzung“) funktioniert ebenfalls."
+    override val cardFrontLabel = "Vorderseite der Karte"
+    override val infoTitle = "Hinweise"
+    override val infoBody = "Tipp: Sammle mehrere Wörter und übersetze sie gemeinsam statt einzeln.\n\n• Alle gesammelten Wörter gehen in einer einzigen KI-Anfrage raus, du verbrauchst also weniger Anfragen. Kostenlose API-Schlüssel haben meist ein Anfragelimit (pro Minute und pro Tag), so halten sie länger.\n• Fotografiere mehrere Wörter hintereinander und tippe dann auf „Übersetzen“.\n• Du kannst den Kamera-Button verschieben: lange drücken und auf einen der hellblauen Kreise ziehen (Rechtshänder / Linkshänder / Mitte). Das Zielrechteck wandert mit.\n• Die Taschenlampe hilft bei schwachem Licht."
+    override val testKey = "Schlüssel testen"
+    override val keyOk = "Der Schlüssel funktioniert ✓"
+
+    override fun langName(l: AppLang): String = when (l) {
+        AppLang.HUNGARIAN -> "Ungarisch"
+        AppLang.ENGLISH -> "Englisch"
+        AppLang.GERMAN -> "Deutsch"
+        AppLang.ITALIAN -> "Italienisch"
+        AppLang.FRENCH -> "Französisch"
+        AppLang.SPANISH -> "Spanisch"
+        AppLang.RUSSIAN -> "Russisch"
     }
 }
 
-@Composable
-fun WordListScreen(
-    words: List<WordItem>,
-    loading: Boolean,
-    decks: List<Deck>,
-    activeDeckId: Long?,
-    onSelectDeck: (Long) -> Unit,
-    onDelete: (Long) -> Unit,
-    onClear: () -> Unit,
-    onAddManual: (String) -> Unit,
-    onGenerate: () -> Unit
-) {
-    val t = LocalStrings.current
-    var manualText by remember { mutableStateOf("") }
+object StringsIt : Strings {
+    override val settingsDesc = "Impostazioni"
+    override val navScan = "Scan"
+    override val navWord = "Parola"
+    override val navCard = "Scheda"
+    override val navDeck = "Mazzo"
+    override val noActiveDeck = "Nessun mazzo attivo — creane uno nella sezione Mazzo!"
+    override val enterApiKeyFirst = "Inserisci prima la chiave API nelle Impostazioni!"
+    override fun cardsAdded(n: Int) = "$n schede aggiunte"
+    override fun errorPrefix(msg: String?) = "Errore: $msg"
+    override val unknownError = "errore sconosciuto"
+    override val cameraError = "errore della fotocamera"
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        // bal felső sarok: pakliválasztó, alatta kezdődik a szöveg
-        DeckPicker(
-            decks = decks,
-            activeDeckId = activeDeckId,
-            onSelect = onSelectDeck,
-            maxWidth = 200.dp
-        )
-        Spacer(Modifier.height(12.dp))
-        Text(
-            t.wordsHint,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(Modifier.height(12.dp))
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            WTextField(
-                value = manualText,
-                onValueChange = { manualText = it },
-                placeholder = t.addWordManually,
-                modifier = Modifier.weight(1f)
-            )
-            Spacer(Modifier.width(8.dp))
-            WButton(
-                onClick = {
-                    onAddManual(manualText)
-                    manualText = ""
-                },
-                modifier = Modifier.size(56.dp),
-                contentPadding = PaddingValues(0.dp)
-            ) { Text("+", fontSize = 22.sp, fontWeight = FontWeight.Bold) }
-        }
-        Spacer(Modifier.height(12.dp))
-        LazyColumn(Modifier.weight(1f)) {
-            items(words, key = { it.id }) { w ->
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 6.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(w.original, style = MaterialTheme.typography.bodyLarge)
-                    IconButton(onClick = { onDelete(w.id) }) {
-                        Text("✕")
-                    }
-                }
-                Divider()
-            }
-        }
-        Spacer(Modifier.height(12.dp))
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            WButton(
-                onClick = onClear,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(56.dp)
-            ) { WLabel(t.clearList) }
-            WButton(
-                onClick = onGenerate,
-                enabled = words.isNotEmpty() && !loading,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(56.dp)
-            ) {
-                if (loading) {
-                    CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
-                } else {
-                    WLabel(t.generateCards(words.size))
-                }
-            }
-        }
+    override val wordsHint =
+        "Seleziona una parola in una pagina web o in qualsiasi app, poi Condividi → questa app. " +
+            "La parola apparirà in questo elenco."
+    override val addWordManually = "Aggiungi una parola manualmente"
+    override val clearList = "Svuota elenco"
+    override fun generateCards(n: Int) = "Genera schede ($n)"
+    override fun wordAddedToList(word: String) = "Aggiunta all'elenco: $word"
+
+    override val noCardsYet =
+        "Non hai ancora nessuna scheda. Aggiungi parole nella sezione Parola, poi generale."
+    override val delete = "Elimina"
+    override val confirmDeleteCard = "Vuoi davvero eliminare questa scheda?"
+    override fun confirmDeleteDeck(name: String) = "Vuoi davvero eliminare il mazzo \"$name\" con tutte le sue schede?"
+    override val yesDelete = "Sì, elimina"
+    override val cancel = "Annulla"
+    override val known = "Lo so ✓"
+    override val markKnown = "Segna come saputa"
+    override val editCard = "Modifica scheda"
+    override val dictionaryFormLabel = "Forma base"
+    override val translationLabel = "Traduzione"
+    override val previous = "◀ Precedente"
+    override val next = "Successiva ▶"
+    override val shuffle = "Mescola"
+    override val originalOrder = "Ordine originale"
+
+    override val newDeckName = "Nome del nuovo mazzo"
+    override val create = "Crea"
+    override val renameDeck = "Rinomina mazzo"
+    override val downloadAll = "Scarica tutti i mazzi"
+    override val uploadDeck = "Carica mazzo"
+    override fun decksUploaded(decks: Int, cards: Int) =
+        if (decks == 1) "Mazzo caricato ($cards schede)" else "$decks mazzi caricati ($cards schede)"
+    override val uploadNothingFound = "Nel file non è stata trovata nessuna scheda."
+    override val allDecksFileName = "tutti_i_mazzi.txt"
+    override fun cardCount(n: Int) = "$n schede"
+    override val emptyDeck = "(nessuna scheda in questo mazzo)"
+    override val deckShort = "M"
+
+    override val cameraPermissionNeeded = "Per il riconoscimento delle parole serve il permesso della fotocamera."
+    override val allowCamera = "Consenti fotocamera"
+    override fun collectedWords(n: Int) = "Parole raccolte ($n):"
+    override fun translateN(n: Int) = "Traduci ($n)"
+
+    override val languagesTitle = "Lingue"
+    override val bookLanguageLabel = "Lingua di origine"
+    override val translationLanguageLabel = "Lingua della traduzione"
+    override val appLanguageLabel = "Lingua dell'app"
+    override val aiProviderTitle = "Provider IA"
+    override val providerLabel = "Provider"
+    override val apiKeyLabel = "Chiave API"
+    override val modelLabel = "Nome del modello"
+    override val baseUrlLabel = "Endpoint API personalizzato (facoltativo)"
+    override val save = "Salva"
+    override val settingsTip = "Ottieni una chiave API gratuita:"
+    override val settingsSaved = "Impostazioni salvate"
+
+    override val customizeTitle = "Personalizzazione"
+    override val handModeLabel = "Modalità"
+    override val handRight = "Destrorso"
+    override val handLeft = "Mancino"
+    override val handCenter = "Centro"
+    override val showKnownLabel = "Mostra le schede «Lo so»"
+    override val optYes = "Sì"
+    override val optNo = "No"
+    override val allKnownHidden = "In questo mazzo conosci tutte le schede, quindi sono nascoste. Puoi mostrarle di nuovo nelle Impostazioni."
+    override val closeLabel = "Chiudi"
+    override val helpDownloadTitle = "Scaricamento"
+    override val helpDownloadBody = "Scarichi un singolo mazzo con il pulsante ⬇ in basso a destra del mazzo. «Scarica tutti i mazzi» salva tutti i mazzi uno dopo l'altro in un unico file.\n\nIl file è un semplice .txt (UTF-8). Il punto di salvataggio si sceglie con il selettore di file del sistema, non serve il permesso di archiviazione.\n\nFormato:\n• il nome del mazzo su una riga a sé\n• sotto una linea ====, poi una riga vuota\n• poi una scheda per riga: la forma base, allineata in colonna con degli spazi, poi la traduzione\n\nEsempio:\nBase\n====\n\nдом          casa\n\nPuoi modificare il file con qualsiasi editor di testo e ricaricarlo."
+    override val helpUploadTitle = "Caricamento"
+    override val helpUploadBody = "«Carica mazzo» rilegge il formato .txt scaricato. Va bene un file con uno o più mazzi (anche quello di «Scarica tutti i mazzi»).\n\n• Crea sempre un nuovo mazzo, anche se il nome esiste già; i mazzi esistenti non vengono toccati.\n• Le schede arrivano come non conosciute.\n• Se il file non ha un'intestazione di mazzo (un nome con una linea ==== sotto), il nome del file diventa il nome del mazzo.\n• In una riga di scheda, forma base e traduzione devono essere separate da una tabulazione o da almeno due spazi. Funziona anche il vecchio formato con il trattino («parola - traduzione»)."
+    override val cardFrontLabel = "Fronte della scheda"
+    override val infoTitle = "Informazioni"
+    override val infoBody = "Consiglio: raccogli più parole e traducile insieme invece che una per una.\n\n• Tutte le parole raccolte partono in un'unica richiesta IA, quindi usi meno richieste. Le chiavi API gratuite di solito hanno un limite di richieste (al minuto e al giorno), così durano di più.\n• Fotografa più parole di fila, poi premi «Traduci».\n• Puoi spostare il pulsante della fotocamera: tienilo premuto e trascinalo su uno dei cerchi azzurri (destrorso / mancino / centro). Il rettangolo di mira si sposta con lui.\n• La torcia aiuta con poca luce."
+    override val testKey = "Prova la chiave"
+    override val keyOk = "La chiave funziona ✓"
+
+    override fun langName(l: AppLang): String = when (l) {
+        AppLang.HUNGARIAN -> "Ungherese"
+        AppLang.ENGLISH -> "Inglese"
+        AppLang.GERMAN -> "Tedesco"
+        AppLang.ITALIAN -> "Italiano"
+        AppLang.FRENCH -> "Francese"
+        AppLang.SPANISH -> "Spagnolo"
+        AppLang.RUSSIAN -> "Russo"
     }
 }
 
-@Composable
-fun FlashcardScreen(
-    cards: List<Flashcard>,
-    decks: List<Deck>,
-    activeDeckId: Long?,
-    onSelectDeck: (Long) -> Unit,
-    allKnownHidden: Boolean,
-    onDelete: (Long) -> Unit,
-    onToggleKnown: (Flashcard) -> Unit,
-    onEdit: (Flashcard) -> Unit,
-    isShuffled: Boolean,
-    onShuffle: () -> Unit,
-    onResetOrder: () -> Unit
-) {
-    val t = LocalStrings.current
+object StringsFr : Strings {
+    override val settingsDesc = "Paramètres"
+    override val navScan = "Scan"
+    override val navWord = "Mot"
+    override val navCard = "Carte"
+    override val navDeck = "Paquet"
+    override val noActiveDeck = "Aucun paquet actif — crée-en un dans l'onglet Paquet !"
+    override val enterApiKeyFirst = "Saisis d'abord la clé API dans les Paramètres !"
+    override fun cardsAdded(n: Int) = "$n carte(s) ajoutée(s)"
+    override fun errorPrefix(msg: String?) = "Erreur : $msg"
+    override val unknownError = "erreur inconnue"
+    override val cameraError = "erreur de l'appareil photo"
 
-    if (cards.isEmpty()) {
-        Box(Modifier.fillMaxSize()) {
-            DeckPicker(
-                decks = decks,
-                activeDeckId = activeDeckId,
-                onSelect = onSelectDeck,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(16.dp),
-                maxWidth = 200.dp
-            )
-            Text(
-                if (allKnownHidden) t.allKnownHidden else t.noCardsYet,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(24.dp),
-                style = MaterialTheme.typography.bodyLarge
-            )
-        }
-        return
-    }
+    override val wordsHint =
+        "Sélectionne un mot sur une page web ou dans n'importe quelle application, puis Partager → cette application. " +
+            "Le mot apparaîtra dans cette liste."
+    override val addWordManually = "Ajouter un mot manuellement"
+    override val clearList = "Vider la liste"
+    override fun generateCards(n: Int) = "Générer les cartes ($n)"
+    override fun wordAddedToList(word: String) = "Ajouté à la liste : $word"
 
-    val scope = rememberCoroutineScope()
-    var index by remember { mutableStateOf(0) }
-    var flipped by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var showEditDialog by remember { mutableStateOf(false) }
-    var widthPx by remember { mutableStateOf(0f) }
-    var animating by remember { mutableStateOf(false) }
-    val dragX = remember { Animatable(0f) }
+    override val noCardsYet =
+        "Tu n'as pas encore de cartes. Ajoute des mots dans l'onglet Mot, puis génère-les."
+    override val delete = "Supprimer"
+    override val confirmDeleteCard = "Veux-tu vraiment supprimer cette carte ?"
+    override fun confirmDeleteDeck(name: String) = "Veux-tu vraiment supprimer le paquet \"$name\" avec toutes ses cartes ?"
+    override val yesDelete = "Oui, supprimer"
+    override val cancel = "Annuler"
+    override val known = "Connu ✓"
+    override val markKnown = "Marquer comme connu"
+    override val editCard = "Modifier la carte"
+    override val dictionaryFormLabel = "Forme de base"
+    override val translationLabel = "Traduction"
+    override val previous = "◀ Précédent"
+    override val next = "Suivant ▶"
+    override val shuffle = "Mélanger"
+    override val originalOrder = "Ordre d'origine"
 
-    // animációk állapota
-    val delAnim = remember { Animatable(0f) }
-    var deletingId by remember { mutableStateOf<Long?>(null) }
-    val knownFlash = remember { Animatable(0f) }
-    val checkScale = remember { Animatable(0f) }
-    val checkAlpha = remember { Animatable(0f) }
-    val shuffleAnim = remember { Animatable(0f) }
+    override val newDeckName = "Nom du nouveau paquet"
+    override val create = "Créer"
+    override val renameDeck = "Renommer le paquet"
+    override val downloadAll = "Télécharger tous les paquets"
+    override val uploadDeck = "Importer un paquet"
+    override fun decksUploaded(decks: Int, cards: Int) =
+        if (decks == 1) "Paquet importé ($cards cartes)" else "$decks paquets importés ($cards cartes)"
+    override val uploadNothingFound = "Aucune carte trouvée dans le fichier."
+    override val allDecksFileName = "tous_les_paquets.txt"
+    override fun cardCount(n: Int) = "$n cartes"
+    override val emptyDeck = "(aucune carte dans ce paquet pour l'instant)"
+    override val deckShort = "P"
 
-    // pakliváltáskor induljon az elejéről
-    LaunchedEffect(activeDeckId) {
-        index = 0
-        flipped = false
-    }
+    override val cameraPermissionNeeded = "L'autorisation de l'appareil photo est nécessaire pour la reconnaissance des mots."
+    override val allowCamera = "Autoriser l'appareil photo"
+    override fun collectedWords(n: Int) = "Mots collectés ($n) :"
+    override fun translateN(n: Int) = "Traduire ($n)"
 
-    val safeIndex = index.coerceIn(0, cards.size - 1)
-    val card = cards[safeIndex]
+    override val languagesTitle = "Langues"
+    override val bookLanguageLabel = "Langue source"
+    override val translationLanguageLabel = "Langue de traduction"
+    override val appLanguageLabel = "Langue de l'application"
+    override val aiProviderTitle = "Fournisseur d'IA"
+    override val providerLabel = "Fournisseur"
+    override val apiKeyLabel = "Clé API"
+    override val modelLabel = "Nom du modèle"
+    override val baseUrlLabel = "Point de terminaison API personnalisé (facultatif)"
+    override val save = "Enregistrer"
+    override val settingsTip = "Obtenir une clé API gratuite :"
+    override val settingsSaved = "Paramètres enregistrés"
 
-    val deleting = deletingId == card.id
-    val delProgress = if (deleting) delAnim.value else 0f
-    val shuf = shuffleAnim.value
-    val frontScale = 1f - 0.3f * delProgress
+    override val customizeTitle = "Personnalisation"
+    override val handModeLabel = "Mode"
+    override val handRight = "Droitier"
+    override val handLeft = "Gaucher"
+    override val handCenter = "Centre"
+    override val showKnownLabel = "Afficher les cartes « Connu »"
+    override val optYes = "Oui"
+    override val optNo = "Non"
+    override val allKnownHidden = "Tu connais toutes les cartes de ce paquet, elles sont donc masquées. Tu peux les afficher à nouveau dans les Paramètres."
+    override val closeLabel = "Fermer"
+    override val helpDownloadTitle = "Téléchargement"
+    override val helpDownloadBody = "Tu télécharges un seul paquet avec le bouton ⬇ en bas à droite du paquet. « Télécharger tous les paquets » enregistre tous les paquets les uns après les autres dans un seul fichier.\n\nLe fichier est un simple .txt (UTF-8). Le sélecteur de fichiers du système demande où l'enregistrer, aucune autorisation de stockage n'est nécessaire.\n\nFormat :\n• le nom du paquet sur sa propre ligne\n• en dessous une ligne ====, puis une ligne vide\n• ensuite une carte par ligne : la forme de base, alignée en colonne avec des espaces, puis la traduction\n\nExemple :\nBase\n====\n\nдом          maison\n\nTu peux modifier le fichier dans n'importe quel éditeur de texte, puis le réimporter."
+    override val helpUploadTitle = "Importation"
+    override val helpUploadBody = "« Importer un paquet » relit le format .txt téléchargé. Un fichier avec un ou plusieurs paquets convient (y compris celui de « Télécharger tous les paquets »).\n\n• Un nouveau paquet est toujours créé, même si le nom existe déjà ; les paquets existants ne sont pas modifiés.\n• Les cartes arrivent comme non connues.\n• Si le fichier n'a pas d'en-tête de paquet (un nom avec une ligne ==== en dessous), le nom du fichier devient le nom du paquet.\n• Sur une ligne de carte, la forme de base et la traduction doivent être séparées par une tabulation ou au moins deux espaces. L'ancien format avec tiret (« mot - traduction ») fonctionne aussi."
+    override val cardFrontLabel = "Recto de la carte"
+    override val infoTitle = "Infos"
+    override val infoBody = "Astuce : rassemble plusieurs mots et traduis-les ensemble plutôt qu'un par un.\n\n• Tous les mots collectés partent dans une seule requête IA, tu utilises donc moins de requêtes. Les clés API gratuites ont généralement une limite de requêtes (par minute et par jour), elles durent ainsi plus longtemps.\n• Photographie plusieurs mots à la suite, puis appuie sur « Traduire ».\n• Tu peux déplacer le bouton de l'appareil photo : appuie longuement dessus et fais-le glisser sur l'un des cercles bleu clair (droitier / gaucher / centre). Le rectangle de visée se déplace avec lui.\n• La lampe torche aide quand il y a peu de lumière."
+    override val testKey = "Tester la clé"
+    override val keyOk = "La clé fonctionne ✓"
 
-    // dir = +1: következő kártya (a mostani balra kicsúszik, az új jobbról jön be)
-    // dir = -1: előző kártya (a mostani jobbra csúszik ki, az új balról jön be)
-    fun go(dir: Int) {
-        if (animating || deleting) return
-        if (cards.size < 2 || widthPx <= 0f) {
-            scope.launch { dragX.animateTo(0f, tween(150)) }
-            return
-        }
-        scope.launch {
-            animating = true
-            dragX.animateTo(-dir * widthPx, tween(180))
-            flipped = false
-            index = (safeIndex + dir + cards.size) % cards.size
-            dragX.snapTo(dir * widthPx)
-            dragX.animateTo(0f, tween(220))
-            animating = false
-        }
-    }
-
-    fun playShuffle() {
-        scope.launch {
-            shuffleAnim.snapTo(0f)
-            shuffleAnim.animateTo(1f, tween(500, easing = FastOutSlowInEasing))
-        }
-    }
-
-    fun playKnown() {
-        scope.launch {
-            knownFlash.snapTo(1f)
-            knownFlash.animateTo(0f, tween(500))
-        }
-        scope.launch {
-            checkAlpha.snapTo(1f)
-            checkScale.snapTo(0.2f)
-            checkScale.animateTo(
-                1f,
-                spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
-            )
-            checkAlpha.animateTo(0f, tween(250))
-        }
-    }
-
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(Modifier.fillMaxWidth()) {
-            WButton(
-                onClick = {
-                    if (isShuffled) onResetOrder() else onShuffle()
-                    index = 0
-                    flipped = false
-                    playShuffle()
-                },
-                modifier = Modifier.align(Alignment.CenterEnd)
-            ) {
-                WLabel(if (isShuffled) t.originalOrder else t.shuffle)
-            }
-            Text(
-                "${safeIndex + 1} / ${cards.size}",
-                style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.align(Alignment.Center)
-            )
-            DeckPicker(
-                decks = decks,
-                activeDeckId = activeDeckId,
-                onSelect = onSelectDeck,
-                modifier = Modifier.align(Alignment.CenterStart),
-                maxWidth = 120.dp
-            )
-        }
-        Spacer(Modifier.height(4.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .onSizeChanged { widthPx = it.width.toFloat() }
-                .pointerInput(safeIndex, cards.size, deleting) {
-                    detectHorizontalDragGestures(
-                        onDragEnd = {
-                            val threshold = widthPx * 0.25f
-                            when {
-                                animating || deleting -> {}
-                                dragX.value < -threshold -> go(1)
-                                dragX.value > threshold -> go(-1)
-                                else -> scope.launch { dragX.animateTo(0f, tween(150)) }
-                            }
-                        },
-                        onDragCancel = {
-                            if (!animating && !deleting) scope.launch { dragX.animateTo(0f, tween(150)) }
-                        },
-                        onHorizontalDrag = { change, dragAmount ->
-                            if (!animating && !deleting) {
-                                change.consume()
-                                scope.launch { dragX.snapTo(dragX.value + dragAmount) }
-                            }
-                        }
-                    )
-                }
-        ) {
-            val frontColor = Color(0xFF16263A)
-            val backColor = Color(0xFF1F3752)
-            val edgeBorder = BorderStroke(1.dp, Color(0xFF2A3B50))
-
-            // az aktuális kártya
-            Card(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(vertical = 8.dp)
-                    .graphicsLayer {
-                        translationX = dragX.value
-                        scaleX = frontScale
-                        scaleY = frontScale
-                        alpha = (1f - delProgress) * (1f - 0.65f * sin(PI.toFloat() * shuf))
-                        rotationY = 360f * shuf
-                        rotationZ = 5f * sin(PI.toFloat() * 5f * shuf) * (1f - shuf)
-                        cameraDistance = 12f * density
-                    }
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { flipped = !flipped },
-                colors = CardDefaults.cardColors(
-                    containerColor = if (flipped) backColor else frontColor,
-                    contentColor = Color(0xFFEAF2FB)
-                ),
-                border = edgeBorder
-            ) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    // zöld felvillanás "tudom" jelölésnél
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .graphicsLayer { alpha = knownFlash.value }
-                            .background(Color(0x4D66BB6A))
-                    )
-                    Text(
-                        if (!flipped) card.translation else card.dictionaryForm,
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                    // rugózó zöld pipa a kártya jobb alsó részén
-                    Text(
-                        "✓",
-                        fontSize = 72.sp,
-                        color = Color(0xFF81C784),
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(16.dp)
-                            .graphicsLayer {
-                                scaleX = checkScale.value
-                                scaleY = checkScale.value
-                                alpha = checkAlpha.value
-                            }
-                    )
-                    IconButton(
-                        onClick = { showEditDialog = true },
-                        modifier = Modifier.align(Alignment.TopEnd)
-                    ) {
-                        Text("✎", style = MaterialTheme.typography.titleLarge)
-                    }
-                }
-            }
-        }
-        Spacer(Modifier.height(8.dp))
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            WButton(
-                onClick = { showDeleteDialog = true },
-                modifier = Modifier
-                    .weight(1f)
-                    .height(52.dp)
-            ) { WLabel(t.delete) }
-            WButton(
-                onClick = {
-                    val becomingKnown = !card.known
-                    onToggleKnown(card)
-                    if (becomingKnown) playKnown()
-                },
-                modifier = Modifier
-                    .weight(1f)
-                    .height(52.dp)
-            ) { WLabel(if (card.known) t.known else t.markKnown) }
-        }
-        Spacer(Modifier.height(12.dp))
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            WButton(
-                onClick = { go(-1) },
-                modifier = Modifier
-                    .weight(1f)
-                    .height(52.dp)
-            ) { WLabel(t.previous) }
-            WButton(
-                onClick = { go(1) },
-                modifier = Modifier
-                    .weight(1f)
-                    .height(52.dp)
-            ) { WLabel(t.next) }
-        }
-    }
-
-    if (showEditDialog) {
-        var editDict by remember(card.id) { mutableStateOf(card.dictionaryForm) }
-        var editTrans by remember(card.id) { mutableStateOf(card.translation) }
-        AlertDialog(
-            onDismissRequest = { showEditDialog = false },
-            title = { Text(t.editCard) },
-            text = {
-                Column {
-                    OutlinedTextField(
-                        value = editDict,
-                        onValueChange = { editDict = it },
-                        label = { Text(t.dictionaryFormLabel) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    OutlinedTextField(
-                        value = editTrans,
-                        onValueChange = { editTrans = it },
-                        label = { Text(t.translationLabel) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    enabled = editDict.isNotBlank() && editTrans.isNotBlank(),
-                    onClick = {
-                        showEditDialog = false
-                        onEdit(card.copy(dictionaryForm = editDict.trim(), translation = editTrans.trim()))
-                    }
-                ) { Text(t.save) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showEditDialog = false }) { Text(t.cancel) }
-            }
-        )
-    }
-
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text(t.confirmDeleteCard) },
-            text = { Text(card.dictionaryForm) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDeleteDialog = false
-                    val idToDelete = card.id
-                    deletingId = idToDelete
-                    scope.launch {
-                        // a kártya összezsugorodik és eltűnik
-                        delAnim.snapTo(0f)
-                        delAnim.animateTo(1f, tween(220))
-                        onDelete(idToDelete)
-                        flipped = false
-                    }
-                }) { Text(t.yesDelete) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text(t.cancel) }
-            }
-        )
+    override fun langName(l: AppLang): String = when (l) {
+        AppLang.HUNGARIAN -> "Hongrois"
+        AppLang.ENGLISH -> "Anglais"
+        AppLang.GERMAN -> "Allemand"
+        AppLang.ITALIAN -> "Italien"
+        AppLang.FRENCH -> "Français"
+        AppLang.SPANISH -> "Espagnol"
+        AppLang.RUSSIAN -> "Russe"
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun <T> DropdownField(
-    label: String,
-    selectedText: String,
-    options: List<T>,
-    optionLabel: (T) -> String,
-    onSelect: (T) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-        OutlinedTextField(
-            value = selectedText,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(label) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .menuAnchor()
-                .fillMaxWidth()
-        )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            options.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(optionLabel(option)) },
-                    onClick = {
-                        onSelect(option)
-                        expanded = false
-                    }
-                )
-            }
-        }
+object StringsEs : Strings {
+    override val settingsDesc = "Ajustes"
+    override val navScan = "Scan"
+    override val navWord = "Palabra"
+    override val navCard = "Tarjeta"
+    override val navDeck = "Mazo"
+    override val noActiveDeck = "No hay ningún mazo activo: ¡crea uno en la pestaña Mazo!"
+    override val enterApiKeyFirst = "¡Primero introduce la clave API en Ajustes!"
+    override fun cardsAdded(n: Int) = "$n tarjeta(s) añadida(s)"
+    override fun errorPrefix(msg: String?) = "Error: $msg"
+    override val unknownError = "error desconocido"
+    override val cameraError = "error de la cámara"
+
+    override val wordsHint =
+        "Selecciona una palabra en una página web o en cualquier app y luego Compartir → esta app. " +
+            "La palabra aparecerá en esta lista."
+    override val addWordManually = "Añadir una palabra manualmente"
+    override val clearList = "Vaciar lista"
+    override fun generateCards(n: Int) = "Generar tarjetas ($n)"
+    override fun wordAddedToList(word: String) = "Añadida a la lista: $word"
+
+    override val noCardsYet =
+        "Todavía no tienes tarjetas. Añade palabras en la pestaña Palabra y luego genéralas."
+    override val delete = "Eliminar"
+    override val confirmDeleteCard = "¿Seguro que quieres eliminar esta tarjeta?"
+    override fun confirmDeleteDeck(name: String) = "¿Seguro que quieres eliminar el mazo \"$name\" con todas sus tarjetas?"
+    override val yesDelete = "Sí, eliminar"
+    override val cancel = "Cancelar"
+    override val known = "Sabida ✓"
+    override val markKnown = "Marcar como sabida"
+    override val editCard = "Editar tarjeta"
+    override val dictionaryFormLabel = "Forma base"
+    override val translationLabel = "Traducción"
+    override val previous = "◀ Anterior"
+    override val next = "Siguiente ▶"
+    override val shuffle = "Barajar"
+    override val originalOrder = "Orden original"
+
+    override val newDeckName = "Nombre del nuevo mazo"
+    override val create = "Crear"
+    override val renameDeck = "Renombrar mazo"
+    override val downloadAll = "Descargar todos los mazos"
+    override val uploadDeck = "Subir mazo"
+    override fun decksUploaded(decks: Int, cards: Int) =
+        if (decks == 1) "Mazo subido ($cards tarjetas)" else "$decks mazos subidos ($cards tarjetas)"
+    override val uploadNothingFound = "No se encontró ninguna tarjeta en el archivo."
+    override val allDecksFileName = "todos_los_mazos.txt"
+    override fun cardCount(n: Int) = "$n tarjetas"
+    override val emptyDeck = "(todavía no hay tarjetas en este mazo)"
+    override val deckShort = "M"
+
+    override val cameraPermissionNeeded = "Se necesita el permiso de la cámara para reconocer palabras."
+    override val allowCamera = "Permitir cámara"
+    override fun collectedWords(n: Int) = "Palabras recopiladas ($n):"
+    override fun translateN(n: Int) = "Traducir ($n)"
+
+    override val languagesTitle = "Idiomas"
+    override val bookLanguageLabel = "Idioma de origen"
+    override val translationLanguageLabel = "Idioma de la traducción"
+    override val appLanguageLabel = "Idioma de la app"
+    override val aiProviderTitle = "Proveedor de IA"
+    override val providerLabel = "Proveedor"
+    override val apiKeyLabel = "Clave API"
+    override val modelLabel = "Nombre del modelo"
+    override val baseUrlLabel = "Endpoint de API personalizado (opcional)"
+    override val save = "Guardar"
+    override val settingsTip = "Obtener una clave API gratuita:"
+    override val settingsSaved = "Ajustes guardados"
+
+    override val customizeTitle = "Personalización"
+    override val handModeLabel = "Modo"
+    override val handRight = "Diestro"
+    override val handLeft = "Zurdo"
+    override val handCenter = "Centro"
+    override val showKnownLabel = "Mostrar las tarjetas «Sabida»"
+    override val optYes = "Sí"
+    override val optNo = "No"
+    override val allKnownHidden = "En este mazo sabes todas las tarjetas, por eso están ocultas. Puedes volver a mostrarlas en Ajustes."
+    override val closeLabel = "Cerrar"
+    override val helpDownloadTitle = "Descarga"
+    override val helpDownloadBody = "Descargas un solo mazo con el botón ⬇ de la esquina inferior derecha del mazo. «Descargar todos los mazos» guarda todos los mazos uno tras otro en un único archivo.\n\nEl archivo es un .txt sencillo (UTF-8). El selector de archivos del sistema pregunta dónde guardarlo, no hace falta permiso de almacenamiento.\n\nFormato:\n• el nombre del mazo en una línea aparte\n• debajo una línea ====, luego una línea vacía\n• después una tarjeta por línea: la forma base, alineada en columna con espacios, y luego la traducción\n\nEjemplo:\nBase\n====\n\nдом          casa\n\nPuedes editar el archivo con cualquier editor de texto y volver a subirlo."
+    override val helpUploadTitle = "Subida"
+    override val helpUploadBody = "«Subir mazo» vuelve a leer el formato .txt descargado. Sirve un archivo con uno o varios mazos (también el de «Descargar todos los mazos»).\n\n• Siempre se crea un mazo nuevo, aunque el nombre ya exista; los mazos existentes no se tocan.\n• Las tarjetas llegan como no sabidas.\n• Si el archivo no tiene encabezado de mazo (un nombre con una línea ==== debajo), el nombre del archivo pasa a ser el nombre del mazo.\n• En la línea de una tarjeta, la forma base y la traducción deben ir separadas por un tabulador o por al menos dos espacios. El formato antiguo con guion («palabra - traducción») también funciona."
+    override val cardFrontLabel = "Anverso de la tarjeta"
+    override val infoTitle = "Información"
+    override val infoBody = "Consejo: reúne varias palabras y tradúcelas juntas en lugar de una por una.\n\n• Todas las palabras reunidas se envían en una sola petición de IA, así que usas menos peticiones. Las claves API gratuitas suelen tener un límite de peticiones (por minuto y por día), de modo que duran más.\n• Fotografía varias palabras seguidas y luego pulsa «Traducir».\n• Puedes mover el botón de la cámara: mantenlo pulsado y arrástralo a uno de los círculos azul claro (diestro / zurdo / centro). El rectángulo de puntería se mueve con él.\n• La linterna ayuda con poca luz."
+    override val testKey = "Probar la clave"
+    override val keyOk = "La clave funciona ✓"
+
+    override fun langName(l: AppLang): String = when (l) {
+        AppLang.HUNGARIAN -> "Húngaro"
+        AppLang.ENGLISH -> "Inglés"
+        AppLang.GERMAN -> "Alemán"
+        AppLang.ITALIAN -> "Italiano"
+        AppLang.FRENCH -> "Francés"
+        AppLang.SPANISH -> "Español"
+        AppLang.RUSSIAN -> "Ruso"
     }
 }
 
-@Composable
-fun SettingsScreen(
-    settings: AiSettings,
-    onSave: (AiSettings) -> Unit
-) {
-    val t = LocalStrings.current
-    val uriHandler = LocalUriHandler.current
-    var provider by remember(settings) { mutableStateOf(settings.provider) }
-    var apiKey by remember(settings) { mutableStateOf(settings.apiKey) }
-    var model by remember(settings) { mutableStateOf(settings.model) }
-    var baseUrl by remember(settings) { mutableStateOf(settings.baseUrl) }
-    var sourceLanguage by remember(settings) { mutableStateOf(settings.sourceLanguage) }
-    var targetLanguage by remember(settings) { mutableStateOf(settings.targetLanguage) }
-    var uiLanguage by remember(settings) { mutableStateOf(settings.uiLanguage) }
-    var handMode by remember(settings) { mutableStateOf(settings.handMode) }
-    var showKnown by remember(settings) { mutableStateOf(settings.showKnown) }
-    val handLabel: (HandMode) -> String = {
-        when (it) {
-            HandMode.RIGHT -> t.handRight
-            HandMode.LEFT -> t.handLeft
-            HandMode.CENTER -> t.handCenter
-        }
+object StringsRu : Strings {
+    override val settingsDesc = "Настройки"
+    override val navScan = "Скан"
+    override val navWord = "Слово"
+    override val navCard = "Карточки"
+    override val navDeck = "Колода"
+    override val noActiveDeck = "Нет активной колоды — создай её на вкладке «Колода»!"
+    override val enterApiKeyFirst = "Сначала введи API-ключ в настройках!"
+    override fun cardsAdded(n: Int) = "Добавлено карточек: $n"
+    override fun errorPrefix(msg: String?) = "Ошибка: $msg"
+    override val unknownError = "неизвестная ошибка"
+    override val cameraError = "ошибка камеры"
+
+    override val wordsHint =
+        "Выдели слово на веб-странице или в любом приложении, затем «Поделиться» → это приложение. " +
+            "Слово появится в этом списке."
+    override val addWordManually = "Добавить слово вручную"
+    override val clearList = "Очистить список"
+    override fun generateCards(n: Int) = "Создать карточки ($n)"
+    override fun wordAddedToList(word: String) = "Добавлено в список: $word"
+
+    override val noCardsYet =
+        "У тебя пока нет карточек. Добавь слова на вкладке «Слово», затем создай карточки."
+    override val delete = "Удалить"
+    override val confirmDeleteCard = "Точно удалить эту карточку?"
+    override fun confirmDeleteDeck(name: String) = "Точно удалить колоду \"$name\" со всеми карточками?"
+    override val yesDelete = "Да, удалить"
+    override val cancel = "Отмена"
+    override val known = "Знаю ✓"
+    override val markKnown = "Отметить: знаю"
+    override val editCard = "Редактировать карточку"
+    override val dictionaryFormLabel = "Словарная форма"
+    override val translationLabel = "Перевод"
+    override val previous = "◀ Назад"
+    override val next = "Далее ▶"
+    override val shuffle = "Перемешать"
+    override val originalOrder = "Исходный порядок"
+
+    override val newDeckName = "Название новой колоды"
+    override val create = "Создать"
+    override val renameDeck = "Переименовать колоду"
+    override val downloadAll = "Скачать все колоды"
+    override val uploadDeck = "Загрузить колоду"
+    override fun decksUploaded(decks: Int, cards: Int) =
+        if (decks == 1) "Колода загружена (карточек: $cards)" else "Загружено колод: $decks (карточек: $cards)"
+    override val uploadNothingFound = "В файле не найдено ни одной карточки."
+    override val allDecksFileName = "vse_kolody.txt"
+    override fun cardCount(n: Int) = "Карточек: $n"
+    override val emptyDeck = "(в этой колоде пока нет карточек)"
+    override val deckShort = "К"
+
+    override val cameraPermissionNeeded = "Для распознавания слов нужно разрешение на использование камеры."
+    override val allowCamera = "Разрешить камеру"
+    override fun collectedWords(n: Int) = "Собранные слова ($n):"
+    override fun translateN(n: Int) = "Перевести ($n)"
+
+    override val languagesTitle = "Языки"
+    override val bookLanguageLabel = "Исходный язык"
+    override val translationLanguageLabel = "Язык перевода"
+    override val appLanguageLabel = "Язык приложения"
+    override val aiProviderTitle = "Поставщик ИИ"
+    override val providerLabel = "Поставщик"
+    override val apiKeyLabel = "API-ключ"
+    override val modelLabel = "Название модели"
+    override val baseUrlLabel = "Свой API-адрес (необязательно)"
+    override val save = "Сохранить"
+    override val settingsTip = "Получить бесплатный API-ключ:"
+    override val settingsSaved = "Настройки сохранены"
+
+    override val customizeTitle = "Персонализация"
+    override val handModeLabel = "Режим"
+    override val handRight = "Для правшей"
+    override val handLeft = "Для левшей"
+    override val handCenter = "По центру"
+    override val showKnownLabel = "Показывать карточки «Знаю»"
+    override val optYes = "Да"
+    override val optNo = "Нет"
+    override val allKnownHidden = "В этой колоде ты знаешь все карточки, поэтому они скрыты. Показать их снова можно в настройках."
+    override val closeLabel = "Закрыть"
+    override val helpDownloadTitle = "Скачивание"
+    override val helpDownloadBody = "Одну колоду можно скачать кнопкой ⬇ в правом нижнем углу колоды. Кнопка «Скачать все колоды» сохраняет все колоды подряд в один файл.\n\nФайл — обычный .txt (UTF-8). Место сохранения спрашивает системный выбор файлов, разрешение на доступ к памяти не нужно.\n\nФормат:\n• название колоды в отдельной строке\n• под ним линия ====, затем пустая строка\n• далее по одной карточке в строке: словарная форма, выровненная пробелами в столбец, затем перевод\n\nПример:\nОсновная\n====\n\nhouse          дом\n\nФайл можно править в любом текстовом редакторе и загружать обратно."
+    override val helpUploadTitle = "Загрузка"
+    override val helpUploadBody = "«Загрузить колоду» читает скачанный формат .txt. Подойдёт файл с одной или несколькими колодами (в том числе файл из «Скачать все колоды»).\n\n• Всегда создаётся новая колода, даже если такое название уже есть; существующие колоды не затрагиваются.\n• Карточки приходят как «не знаю».\n• Если в файле нет заголовка колоды (название с линией ==== под ним), названием колоды станет имя файла.\n• В строке карточки словарная форма и перевод должны быть разделены табуляцией или минимум двумя пробелами. Старый формат с тире («слово - перевод») тоже работает."
+    override val cardFrontLabel = "Лицевая сторона карточки"
+    override val infoTitle = "Информация"
+    override val infoBody = "Совет: собирай несколько слов и переводи их вместе, а не по одному.\n\n• Все собранные слова уходят одним запросом к ИИ, так что ты тратишь меньше запросов. У бесплатных API-ключей обычно есть лимит запросов (в минуту и в день), поэтому так их хватает дольше.\n• Сфотографируй несколько слов подряд, затем нажми «Перевести».\n• Кнопку камеры можно переместить: нажми и удерживай её, затем перетащи на один из голубых кругов (для правшей / для левшей / по центру). Прицельный прямоугольник сдвинется вместе с ней.\n• Фонарик помогает при слабом освещении."
+    override val testKey = "Проверить ключ"
+    override val keyOk = "Ключ работает ✓"
+
+    override fun langName(l: AppLang): String = when (l) {
+        AppLang.HUNGARIAN -> "Венгерский"
+        AppLang.ENGLISH -> "Английский"
+        AppLang.GERMAN -> "Немецкий"
+        AppLang.ITALIAN -> "Итальянский"
+        AppLang.FRENCH -> "Французский"
+        AppLang.SPANISH -> "Испанский"
+        AppLang.RUSSIAN -> "Русский"
     }
+}
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp)
-    ) {
-        Text(t.languagesTitle, style = MaterialTheme.typography.titleMedium, color = Color(0xFFFFA726))
-        Spacer(Modifier.height(8.dp))
-        DropdownField(
-            label = t.bookLanguageLabel,
-            selectedText = t.langName(AppLang.valueOf(sourceLanguage.name)),
-            options = com.rubookscanner.app.data.SourceLanguage.entries,
-            optionLabel = { t.langName(AppLang.valueOf(it.name)) },
-            onSelect = { sourceLanguage = it }
-        )
-        Spacer(Modifier.height(12.dp))
-        DropdownField(
-            label = t.translationLanguageLabel,
-            selectedText = t.langName(targetLanguage),
-            options = AppLang.entries,
-            optionLabel = { t.langName(it) },
-            onSelect = { targetLanguage = it }
-        )
-        Spacer(Modifier.height(12.dp))
-        DropdownField(
-            label = t.appLanguageLabel,
-            selectedText = uiLanguage.label,
-            options = AppLang.entries,
-            optionLabel = { it.label },
-            onSelect = { uiLanguage = it }
-        )
-        Spacer(Modifier.height(20.dp))
+val LocalStrings = staticCompositionLocalOf<Strings> { StringsHu }
 
-        Text(t.customizeTitle, style = MaterialTheme.typography.titleMedium, color = Color(0xFFFFA726))
-        Spacer(Modifier.height(8.dp))
-        DropdownField(
-            label = t.handModeLabel,
-            selectedText = handLabel(handMode),
-            options = HandMode.entries,
-            optionLabel = { handLabel(it) },
-            onSelect = { handMode = it }
-        )
-        Spacer(Modifier.height(12.dp))
-        DropdownField(
-            label = t.showKnownLabel,
-            selectedText = if (showKnown) t.optYes else t.optNo,
-            options = listOf(true, false),
-            optionLabel = { if (it) t.optYes else t.optNo },
-            onSelect = { showKnown = it }
-        )
-        Spacer(Modifier.height(20.dp))
-
-        Text(t.aiProviderTitle, style = MaterialTheme.typography.titleMedium, color = Color(0xFFFFA726))
-        Spacer(Modifier.height(8.dp))
-        DropdownField(
-            label = t.providerLabel,
-            selectedText = provider.name,
-            options = AiProvider.entries,
-            optionLabel = { it.name },
-            onSelect = {
-                provider = it
-                model = defaultModelFor(it)
-            }
-        )
-        Spacer(Modifier.height(12.dp))
-        OutlinedTextField(
-            value = apiKey,
-            onValueChange = { apiKey = it },
-            label = { Text(t.apiKeyLabel) },
-            visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(Modifier.height(12.dp))
-        OutlinedTextField(
-            value = model,
-            onValueChange = { model = it },
-            label = { Text(t.modelLabel) },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(Modifier.height(12.dp))
-        OutlinedTextField(
-            value = baseUrl,
-            onValueChange = { baseUrl = it },
-            label = { Text(t.baseUrlLabel) },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(Modifier.height(20.dp))
-        WButton(
-            onClick = {
-                onSave(
-                    AiSettings(
-                        provider = provider,
-                        apiKey = apiKey,
-                        model = model,
-                        baseUrl = baseUrl,
-                        sourceLanguage = sourceLanguage,
-                        uiLanguage = uiLanguage,
-                        targetLanguage = targetLanguage,
-                        handMode = handMode,
-                        showKnown = showKnown
-                    )
-                )
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp)
-        ) {
-            WLabel(t.save)
-        }
-        Spacer(Modifier.height(20.dp))
-        Text(t.settingsTip, style = MaterialTheme.typography.bodySmall)
-        Spacer(Modifier.height(8.dp))
-        val keyUrl = when (provider) {
-            AiProvider.ANTHROPIC -> "https://console.anthropic.com/settings/keys"
-            AiProvider.OPENAI -> "https://platform.openai.com/api-keys"
-            AiProvider.GEMINI -> "https://aistudio.google.com/apikey"
-        }
-        Text(
-            keyUrl,
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color(0xFF64B5F6),
-            textDecoration = TextDecoration.Underline,
-            modifier = Modifier.clickable { uriHandler.openUri(keyUrl) }
-        )
-    }
+fun stringsFor(lang: AppLang): Strings = when (lang) {
+    AppLang.HUNGARIAN -> StringsHu
+    AppLang.ENGLISH -> StringsEn
+    AppLang.GERMAN -> StringsDe
+    AppLang.ITALIAN -> StringsIt
+    AppLang.FRENCH -> StringsFr
+    AppLang.SPANISH -> StringsEs
+    AppLang.RUSSIAN -> StringsRu
 }

@@ -37,6 +37,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -49,6 +50,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -81,7 +83,9 @@ import androidx.compose.ui.unit.sp
 import com.rubookscanner.app.data.AiProvider
 import com.rubookscanner.app.data.AiSettings
 import com.rubookscanner.app.data.AppLang
+import com.rubookscanner.app.data.Deck
 import com.rubookscanner.app.data.Flashcard
+import com.rubookscanner.app.data.HandMode
 import com.rubookscanner.app.data.WordItem
 import com.rubookscanner.app.data.defaultModelFor
 import kotlin.math.PI
@@ -204,26 +208,79 @@ fun WTextField(
     }
 }
 
-/** Az aktív pakli jelzése ("P: pakli neve") a Szó és a Kártya fül jobb felső sarkában. */
+/**
+ * Pakliválasztó: halvány keretes, két soros ("Pakli" + a pakli neve) lenyíló.
+ * Kiválasztva az adott pakli lesz az aktív.
+ */
 @Composable
-fun ActiveDeckLabel(name: String, modifier: Modifier = Modifier, maxWidth: Dp = 120.dp) {
+fun DeckPicker(
+    decks: List<Deck>,
+    activeDeckId: Long?,
+    onSelect: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+    maxWidth: Dp = 150.dp
+) {
     val t = LocalStrings.current
-    Text(
-        "${t.deckShort}: $name",
-        style = MaterialTheme.typography.labelLarge,
-        fontWeight = FontWeight.Bold,
-        color = Color(0xFFFFB74D),
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = modifier.widthIn(max = maxWidth)
-    )
+    var expanded by remember { mutableStateOf(false) }
+    val activeName = decks.firstOrNull { it.id == activeDeckId }?.name.orEmpty()
+    val shape = RoundedCornerShape(8.dp)
+    val orange = Color(0xFFFFB74D)
+    Box(modifier.widthIn(max = maxWidth)) {
+        Row(
+            Modifier
+                .clip(shape)
+                .border(1.dp, orange.copy(alpha = 0.35f), shape)
+                .clickable { expanded = true }
+                .padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f, fill = false)) {
+                Text(
+                    t.navDeck,
+                    fontSize = 11.sp,
+                    color = orange.copy(alpha = 0.7f),
+                    maxLines = 1
+                )
+                Text(
+                    activeName.ifBlank { "—" },
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = orange,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Spacer(Modifier.width(6.dp))
+            Text("▾", color = orange, fontSize = 14.sp)
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            decks.forEach { deck ->
+                val active = deck.id == activeDeckId
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            deck.name,
+                            fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
+                            color = if (active) orange else Color.Unspecified
+                        )
+                    },
+                    onClick = {
+                        onSelect(deck.id)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
 }
 
 @Composable
 fun WordListScreen(
     words: List<WordItem>,
     loading: Boolean,
-    activeDeckName: String,
+    decks: List<Deck>,
+    activeDeckId: Long?,
+    onSelectDeck: (Long) -> Unit,
     onDelete: (Long) -> Unit,
     onClear: () -> Unit,
     onAddManual: (String) -> Unit,
@@ -237,18 +294,19 @@ fun WordListScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-            Text(
-                t.wordsHint,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f)
-            )
-            if (activeDeckName.isNotBlank()) {
-                Spacer(Modifier.width(12.dp))
-                // jobb felső sarok: melyik pakliba kerülnek a kártyák
-                ActiveDeckLabel(activeDeckName, maxWidth = 140.dp)
-            }
-        }
+        // bal felső sarok: pakliválasztó, alatta kezdődik a szöveg
+        DeckPicker(
+            decks = decks,
+            activeDeckId = activeDeckId,
+            onSelect = onSelectDeck,
+            maxWidth = 200.dp
+        )
+        Spacer(Modifier.height(12.dp))
+        Text(
+            t.wordsHint,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.fillMaxWidth()
+        )
         Spacer(Modifier.height(12.dp))
         Row(
             Modifier
@@ -321,7 +379,10 @@ fun WordListScreen(
 @Composable
 fun FlashcardScreen(
     cards: List<Flashcard>,
-    activeDeckName: String,
+    decks: List<Deck>,
+    activeDeckId: Long?,
+    onSelectDeck: (Long) -> Unit,
+    allKnownHidden: Boolean,
     onDelete: (Long) -> Unit,
     onToggleKnown: (Flashcard) -> Unit,
     onEdit: (Flashcard) -> Unit,
@@ -332,10 +393,21 @@ fun FlashcardScreen(
     val t = LocalStrings.current
 
     if (cards.isEmpty()) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxSize()) {
+            DeckPicker(
+                decks = decks,
+                activeDeckId = activeDeckId,
+                onSelect = onSelectDeck,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(16.dp),
+                maxWidth = 200.dp
+            )
             Text(
-                t.noCardsYet,
-                modifier = Modifier.padding(24.dp),
+                if (allKnownHidden) t.allKnownHidden else t.noCardsYet,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(24.dp),
                 style = MaterialTheme.typography.bodyLarge
             )
         }
@@ -358,6 +430,12 @@ fun FlashcardScreen(
     val checkScale = remember { Animatable(0f) }
     val checkAlpha = remember { Animatable(0f) }
     val shuffleAnim = remember { Animatable(0f) }
+
+    // pakliváltáskor induljon az elejéről
+    LaunchedEffect(activeDeckId) {
+        index = 0
+        flipped = false
+    }
 
     val safeIndex = index.coerceIn(0, cards.size - 1)
     val card = cards[safeIndex]
@@ -423,7 +501,7 @@ fun FlashcardScreen(
                     flipped = false
                     playShuffle()
                 },
-                modifier = Modifier.align(Alignment.CenterStart)
+                modifier = Modifier.align(Alignment.CenterEnd)
             ) {
                 WLabel(if (isShuffled) t.originalOrder else t.shuffle)
             }
@@ -432,13 +510,13 @@ fun FlashcardScreen(
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.align(Alignment.Center)
             )
-            if (activeDeckName.isNotBlank()) {
-                ActiveDeckLabel(
-                    activeDeckName,
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                    maxWidth = 110.dp
-                )
-            }
+            DeckPicker(
+                decks = decks,
+                activeDeckId = activeDeckId,
+                onSelect = onSelectDeck,
+                modifier = Modifier.align(Alignment.CenterStart),
+                maxWidth = 120.dp
+            )
         }
         Spacer(Modifier.height(4.dp))
         Box(
@@ -692,6 +770,15 @@ fun SettingsScreen(
     var sourceLanguage by remember(settings) { mutableStateOf(settings.sourceLanguage) }
     var targetLanguage by remember(settings) { mutableStateOf(settings.targetLanguage) }
     var uiLanguage by remember(settings) { mutableStateOf(settings.uiLanguage) }
+    var handMode by remember(settings) { mutableStateOf(settings.handMode) }
+    var showKnown by remember(settings) { mutableStateOf(settings.showKnown) }
+    val handLabel: (HandMode) -> String = {
+        when (it) {
+            HandMode.RIGHT -> t.handRight
+            HandMode.LEFT -> t.handLeft
+            HandMode.CENTER -> t.handCenter
+        }
+    }
 
     Column(
         Modifier
@@ -723,6 +810,25 @@ fun SettingsScreen(
             options = AppLang.entries,
             optionLabel = { it.label },
             onSelect = { uiLanguage = it }
+        )
+        Spacer(Modifier.height(20.dp))
+
+        Text(t.customizeTitle, style = MaterialTheme.typography.titleMedium, color = Color(0xFFFFA726))
+        Spacer(Modifier.height(8.dp))
+        DropdownField(
+            label = t.handModeLabel,
+            selectedText = handLabel(handMode),
+            options = HandMode.entries,
+            optionLabel = { handLabel(it) },
+            onSelect = { handMode = it }
+        )
+        Spacer(Modifier.height(12.dp))
+        DropdownField(
+            label = t.showKnownLabel,
+            selectedText = if (showKnown) t.optYes else t.optNo,
+            options = listOf(true, false),
+            optionLabel = { if (it) t.optYes else t.optNo },
+            onSelect = { showKnown = it }
         )
         Spacer(Modifier.height(20.dp))
 
@@ -771,7 +877,9 @@ fun SettingsScreen(
                         baseUrl = baseUrl,
                         sourceLanguage = sourceLanguage,
                         uiLanguage = uiLanguage,
-                        targetLanguage = targetLanguage
+                        targetLanguage = targetLanguage,
+                        handMode = handMode,
+                        showKnown = showKnown
                     )
                 )
             },

@@ -11,6 +11,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -20,8 +21,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -79,6 +83,7 @@ fun DecksScreen(
     var pendingExportText by remember { mutableStateOf<String?>(null) }
     var deckToDelete by remember { mutableStateOf<Deck?>(null) }
     var deckToRename by remember { mutableStateOf<Deck?>(null) }
+    var helpDialog by remember { mutableStateOf<Int?>(null) } // 0 = letöltés, 1 = feltöltés
     val createDocLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("text/plain")
     ) { uri ->
@@ -147,6 +152,23 @@ fun DecksScreen(
             }
         )
     }
+    helpDialog?.let { which ->
+        AlertDialog(
+            onDismissRequest = { helpDialog = null },
+            title = { Text(if (which == 0) t.helpDownloadTitle else t.helpUploadTitle) },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    Text(
+                        if (which == 0) t.helpDownloadBody else t.helpUploadBody,
+                        fontSize = 14.sp
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { helpDialog = null }) { Text(t.closeLabel) }
+            }
+        )
+    }
     Column(
         Modifier
             .fillMaxSize()
@@ -176,24 +198,32 @@ fun DecksScreen(
             ) { WLabel(t.create) }
         }
 
-        WButton(
-            onClick = {
-                pendingExportText = buildAllDecksExportText(decks, allCards, t.emptyDeck)
-                createDocLauncher.launch(t.allDecksFileName)
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-        ) { WLabel(t.downloadAll) }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            WButton(
+                onClick = {
+                    pendingExportText = buildAllDecksExportText(decks, allCards, t.emptyDeck)
+                    createDocLauncher.launch(t.allDecksFileName)
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(48.dp)
+            ) { WLabel(t.downloadAll) }
+            Spacer(Modifier.width(8.dp))
+            HelpButton { helpDialog = 0 }
+        }
 
         Spacer(Modifier.height(8.dp))
 
-        WButton(
-            onClick = { openDocLauncher.launch(arrayOf("text/*", "application/octet-stream")) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-        ) { WLabel(t.uploadDeck) }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            WButton(
+                onClick = { openDocLauncher.launch(arrayOf("text/*", "application/octet-stream")) },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(48.dp)
+            ) { WLabel(t.uploadDeck) }
+            Spacer(Modifier.width(8.dp))
+            HelpButton { helpDialog = 1 }
+        }
 
         Spacer(Modifier.height(12.dp))
 
@@ -281,6 +311,16 @@ fun DecksScreen(
             }
         }
     }
+}
+
+/** Kis négyzet alakú "?" gomb: a letöltés / feltöltés tudnivalóit nyitja meg. */
+@Composable
+private fun HelpButton(onClick: () -> Unit) {
+    WButton(
+        onClick = onClick,
+        modifier = Modifier.size(48.dp),
+        contentPadding = PaddingValues(0.dp)
+    ) { Text("?", fontSize = 20.sp, fontWeight = FontWeight.Bold) }
 }
 
 private fun writeTextToUri(context: Context, uri: Uri, text: String) {

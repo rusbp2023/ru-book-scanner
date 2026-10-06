@@ -33,6 +33,7 @@ private object Keys {
     val UI_LANGUAGE = stringPreferencesKey("ui_language")
     val TARGET_LANGUAGE = stringPreferencesKey("target_language")
     val HAND_MODE = stringPreferencesKey("hand_mode")
+    val CARD_FRONT = stringPreferencesKey("card_front")
     val SHOW_KNOWN = stringPreferencesKey("show_known")
 }
 
@@ -72,6 +73,7 @@ class Store(private val context: Context) {
             uiLanguage = enumOrDefault(prefs[Keys.UI_LANGUAGE], AppLang.HUNGARIAN),
             targetLanguage = enumOrDefault(prefs[Keys.TARGET_LANGUAGE], AppLang.HUNGARIAN),
             handMode = enumOrDefault(prefs[Keys.HAND_MODE], HandMode.CENTER),
+            cardFront = enumOrDefault(prefs[Keys.CARD_FRONT], CardFront.TRANSLATION),
             showKnown = prefs[Keys.SHOW_KNOWN]?.toBooleanStrictOrNull() ?: true
         )
     }
@@ -244,6 +246,7 @@ class Store(private val context: Context) {
             prefs[Keys.UI_LANGUAGE] = settings.uiLanguage.name
             prefs[Keys.TARGET_LANGUAGE] = settings.targetLanguage.name
             prefs[Keys.HAND_MODE] = settings.handMode.name
+            prefs[Keys.CARD_FRONT] = settings.cardFront.name
             prefs[Keys.SHOW_KNOWN] = settings.showKnown.toString()
         }
     }

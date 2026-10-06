@@ -117,7 +117,8 @@ fun AppContent(store: Store) {
         store.ensureDefaultDeck()
     }
 
-        val baseCards = cards.filter { it.deckId == activeDeckId }
+        val deckCards = cards.filter { it.deckId == activeDeckId }
+    val baseCards = if (settings.showKnown) deckCards else deckCards.filter { !it.known }
     val savedOrder = activeDeckId?.let { shuffleOrders[it] }
     val cardsInActiveDeck = if (savedOrder == null) {
         baseCards
@@ -127,6 +128,7 @@ fun AppContent(store: Store) {
         savedOrder.mapNotNull { byId[it] } + baseCards.filter { it.id !in inOrder }
     }
     val isShuffled = savedOrder != null
+    val allKnownHidden = deckCards.isNotEmpty() && baseCards.isEmpty()
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -178,7 +180,9 @@ fun AppContent(store: Store) {
                 AppScreen.WORDS -> WordListScreen(
                     words = words,
                     loading = loading,
-                    activeDeckName = decks.firstOrNull { it.id == activeDeckId }?.name.orEmpty(),
+                    decks = decks,
+                    activeDeckId = activeDeckId,
+                    onSelectDeck = { id -> scope.launch { store.setActiveDeck(id) } },
                     onDelete = { id -> scope.launch { store.removeWord(id) } },
                     onClear = { scope.launch { store.clearWords() } },
                     onAddManual = { text -> scope.launch { store.addWord(text) } },
@@ -214,10 +218,13 @@ fun AppContent(store: Store) {
 
                 AppScreen.CARDS -> FlashcardScreen(
                     cards = cardsInActiveDeck,
-                    activeDeckName = decks.firstOrNull { it.id == activeDeckId }?.name.orEmpty(),
+                    decks = decks,
+                    activeDeckId = activeDeckId,
+                    onSelectDeck = { id -> scope.launch { store.setActiveDeck(id) } },
                     onDelete = { id -> scope.launch { store.deleteFlashcard(id) } },
                     onToggleKnown = { c -> scope.launch { store.updateFlashcard(c.copy(known = !c.known)) } },
                     onEdit = { c -> scope.launch { store.updateFlashcard(c) } },
+                    allKnownHidden = allKnownHidden,
                     isShuffled = isShuffled,
                     onShuffle = { activeDeckId?.let { id -> scope.launch { store.shuffleDeck(id) } } },
                     onResetOrder = { activeDeckId?.let { id -> scope.launch { store.resetDeckOrder(id) } } }

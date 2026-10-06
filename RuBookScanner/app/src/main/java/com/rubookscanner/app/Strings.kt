@@ -67,6 +67,21 @@ interface Strings {
     val save: String
     val settingsTip: String
     val settingsSaved: String
+
+    val customizeTitle: String
+    val handModeLabel: String
+    val handRight: String
+    val handLeft: String
+    val handCenter: String
+    val showKnownLabel: String
+    val optYes: String
+    val optNo: String
+    val allKnownHidden: String
+    val closeLabel: String
+    val helpDownloadTitle: String
+    val helpDownloadBody: String
+    val helpUploadTitle: String
+    val helpUploadBody: String
 }
 
 object StringsHu : Strings {
@@ -137,6 +152,21 @@ object StringsHu : Strings {
     override val save = "Mentés"
     override val settingsTip = "Ingyenes API kulcs beszerzése:"
     override val settingsSaved = "Beállítások mentve"
+
+    override val customizeTitle = "Testreszabás"
+    override val handModeLabel = "Mód"
+    override val handRight = "Jobb kezes"
+    override val handLeft = "Bal kezes"
+    override val handCenter = "Közép"
+    override val showKnownLabel = "„Tudom” kártyák mutatása"
+    override val optYes = "Igen"
+    override val optNo = "Nem"
+    override val allKnownHidden = "Ebben a pakliban minden kártyát tudsz, ezért el vannak rejtve. A Beállításoknál újra megjelenítheted őket."
+    override val closeLabel = "Bezár"
+    override val helpDownloadTitle = "Letöltés"
+    override val helpDownloadBody = "Egy pakli letöltése: a pakli jobb alsó sarkában lévő ⬇ gombbal. Az „Összes pakli letöltése” gomb az összes paklit egyetlen fájlba menti, egymás után.\n\nA fájl sima .txt (UTF-8). A mentés helyét a rendszer fájlválasztója kérdezi meg, külön tároló-engedély nem kell.\n\nFormátum:\n• a pakli neve külön sorban\n• alatta egy ==== vonal, majd egy üres sor\n• soronként egy kártya: a szótári alak, szóközökkel oszlopba rendezve, utána a fordítás\n\nPélda:\nAlap\n====\n\nдом          ház\n\nA fájlt bármilyen szövegszerkesztőben módosíthatod, majd visszatöltheted."
+    override val helpUploadTitle = "Feltöltés"
+    override val helpUploadBody = "A „Pakli feltöltése” gomb a letöltött .txt formátumot olvassa vissza. Egy- vagy többpaklis fájl is jó (az „Összes pakli letöltése” fájlja is).\n\n• Mindig új pakli jön létre, még azonos név esetén is, a meglévő paklikat nem érinti.\n• A kártyák „nem tudom” állapotban érkeznek.\n• Ha a fájlban nincs pakli-fejléc (név és alatta ==== vonal), a fájl neve lesz a pakli neve.\n• Egy kártya sorában a szótári alakot és a fordítást tabulátor vagy legalább két szóköz válassza el. A régi, gondolatjeles forma („szó - fordítás”) is működik."
 }
 
 object StringsEn : Strings {
@@ -207,6 +237,21 @@ object StringsEn : Strings {
     override val save = "Save"
     override val settingsTip = "Get a free API key:"
     override val settingsSaved = "Settings saved"
+
+    override val customizeTitle = "Customization"
+    override val handModeLabel = "Mode"
+    override val handRight = "Right-handed"
+    override val handLeft = "Left-handed"
+    override val handCenter = "Center"
+    override val showKnownLabel = "Show “Known” cards"
+    override val optYes = "Yes"
+    override val optNo = "No"
+    override val allKnownHidden = "You know every card in this deck, so they are hidden. You can show them again in Settings."
+    override val closeLabel = "Close"
+    override val helpDownloadTitle = "Download"
+    override val helpDownloadBody = "Download one deck with the ⬇ button in the bottom right corner of the deck. “Download all decks” saves every deck into a single file, one after another.\n\nThe file is plain .txt (UTF-8). The system file picker asks where to save it; no storage permission is needed.\n\nFormat:\n• the deck name on its own line\n• below it a ==== line, then an empty line\n• then one card per line: the dictionary form, padded with spaces into a column, then the translation\n\nExample:\nBasic\n====\n\nдом          house\n\nYou can edit the file in any text editor and upload it again."
+    override val helpUploadTitle = "Upload"
+    override val helpUploadBody = "“Upload deck” reads back the downloaded .txt format. A file with one or several decks works (including the “Download all decks” file).\n\n• It always creates a new deck, even if the name already exists; your existing decks are not touched.\n• Cards arrive as not known.\n• If the file has no deck header (a name with a ==== line under it), the file name becomes the deck name.\n• On a card line, the dictionary form and the translation must be separated by a tab or at least two spaces. The old dash format (“word - translation”) also works."
 }
 
 object StringsDe : Strings {
@@ -277,6 +322,21 @@ object StringsDe : Strings {
     override val save = "Speichern"
     override val settingsTip = "Kostenlosen API-Schlüssel erhalten:"
     override val settingsSaved = "Einstellungen gespeichert"
+
+    override val customizeTitle = "Anpassung"
+    override val handModeLabel = "Modus"
+    override val handRight = "Rechtshänder"
+    override val handLeft = "Linkshänder"
+    override val handCenter = "Mitte"
+    override val showKnownLabel = "„Gekonnt“-Karten anzeigen"
+    override val optYes = "Ja"
+    override val optNo = "Nein"
+    override val allKnownHidden = "In diesem Deck kennst du alle Karten, deshalb sind sie ausgeblendet. In den Einstellungen kannst du sie wieder anzeigen."
+    override val closeLabel = "Schließen"
+    override val helpDownloadTitle = "Herunterladen"
+    override val helpDownloadBody = "Ein einzelnes Deck lädst du mit dem ⬇-Button unten rechts am Deck herunter. „Alle Decks herunterladen“ speichert alle Decks nacheinander in einer einzigen Datei.\n\nDie Datei ist eine einfache .txt-Datei (UTF-8). Den Speicherort fragt die Dateiauswahl des Systems ab, eine Speicherberechtigung ist nicht nötig.\n\nFormat:\n• der Deckname in einer eigenen Zeile\n• darunter eine ====-Linie, danach eine Leerzeile\n• dann pro Zeile eine Karte: die Grundform, mit Leerzeichen in eine Spalte ausgerichtet, danach die Übersetzung\n\nBeispiel:\nGrundstock\n====\n\nдом          Haus\n\nDie Datei kannst du in einem beliebigen Texteditor bearbeiten und wieder hochladen."
+    override val helpUploadTitle = "Hochladen"
+    override val helpUploadBody = "„Deck hochladen“ liest das heruntergeladene .txt-Format wieder ein. Eine Datei mit einem oder mehreren Decks funktioniert (auch die Datei von „Alle Decks herunterladen“).\n\n• Es entsteht immer ein neues Deck, auch bei gleichem Namen; bestehende Decks bleiben unberührt.\n• Die Karten kommen als „nicht gekonnt“ an.\n• Hat die Datei keine Deck-Kopfzeile (Name mit ====-Linie darunter), wird der Dateiname zum Decknamen.\n• In einer Kartenzeile müssen Grundform und Übersetzung durch einen Tabulator oder mindestens zwei Leerzeichen getrennt sein. Das alte Format mit Bindestrich („Wort - Übersetzung“) funktioniert ebenfalls."
 }
 
 object StringsIt : Strings {
@@ -347,6 +407,21 @@ object StringsIt : Strings {
     override val save = "Salva"
     override val settingsTip = "Ottieni una chiave API gratuita:"
     override val settingsSaved = "Impostazioni salvate"
+
+    override val customizeTitle = "Personalizzazione"
+    override val handModeLabel = "Modalità"
+    override val handRight = "Destrorso"
+    override val handLeft = "Mancino"
+    override val handCenter = "Centro"
+    override val showKnownLabel = "Mostra le schede «Lo so»"
+    override val optYes = "Sì"
+    override val optNo = "No"
+    override val allKnownHidden = "In questo mazzo conosci tutte le schede, quindi sono nascoste. Puoi mostrarle di nuovo nelle Impostazioni."
+    override val closeLabel = "Chiudi"
+    override val helpDownloadTitle = "Scaricamento"
+    override val helpDownloadBody = "Scarichi un singolo mazzo con il pulsante ⬇ in basso a destra del mazzo. «Scarica tutti i mazzi» salva tutti i mazzi uno dopo l'altro in un unico file.\n\nIl file è un semplice .txt (UTF-8). Il punto di salvataggio si sceglie con il selettore di file del sistema, non serve il permesso di archiviazione.\n\nFormato:\n• il nome del mazzo su una riga a sé\n• sotto una linea ====, poi una riga vuota\n• poi una scheda per riga: la forma base, allineata in colonna con degli spazi, poi la traduzione\n\nEsempio:\nBase\n====\n\nдом          casa\n\nPuoi modificare il file con qualsiasi editor di testo e ricaricarlo."
+    override val helpUploadTitle = "Caricamento"
+    override val helpUploadBody = "«Carica mazzo» rilegge il formato .txt scaricato. Va bene un file con uno o più mazzi (anche quello di «Scarica tutti i mazzi»).\n\n• Crea sempre un nuovo mazzo, anche se il nome esiste già; i mazzi esistenti non vengono toccati.\n• Le schede arrivano come non conosciute.\n• Se il file non ha un'intestazione di mazzo (un nome con una linea ==== sotto), il nome del file diventa il nome del mazzo.\n• In una riga di scheda, forma base e traduzione devono essere separate da una tabulazione o da almeno due spazi. Funziona anche il vecchio formato con il trattino («parola - traduzione»)."
 }
 
 object StringsFr : Strings {
@@ -417,6 +492,21 @@ object StringsFr : Strings {
     override val save = "Enregistrer"
     override val settingsTip = "Obtenir une clé API gratuite :"
     override val settingsSaved = "Paramètres enregistrés"
+
+    override val customizeTitle = "Personnalisation"
+    override val handModeLabel = "Mode"
+    override val handRight = "Droitier"
+    override val handLeft = "Gaucher"
+    override val handCenter = "Centre"
+    override val showKnownLabel = "Afficher les cartes « Connu »"
+    override val optYes = "Oui"
+    override val optNo = "Non"
+    override val allKnownHidden = "Tu connais toutes les cartes de ce paquet, elles sont donc masquées. Tu peux les afficher à nouveau dans les Paramètres."
+    override val closeLabel = "Fermer"
+    override val helpDownloadTitle = "Téléchargement"
+    override val helpDownloadBody = "Tu télécharges un seul paquet avec le bouton ⬇ en bas à droite du paquet. « Télécharger tous les paquets » enregistre tous les paquets les uns après les autres dans un seul fichier.\n\nLe fichier est un simple .txt (UTF-8). Le sélecteur de fichiers du système demande où l'enregistrer, aucune autorisation de stockage n'est nécessaire.\n\nFormat :\n• le nom du paquet sur sa propre ligne\n• en dessous une ligne ====, puis une ligne vide\n• ensuite une carte par ligne : la forme de base, alignée en colonne avec des espaces, puis la traduction\n\nExemple :\nBase\n====\n\nдом          maison\n\nTu peux modifier le fichier dans n'importe quel éditeur de texte, puis le réimporter."
+    override val helpUploadTitle = "Importation"
+    override val helpUploadBody = "« Importer un paquet » relit le format .txt téléchargé. Un fichier avec un ou plusieurs paquets convient (y compris celui de « Télécharger tous les paquets »).\n\n• Un nouveau paquet est toujours créé, même si le nom existe déjà ; les paquets existants ne sont pas modifiés.\n• Les cartes arrivent comme non connues.\n• Si le fichier n'a pas d'en-tête de paquet (un nom avec une ligne ==== en dessous), le nom du fichier devient le nom du paquet.\n• Sur une ligne de carte, la forme de base et la traduction doivent être séparées par une tabulation ou au moins deux espaces. L'ancien format avec tiret (« mot - traduction ») fonctionne aussi."
 }
 
 object StringsEs : Strings {
@@ -487,6 +577,21 @@ object StringsEs : Strings {
     override val save = "Guardar"
     override val settingsTip = "Obtener una clave API gratuita:"
     override val settingsSaved = "Ajustes guardados"
+
+    override val customizeTitle = "Personalización"
+    override val handModeLabel = "Modo"
+    override val handRight = "Diestro"
+    override val handLeft = "Zurdo"
+    override val handCenter = "Centro"
+    override val showKnownLabel = "Mostrar las tarjetas «Sabida»"
+    override val optYes = "Sí"
+    override val optNo = "No"
+    override val allKnownHidden = "En este mazo sabes todas las tarjetas, por eso están ocultas. Puedes volver a mostrarlas en Ajustes."
+    override val closeLabel = "Cerrar"
+    override val helpDownloadTitle = "Descarga"
+    override val helpDownloadBody = "Descargas un solo mazo con el botón ⬇ de la esquina inferior derecha del mazo. «Descargar todos los mazos» guarda todos los mazos uno tras otro en un único archivo.\n\nEl archivo es un .txt sencillo (UTF-8). El selector de archivos del sistema pregunta dónde guardarlo, no hace falta permiso de almacenamiento.\n\nFormato:\n• el nombre del mazo en una línea aparte\n• debajo una línea ====, luego una línea vacía\n• después una tarjeta por línea: la forma base, alineada en columna con espacios, y luego la traducción\n\nEjemplo:\nBase\n====\n\nдом          casa\n\nPuedes editar el archivo con cualquier editor de texto y volver a subirlo."
+    override val helpUploadTitle = "Subida"
+    override val helpUploadBody = "«Subir mazo» vuelve a leer el formato .txt descargado. Sirve un archivo con uno o varios mazos (también el de «Descargar todos los mazos»).\n\n• Siempre se crea un mazo nuevo, aunque el nombre ya exista; los mazos existentes no se tocan.\n• Las tarjetas llegan como no sabidas.\n• Si el archivo no tiene encabezado de mazo (un nombre con una línea ==== debajo), el nombre del archivo pasa a ser el nombre del mazo.\n• En la línea de una tarjeta, la forma base y la traducción deben ir separadas por un tabulador o por al menos dos espacios. El formato antiguo con guion («palabra - traducción») también funciona."
 }
 
 object StringsRu : Strings {
@@ -557,6 +662,21 @@ object StringsRu : Strings {
     override val save = "Сохранить"
     override val settingsTip = "Получить бесплатный API-ключ:"
     override val settingsSaved = "Настройки сохранены"
+
+    override val customizeTitle = "Персонализация"
+    override val handModeLabel = "Режим"
+    override val handRight = "Для правшей"
+    override val handLeft = "Для левшей"
+    override val handCenter = "По центру"
+    override val showKnownLabel = "Показывать карточки «Знаю»"
+    override val optYes = "Да"
+    override val optNo = "Нет"
+    override val allKnownHidden = "В этой колоде ты знаешь все карточки, поэтому они скрыты. Показать их снова можно в настройках."
+    override val closeLabel = "Закрыть"
+    override val helpDownloadTitle = "Скачивание"
+    override val helpDownloadBody = "Одну колоду можно скачать кнопкой ⬇ в правом нижнем углу колоды. Кнопка «Скачать все колоды» сохраняет все колоды подряд в один файл.\n\nФайл — обычный .txt (UTF-8). Место сохранения спрашивает системный выбор файлов, разрешение на доступ к памяти не нужно.\n\nФормат:\n• название колоды в отдельной строке\n• под ним линия ====, затем пустая строка\n• далее по одной карточке в строке: словарная форма, выровненная пробелами в столбец, затем перевод\n\nПример:\nОсновная\n====\n\nhouse          дом\n\nФайл можно править в любом текстовом редакторе и загружать обратно."
+    override val helpUploadTitle = "Загрузка"
+    override val helpUploadBody = "«Загрузить колоду» читает скачанный формат .txt. Подойдёт файл с одной или несколькими колодами (в том числе файл из «Скачать все колоды»).\n\n• Всегда создаётся новая колода, даже если такое название уже есть; существующие колоды не затрагиваются.\n• Карточки приходят как «не знаю».\n• Если в файле нет заголовка колоды (название с линией ==== под ним), названием колоды станет имя файла.\n• В строке карточки словарная форма и перевод должны быть разделены табуляцией или минимум двумя пробелами. Старый формат с тире («слово - перевод») тоже работает."
 }
 
 val LocalStrings = staticCompositionLocalOf<Strings> { StringsHu }

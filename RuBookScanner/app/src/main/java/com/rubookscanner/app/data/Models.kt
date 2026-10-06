@@ -20,6 +20,9 @@ data class Flashcard(
 
 enum class AiProvider { ANTHROPIC, OPENAI, GEMINI }
 
+/** A scan felület kiosztása: jobb kezes, bal kezes vagy közép (alapértelmezett). */
+enum class HandMode { RIGHT, LEFT, CENTER }
+
 /** A könyv nyelve. A label a nyelv saját neve, a promptName az AI-nak szóló kérésben szerepel. */
 enum class SourceLanguage(val label: String, val promptName: String) {
     RUSSIAN("Русский", "orosz"),
@@ -48,7 +51,9 @@ data class AiSettings(
     val baseUrl: String = "",
     val sourceLanguage: SourceLanguage = SourceLanguage.RUSSIAN,
     val uiLanguage: AppLang = AppLang.HUNGARIAN,
-    val targetLanguage: AppLang = AppLang.HUNGARIAN
+    val targetLanguage: AppLang = AppLang.HUNGARIAN,
+    val handMode: HandMode = HandMode.CENTER,
+    val showKnown: Boolean = true
 )
 
 fun defaultModelFor(provider: AiProvider): String = when (provider) {

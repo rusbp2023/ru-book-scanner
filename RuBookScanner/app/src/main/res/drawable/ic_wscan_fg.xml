@@ -1,23 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- outer ring: thinner and larger -->
+    <!-- glass body: gradient rounded square -->
+    <path android:pathData="M41,26H67A15,15 0 0 1 82,41V67A15,15 0 0 1 67,82H41A15,15 0 0 1 26,67V41A15,15 0 0 1 41,26Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="26"
+                android:startY="26"
+                android:endX="82"
+                android:endY="82"
+                android:startColor="#D0B7DAFF"
+                android:centerColor="#A05A92DE"
+                android:endColor="#C02A5AB0" />
+        </aapt:attr>
+    </path>
+    <!-- book page under the glass -->
+    <path
+        android:fillColor="#C5CAD1"
+        android:pathData="M34,34h40v40h-40z" />
+    <!-- evenly spaced text lines -->
+    <path
+        android:fillColor="#8D949C"
+        android:pathData="M37,36.5h34v2.4h-34z M37,41.5h34v2.4h-34z M37,46.5h34v2.4h-34z M37,51.5h34v2.4h-34z M37,56.5h34v2.4h-34z M37,61.5h34v2.4h-34z M37,66.5h34v2.4h-34z" />
+    <!-- narrower translucent yellow scan rectangle -->
+    <path
+        android:fillColor="#99FFD600"
+        android:strokeColor="#FFD600"
+        android:strokeWidth="1.6"
+        android:pathData="M40,48h28v12h-28z" />
+    <!-- glass sheen over everything -->
+    <path android:pathData="M41,26H67A15,15 0 0 1 82,41V67A15,15 0 0 1 67,82H41A15,15 0 0 1 26,67V41A15,15 0 0 1 41,26Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="26"
+                android:startY="26"
+                android:endX="70"
+                android:endY="82"
+                android:startColor="#66FFFFFF"
+                android:endColor="#0DFFFFFF" />
+        </aapt:attr>
+    </path>
+    <!-- glass rim -->
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#FFD600"
-        android:strokeWidth="3.5"
-        android:pathData="M24,54 a30,30 0 1,0 60,0 a30,30 0 1,0 -60,0 z" />
-    <!-- upper half faintly filled (scanning) -->
-    <path
-        android:fillColor="#66FFD600"
-        android:pathData="M32,44h44v10h-44z" />
-    <!-- wider horizontal yellow rectangle -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFD600"
-        android:strokeWidth="3"
-        android:pathData="M32,44h44v20h-44z" />
+        android:strokeWidth="1.3"
+        android:pathData="M41,26H67A15,15 0 0 1 82,41V67A15,15 0 0 1 67,82H41A15,15 0 0 1 26,67V41A15,15 0 0 1 41,26Z">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:type="linear"
+                android:startX="26"
+                android:startY="26"
+                android:endX="82"
+                android:endY="82"
+                android:startColor="#B3FFFFFF"
+                android:endColor="#26FFFFFF" />
+        </aapt:attr>
+    </path>
 </vector>

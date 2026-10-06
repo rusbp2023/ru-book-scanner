@@ -1,6 +1,17 @@
 package com.rubookscanner.app
 
 import android.graphics.Bitmap
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -133,12 +144,17 @@ fun AppContent(store: Store) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            Row(
+            Column(
                 Modifier
                     .fillMaxWidth()
                     .background(Color(0xFF1E1E22))
                     .navigationBarsPadding()
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
+            ) {
+            NeonIndicator(screen.ordinal)
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(start = 8.dp, end = 8.dp, top = 2.dp, bottom = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 NavButton(screen == AppScreen.SCAN, Modifier.weight(1f), { screen = AppScreen.SCAN }) {
@@ -156,6 +172,7 @@ fun AppContent(store: Store) {
                 NavButton(screen == AppScreen.SETTINGS, Modifier.weight(0.7f), { screen = AppScreen.SETTINGS }) {
                     Icon(Icons.Filled.Settings, contentDescription = t.settingsDesc)
                 }
+            }
             }
         }
     ) { padding ->
@@ -228,10 +245,6 @@ fun AppContent(store: Store) {
                     onToggleKnown = { c -> scope.launch { store.updateFlashcard(c.copy(known = !c.known)) } },
                     onEdit = { c -> scope.launch { store.updateFlashcard(c) } },
                     allKnownHidden = allKnownHidden,
-                    showKnown = settings.showKnown,
-                    onToggleShowKnown = {
-                        scope.launch { store.saveSettings(settings.copy(showKnown = !settings.showKnown)) }
-                    },
                     isShuffled = isShuffled,
                     onShuffle = { activeDeckId?.let { id -> scope.launch { store.shuffleDeck(id) } } },
                     onResetOrder = { activeDeckId?.let { id -> scope.launch { store.resetDeckOrder(id) } } }
@@ -305,4 +318,61 @@ private fun NavButton(
             content()
         }
     }
+}
+
+/** Thin neon slider above the bottom bar: glows over the active tab and slides to the tapped one. */
+@Composable
+private fun NeonIndicator(selected: Int) {
+    val density = LocalDensity.current
+    var widthPx by remember { mutableStateOf(0f) }
+    val weights = listOf(1f, 1f, 1f, 1f, 0.7f) // same weights as the nav buttons
+    val padPx = with(density) { 8.dp.toPx() }
+    val gapPx = with(density) { 6.dp.toPx() }
+    val unit = if (widthPx > 0f) (widthPx - 2 * padPx - 4 * gapPx) / weights.sum() else 0f
+    var start = padPx
+    for (i in 0 until selected) start += weights[i] * unit + gapPx
+    val tabW = weights[selected] * unit
+    val x by animateFloatAsState(start, tween(300, easing = FastOutSlowInEasing), label = "neonX")
+    val w by animateFloatAsState(tabW, tween(300, easing = FastOutSlowInEasing), label = "neonW")
+    val blue = Color(0xFF64B5F6)
+    val bright = Color(0xFFB3E0FF)
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(12.dp)
+            .onSizeChanged { widthPx = it.width.toFloat() }
+            .drawBehind {
+                if (w > 0f) {
+                    val lineH = 2.5.dp.toPx()
+                    val bottom = size.height
+                    val inset = w * 0.2f
+                    val lx = x + inset
+                    val lw = w - 2 * inset
+                    // soft glow rising from the line
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            listOf(Color.Transparent, blue.copy(alpha = 0.35f)),
+                            startY = 0f,
+                            endY = bottom
+                        ),
+                        topLeft = Offset(x + w * 0.05f, 0f),
+                        size = Size(w * 0.9f, bottom)
+                    )
+                    // halo around the line
+                    drawRoundRect(
+                        blue.copy(alpha = 0.45f),
+                        Offset(lx - 2.dp.toPx(), bottom - lineH - 2.dp.toPx()),
+                        Size(lw + 4.dp.toPx(), lineH + 4.dp.toPx()),
+                        CornerRadius(4.dp.toPx())
+                    )
+                    // the bright neon line
+                    drawRoundRect(
+                        bright,
+                        Offset(lx, bottom - lineH),
+                        Size(lw, lineH),
+                        CornerRadius(lineH / 2f)
+                    )
+                }
+            }
+    )
 }

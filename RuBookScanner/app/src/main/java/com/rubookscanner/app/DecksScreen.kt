@@ -503,7 +503,7 @@ private fun DeckNameButton(
                     style = Stroke(lw)
                 )
                 drawRoundRect(
-                    Color(0x66000000),
+                    Color(0x9E000000),
                     Offset(lw / 2, lw / 2),
                     Size(w - lw, h - lw),
                     corner,

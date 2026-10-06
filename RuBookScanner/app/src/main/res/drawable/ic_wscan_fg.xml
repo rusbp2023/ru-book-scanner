@@ -4,28 +4,20 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- lekerekített kék négyzet -->
-    <path
-        android:fillColor="#1976D2"
-        android:strokeColor="#64B5F6"
-        android:strokeWidth="2"
-        android:pathData="M40,26 h28 a14,14 0 0 1 14,14 v28 a14,14 0 0 1 -14,14 h-28 a14,14 0 0 1 -14,-14 v-28 a14,14 0 0 1 14,-14 z" />
-    <!-- a scan téglalapjának halvány izzása -->
+    <!-- külső keret -->
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#6664B5F6"
-        android:strokeWidth="7"
-        android:pathData="M30,48 h50 v16 h-50 z" />
-    <!-- sárga célzó négyzet -->
+        android:strokeColor="#FFD600"
+        android:strokeWidth="6"
+        android:pathData="M32,54 a22,22 0 1,0 44,0 a22,22 0 1,0 -44,0 z" />
+    <!-- a téglalap felső fele halványan telített (scannelés) -->
+    <path
+        android:fillColor="#66FFD600"
+        android:pathData="M37,46h34v8h-34z" />
+    <!-- vízszintes sárga téglalap -->
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#FFF176"
-        android:strokeWidth="3.5"
-        android:pathData="M42,42 h24 v24 h-24 z" />
-    <!-- világoskék téglalap, mint a scannelés téglalapja: keresztezi a sárga négyzetet -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#E3F2FD"
-        android:strokeWidth="2.5"
-        android:pathData="M30,48 h50 v16 h-50 z" />
+        android:strokeColor="#FFD600"
+        android:strokeWidth="3"
+        android:pathData="M37,46h34v16h-34z" />
 </vector>

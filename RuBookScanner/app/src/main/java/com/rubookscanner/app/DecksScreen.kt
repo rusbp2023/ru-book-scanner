@@ -225,7 +225,7 @@ fun DecksScreen(
                                 modifier = Modifier
                                     .weight(1f)
                                     .fillMaxHeight()
-                                    .padding(horizontal = 6.dp, vertical = 10.dp)
+                                    .padding(start = 0.dp, end = 0.dp, top = 5.dp, bottom = 5.dp)
                             ) {
                                 Text(
                                     deck.name,
@@ -434,34 +434,41 @@ private fun DeckNameButton(
                 val w = size.width
                 val h = size.height
                 val r = 8.dp.toPx()
-                val lw = 1.5.dp.toPx()
-                val inner = lw * 1.5f + 1.dp.toPx()
-                val y1 = r
-                val y2 = h - r
+                val corner = CornerRadius(r, r)
 
-                // besüllyesztett belső, felül belső árnyékkal
+                // alig sötétebb belső: szinte egyezik a bársonnyal, nyomáskor mélyebb
                 drawRoundRect(
-                    if (pressed) Color(0x66000000) else Color(0x33000000),
+                    if (pressed) Color(0x40000000) else Color(0x14000000),
                     Offset(0f, 0f),
                     Size(w, h),
-                    CornerRadius(r, r)
+                    corner
                 )
+                // finom belső árnyék a felső élnél
                 drawRect(
                     brush = Brush.verticalGradient(
-                        listOf(if (pressed) Color(0x80000000) else Color(0x59000000), Color(0x00000000)),
+                        listOf(if (pressed) Color(0x59000000) else Color(0x26000000), Color(0x00000000)),
                         startY = 0f,
-                        endY = 8.dp.toPx()
+                        endY = 6.dp.toPx()
                     ),
                     topLeft = Offset(r, 0f),
-                    size = Size(w - 2 * r, 8.dp.toPx())
+                    size = Size(w - 2 * r, 6.dp.toPx())
                 )
-
-                // bal szegély: sötét külső + halvány fényes belső vonal
-                drawLine(Color(0xB3000000), Offset(lw / 2, y1), Offset(lw / 2, y2), lw)
-                drawLine(Color(0x40FFC8B4), Offset(inner, y1), Offset(inner, y2), 1.dp.toPx())
-                // jobb szegély: halvány fényes belső + sötét külső vonal
-                drawLine(Color(0x40FFC8B4), Offset(w - inner, y1), Offset(w - inner, y2), 1.dp.toPx())
-                drawLine(Color(0xB3000000), Offset(w - lw / 2, y1), Offset(w - lw / 2, y2), lw)
+                // bemélyedt perem: alul/jobbra halvány fényes ajak, fölötte sötét vékony vonal
+                val lw = 1.dp.toPx()
+                drawRoundRect(
+                    Color(0x26FFC8B4),
+                    Offset(lw / 2, lw / 2 + 1.dp.toPx()),
+                    Size(w - lw, h - lw),
+                    corner,
+                    style = Stroke(lw)
+                )
+                drawRoundRect(
+                    Color(0x66000000),
+                    Offset(lw / 2, lw / 2),
+                    Size(w - lw, h - lw),
+                    corner,
+                    style = Stroke(lw)
+                )
             },
         contentAlignment = Alignment.Center
     ) {

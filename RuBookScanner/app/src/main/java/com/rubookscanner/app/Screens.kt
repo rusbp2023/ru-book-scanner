@@ -827,17 +827,17 @@ fun SettingsScreen(
         Spacer(Modifier.height(8.dp))
         DropdownField(
             label = t.bookLanguageLabel,
-            selectedText = sourceLanguage.label,
+            selectedText = t.langName(AppLang.valueOf(sourceLanguage.name)),
             options = com.rubookscanner.app.data.SourceLanguage.entries,
-            optionLabel = { it.label },
+            optionLabel = { t.langName(AppLang.valueOf(it.name)) },
             onSelect = { sourceLanguage = it }
         )
         Spacer(Modifier.height(12.dp))
         DropdownField(
             label = t.translationLanguageLabel,
-            selectedText = targetLanguage.label,
+            selectedText = t.langName(targetLanguage),
             options = AppLang.entries,
-            optionLabel = { it.label },
+            optionLabel = { t.langName(it) },
             onSelect = { targetLanguage = it }
         )
         Spacer(Modifier.height(12.dp))

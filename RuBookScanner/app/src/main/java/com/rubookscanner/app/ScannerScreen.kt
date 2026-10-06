@@ -1,6 +1,18 @@
 package com.rubookscanner.app
 
 import android.Manifest
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.runtime.rememberUpdatedState
+import kotlin.math.hypot
+import kotlin.math.roundToInt
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -113,7 +125,8 @@ private data class Particle(
 fun ScannerScreen(
     settings: AiSettings,
     pendingCrops: SnapshotStateList<Bitmap>,
-    onFlashcardsAccepted: (List<Flashcard>) -> Unit
+    onFlashcardsAccepted: (List<Flashcard>) -> Unit,
+    onHandModeChange: (HandMode) -> Unit
 ) {
     val context = LocalContext.current
     var hasPermission by remember {
@@ -136,7 +149,8 @@ fun ScannerScreen(
         CameraScanContent(
             settings = settings,
             pendingCrops = pendingCrops,
-            onFlashcardsAccepted = onFlashcardsAccepted
+            onFlashcardsAccepted = onFlashcardsAccepted,
+            onHandModeChange = onHandModeChange
         )
     } else {
         PermissionRequiredScreen(onRequest = { launcher.launch(Manifest.permission.CAMERA) })
@@ -166,7 +180,8 @@ private fun PermissionRequiredScreen(onRequest: () -> Unit) {
 private fun CameraScanContent(
     settings: AiSettings,
     pendingCrops: SnapshotStateList<Bitmap>,
-    onFlashcardsAccepted: (List<Flashcard>) -> Unit
+    onFlashcardsAccepted: (List<Flashcard>) -> Unit,
+    onHandModeChange: (HandMode) -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -182,6 +197,7 @@ private fun CameraScanContent(
         HandMode.LEFT -> 32.dp
         HandMode.CENTER -> 0.dp
     }
+    val aimOffsetAnimated by animateDpAsState(aimOffsetDp, tween(220), label = "aimOffset")
     /** A téglalap középpontjának eltolása a képernyő szélességéhez viszonyítva (a kivágás is ide igazodik). */
     fun aimShift(): Float =
         if (previewView.width > 0) with(density) { aimOffsetDp.toPx() } / previewView.width else 0f
@@ -274,9 +290,65 @@ private fun CameraScanContent(
         }
     }
 
+    // --- draggable capture button ---
+    var boxW by remember { mutableStateOf(0f) }
+    var boxH by remember { mutableStateOf(0f) }
+    var dragging by remember { mutableStateOf(false) }
+    var settling by remember { mutableStateOf(false) }
+    var dragX by remember { mutableStateOf(0f) }
+    var dragY by remember { mutableStateOf(0f) }
+    var hoverMode by remember { mutableStateOf<HandMode?>(null) }
+    var longPressed by remember { mutableStateOf(false) }
+    val settleX = remember { Animatable(0f) }
+    val settleY = remember { Animatable(0f) }
+    val currentMode by rememberUpdatedState(settings.handMode)
+    val onModeChange by rememberUpdatedState(onHandModeChange)
+    val haptic = LocalHapticFeedback.current
+    val btnPx = with(density) { 80.dp.toPx() }
+
+    /** Top-left corner of the capture button in each mode. */
+    fun slotPos(m: HandMode): Offset {
+        val side = with(density) { 16.dp.toPx() }
+        val top = with(density) { 63.dp.toPx() }
+        return when (m) {
+            HandMode.RIGHT -> Offset(boxW - side - btnPx, top)
+            HandMode.LEFT -> Offset(side, top)
+            HandMode.CENTER -> Offset((boxW - btnPx) / 2f, boxH - side - btnPx)
+        }
+    }
+
+    fun distToSlot(m: HandMode, cx: Float, cy: Float): Float {
+        val p = slotPos(m)
+        return hypot(p.x + btnPx / 2f - cx, p.y + btnPx / 2f - cy)
+    }
+
+    fun finishDrag() {
+        val target = hoverMode
+        hoverMode = null
+        longPressed = false
+        scope.launch {
+            settleX.snapTo(dragX)
+            settleY.snapTo(dragY)
+            settling = true
+            dragging = false
+            val mode = target ?: currentMode
+            if (mode != currentMode) onModeChange(mode)
+            val dest = slotPos(mode)
+            val a = launch { settleX.animateTo(dest.x, tween(180)) }
+            val b = launch { settleY.animateTo(dest.y, tween(180)) }
+            a.join()
+            b.join()
+            settling = false
+        }
+    }
+
     val captureButton: @Composable (Modifier) -> Unit = { mod ->
             WButton(
                 onClick = {
+                    if (longPressed) {
+                        longPressed = false
+                        return@WButton
+                    }
                     isCapturing = true
                     errorMsg = null
                     cameraController.takePicture(
@@ -377,7 +449,14 @@ private fun CameraScanContent(
         previewView.controller = cameraController
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .onSizeChanged {
+                boxW = it.width.toFloat()
+                boxH = it.height.toFloat()
+            }
+    ) {
         AndroidView(
             factory = { previewView },
             modifier = Modifier.fillMaxSize()
@@ -389,7 +468,7 @@ private fun CameraScanContent(
             Box(
                 Modifier
                     .align(Alignment.Center)
-                    .offset(x = aimOffsetDp)
+                    .offset(x = aimOffsetAnimated)
                     .size(width = 52.dp, height = 26.dp)
                     .border(2.dp, AimColor, RectangleShape)
             )
@@ -398,7 +477,7 @@ private fun CameraScanContent(
                 Box(
                     Modifier
                         .align(Alignment.Center)
-                        .offset(x = aimOffsetDp)
+                        .offset(x = aimOffsetAnimated)
                         .size(width = 52.dp, height = 26.dp)
                         .graphicsLayer {
                             val s = 1.3f + 0.7f * pulse.value
@@ -616,17 +695,74 @@ private fun CameraScanContent(
             }
 
             if (settings.handMode == HandMode.CENTER) {
-                captureButton(Modifier)
+                Box(Modifier.height(80.dp))
             }
         }
 
-        // jobb / bal kezes mód: a fotó gomb felül az oldalon, kb. 1 cm-rel a sarok alatt
-        if (settings.handMode != HandMode.CENTER) {
-            Box(
+        // drag targets: visible only while the capture button is being dragged
+        if (boxW > 0f) {
+            if (dragging) {
+                HandMode.entries.filter { it != currentMode }.forEach { m ->
+                    val p = slotPos(m)
+                    val hot = hoverMode == m
+                    Box(
+                        Modifier
+                            .offset { IntOffset(p.x.roundToInt(), p.y.roundToInt()) }
+                            .size(80.dp)
+                            .graphicsLayer {
+                                val sc = if (hot) 1.12f else 1f
+                                scaleX = sc
+                                scaleY = sc
+                            }
+                            .clip(CircleShape)
+                            .background(Color(0xFF64B5F6).copy(alpha = if (hot) 0.60f else 0.32f))
+                            .border(
+                                2.dp,
+                                Color(0xFFBBDEFB).copy(alpha = if (hot) 1f else 0.7f),
+                                CircleShape
+                            )
+                    )
+                }
+            }
+            val slot = slotPos(settings.handMode)
+            val btnX = if (dragging) dragX else if (settling) settleX.value else slot.x
+            val btnY = if (dragging) dragY else if (settling) settleY.value else slot.y
+            captureButton(
                 Modifier
-                    .align(if (settings.handMode == HandMode.RIGHT) Alignment.TopEnd else Alignment.TopStart)
-                    .padding(top = 63.dp, start = 16.dp, end = 16.dp)
-            ) { captureButton(Modifier) }
+                    .offset { IntOffset(btnX.roundToInt(), btnY.roundToInt()) }
+                    .pointerInput(Unit) {
+                        detectDragGesturesAfterLongPress(
+                            onDragStart = {
+                                val p = slotPos(currentMode)
+                                dragX = p.x
+                                dragY = p.y
+                                longPressed = true
+                                dragging = true
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            },
+                            onDrag = { change, amount ->
+                                change.consume()
+                                dragX = (dragX + amount.x).coerceIn(0f, maxOf(0f, boxW - btnPx))
+                                dragY = (dragY + amount.y).coerceIn(0f, maxOf(0f, boxH - btnPx))
+                                val cx = dragX + btnPx / 2f
+                                val cy = dragY + btnPx / 2f
+                                val thresh = 70.dp.toPx()
+                                val best = HandMode.entries
+                                    .filter { it != currentMode }
+                                    .minByOrNull { distToSlot(it, cx, cy) }
+                                hoverMode = if (best != null && distToSlot(best, cx, cy) < thresh) best else null
+                            },
+                            onDragEnd = { finishDrag() },
+                            onDragCancel = { finishDrag() }
+                        )
+                    }
+                    .graphicsLayer {
+                        val sc = if (dragging) 1.12f else 1f
+                        scaleX = sc
+                        scaleY = sc
+                        alpha = if (dragging) 0.9f else 1f
+                    }
+            )
         }
     }
 }

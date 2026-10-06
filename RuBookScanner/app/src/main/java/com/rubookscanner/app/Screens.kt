@@ -209,8 +209,8 @@ fun WTextField(
 }
 
 /**
- * Pakliválasztó: halvány keretes, két soros ("Pakli" + a pakli neve) lenyíló.
- * Kiválasztva az adott pakli lesz az aktív.
+ * Pakli valaszto: az app sotet kek feluletebol indul, csak halvany meleg (barsony-barnas)
+ * arnyalattal, es meleg feher felirattal - emlekeztet a Pakli fulre, de nem azonos vele.
  */
 @Composable
 fun DeckPicker(
@@ -223,13 +223,19 @@ fun DeckPicker(
     val t = LocalStrings.current
     var expanded by remember { mutableStateOf(false) }
     val activeName = decks.firstOrNull { it.id == activeDeckId }?.name.orEmpty()
-    val shape = RoundedCornerShape(8.dp)
-    val orange = Color(0xFFFFB74D)
+    val shape = RoundedCornerShape(10.dp)
+    val warmInk = Color(0xFFEDE6DA)
+    val warmSoft = Color(0xFFB8A39A)
     Box(modifier.widthIn(max = maxWidth)) {
         Row(
             Modifier
                 .clip(shape)
-                .border(1.dp, orange.copy(alpha = 0.35f), shape)
+                .background(Brush.verticalGradient(listOf(Color(0xFF2E2229), Color(0xFF1B1D29))))
+                .border(
+                    1.dp,
+                    Brush.verticalGradient(listOf(Color(0x55D2BBB0), Color(0x22D2BBB0))),
+                    shape
+                )
                 .clickable { expanded = true }
                 .padding(horizontal = 10.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -238,22 +244,26 @@ fun DeckPicker(
                 Text(
                     t.navDeck,
                     fontSize = 11.sp,
-                    color = orange.copy(alpha = 0.7f),
+                    color = warmSoft,
                     maxLines = 1
                 )
                 Text(
-                    activeName.ifBlank { "—" },
+                    activeName.ifBlank { "-" },
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
-                    color = orange,
+                    color = warmInk,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
             Spacer(Modifier.width(6.dp))
-            Text("▾", color = orange, fontSize = 14.sp)
+            Text("\u25BE", color = warmSoft, fontSize = 14.sp)
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(Color(0xFF221B24))
+        ) {
             decks.forEach { deck ->
                 val active = deck.id == activeDeckId
                 DropdownMenuItem(
@@ -261,7 +271,7 @@ fun DeckPicker(
                         Text(
                             deck.name,
                             fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
-                            color = if (active) orange else Color.Unspecified
+                            color = if (active) Color(0xFFE8C4B8) else warmInk
                         )
                     },
                     onClick = {
@@ -272,28 +282,6 @@ fun DeckPicker(
             }
         }
     }
-}
-
-/** Small capsule on the card screen: switches whether "known" cards are shown. */
-@Composable
-fun KnownToggle(show: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
-    val t = LocalStrings.current
-    val green = Color(0xFF81C784)
-    val grey = Color(0xFF7D8B9B)
-    val shape = RoundedCornerShape(12.dp)
-    Text(
-        t.known,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.SemiBold,
-        color = if (show) green else grey,
-        textDecoration = if (show) TextDecoration.None else TextDecoration.LineThrough,
-        maxLines = 1,
-        modifier = modifier
-            .clip(shape)
-            .border(1.dp, if (show) green.copy(alpha = 0.8f) else grey.copy(alpha = 0.35f), shape)
-            .clickable(onClick = onToggle)
-            .padding(horizontal = 10.dp, vertical = 5.dp)
-    )
 }
 
 @Composable
@@ -405,8 +393,6 @@ fun FlashcardScreen(
     activeDeckId: Long?,
     onSelectDeck: (Long) -> Unit,
     allKnownHidden: Boolean,
-    showKnown: Boolean,
-    onToggleShowKnown: () -> Unit,
     onDelete: (Long) -> Unit,
     onToggleKnown: (Flashcard) -> Unit,
     onEdit: (Flashcard) -> Unit,
@@ -426,13 +412,6 @@ fun FlashcardScreen(
                     .align(Alignment.TopStart)
                     .padding(16.dp),
                 maxWidth = 200.dp
-            )
-            KnownToggle(
-                show = showKnown,
-                onToggle = onToggleShowKnown,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
             )
             Text(
                 if (allKnownHidden) t.allKnownHidden else t.noCardsYet,
@@ -536,17 +515,11 @@ fun FlashcardScreen(
             ) {
                 WLabel(if (isShuffled) t.originalOrder else t.shuffle)
             }
-            Column(
-                modifier = Modifier.align(Alignment.Center),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    "${safeIndex + 1} / ${cards.size}",
-                    style = MaterialTheme.typography.labelLarge
-                )
-                Spacer(Modifier.height(4.dp))
-                KnownToggle(show = showKnown, onToggle = onToggleShowKnown)
-            }
+            Text(
+                "${safeIndex + 1} / ${cards.size}",
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.align(Alignment.Center)
+            )
             DeckPicker(
                 decks = decks,
                 activeDeckId = activeDeckId,

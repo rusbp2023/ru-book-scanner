@@ -20,6 +20,9 @@ data class Flashcard(
 
 enum class AiProvider { ANTHROPIC, OPENAI, GEMINI }
 
+/** A kartya elolapja: a fordites vagy a szotari alak. */
+enum class CardFront { TRANSLATION, DICTIONARY }
+
 /** A scan felület kiosztása: jobb kezes, bal kezes vagy közép (alapértelmezett). */
 enum class HandMode { RIGHT, LEFT, CENTER }
 
@@ -53,7 +56,8 @@ data class AiSettings(
     val uiLanguage: AppLang = AppLang.HUNGARIAN,
     val targetLanguage: AppLang = AppLang.HUNGARIAN,
     val handMode: HandMode = HandMode.CENTER,
-    val showKnown: Boolean = true
+    val showKnown: Boolean = true,
+    val cardFront: CardFront = CardFront.TRANSLATION
 )
 
 fun defaultModelFor(provider: AiProvider): String = when (provider) {

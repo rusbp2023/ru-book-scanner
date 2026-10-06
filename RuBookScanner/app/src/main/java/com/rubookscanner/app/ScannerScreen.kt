@@ -309,8 +309,8 @@ private fun CameraScanContent(
                 val tp = scanTarget.t * hh
                 val r = scanTarget.r * w + dx
                 val b = scanTarget.b * hh
-                val glow = if (scanError) Color(0xFFEF5350) else Color(0xFF64B5F6)
-                val bright = if (scanError) Color(0xFFFFCDD2) else Color(0xFFE3F2FD)
+                val glow = if (scanError) Color(0xFFEF5350) else Color(0xFFFFEB3B)
+                val bright = if (scanError) Color(0xFFFFCDD2) else Color(0xFFFFF9C4)
                 val a = fade.value
 
                 // 1) a téglalap keretének felizzása
@@ -389,7 +389,7 @@ private fun CameraScanContent(
                             c.y + sin(pt.angle) * pt.speed * dist * e
                         )
                         drawCircle(
-                            color = if (pt.green) Color(0xFFA5D6A7) else Color(0xFFE3F2FD),
+                            color = if (pt.green) Color(0xFFA5D6A7) else Color(0xFFFFF9C4),
                             radius = pt.radius.dp.toPx() * (1f - 0.6f * bp),
                             center = pos,
                             alpha = 1f - bp

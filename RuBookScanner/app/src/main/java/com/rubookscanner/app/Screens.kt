@@ -274,6 +274,28 @@ fun DeckPicker(
     }
 }
 
+/** Small capsule on the card screen: switches whether "known" cards are shown. */
+@Composable
+fun KnownToggle(show: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
+    val t = LocalStrings.current
+    val green = Color(0xFF81C784)
+    val grey = Color(0xFF7D8B9B)
+    val shape = RoundedCornerShape(12.dp)
+    Text(
+        t.known,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = if (show) green else grey,
+        textDecoration = if (show) TextDecoration.None else TextDecoration.LineThrough,
+        maxLines = 1,
+        modifier = modifier
+            .clip(shape)
+            .border(1.dp, if (show) green.copy(alpha = 0.8f) else grey.copy(alpha = 0.35f), shape)
+            .clickable(onClick = onToggle)
+            .padding(horizontal = 10.dp, vertical = 5.dp)
+    )
+}
+
 @Composable
 fun WordListScreen(
     words: List<WordItem>,
@@ -383,6 +405,8 @@ fun FlashcardScreen(
     activeDeckId: Long?,
     onSelectDeck: (Long) -> Unit,
     allKnownHidden: Boolean,
+    showKnown: Boolean,
+    onToggleShowKnown: () -> Unit,
     onDelete: (Long) -> Unit,
     onToggleKnown: (Flashcard) -> Unit,
     onEdit: (Flashcard) -> Unit,
@@ -402,6 +426,13 @@ fun FlashcardScreen(
                     .align(Alignment.TopStart)
                     .padding(16.dp),
                 maxWidth = 200.dp
+            )
+            KnownToggle(
+                show = showKnown,
+                onToggle = onToggleShowKnown,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
             )
             Text(
                 if (allKnownHidden) t.allKnownHidden else t.noCardsYet,
@@ -505,11 +536,17 @@ fun FlashcardScreen(
             ) {
                 WLabel(if (isShuffled) t.originalOrder else t.shuffle)
             }
-            Text(
-                "${safeIndex + 1} / ${cards.size}",
-                style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.align(Alignment.Center)
-            )
+            Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    "${safeIndex + 1} / ${cards.size}",
+                    style = MaterialTheme.typography.labelLarge
+                )
+                Spacer(Modifier.height(4.dp))
+                KnownToggle(show = showKnown, onToggle = onToggleShowKnown)
+            }
             DeckPicker(
                 decks = decks,
                 activeDeckId = activeDeckId,

@@ -225,6 +225,10 @@ fun AppContent(store: Store) {
                     onToggleKnown = { c -> scope.launch { store.updateFlashcard(c.copy(known = !c.known)) } },
                     onEdit = { c -> scope.launch { store.updateFlashcard(c) } },
                     allKnownHidden = allKnownHidden,
+                    showKnown = settings.showKnown,
+                    onToggleShowKnown = {
+                        scope.launch { store.saveSettings(settings.copy(showKnown = !settings.showKnown)) }
+                    },
                     isShuffled = isShuffled,
                     onShuffle = { activeDeckId?.let { id -> scope.launch { store.shuffleDeck(id) } } },
                     onResetOrder = { activeDeckId?.let { id -> scope.launch { store.resetDeckOrder(id) } } }

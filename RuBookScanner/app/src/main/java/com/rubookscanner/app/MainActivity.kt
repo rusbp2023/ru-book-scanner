@@ -164,6 +164,9 @@ fun AppContent(store: Store) {
                 AppScreen.SCAN -> ScannerScreen(
                     settings = settings,
                     pendingCrops = pendingCrops,
+                    onHandModeChange = { mode ->
+                        scope.launch { store.saveSettings(settings.copy(handMode = mode)) }
+                    },
                     onFlashcardsAccepted = { newCards ->
                         scope.launch {
                             val deckId = activeDeckId

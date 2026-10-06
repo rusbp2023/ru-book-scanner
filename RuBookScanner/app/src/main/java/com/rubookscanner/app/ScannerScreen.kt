@@ -1,6 +1,14 @@
 package com.rubookscanner.app
 
 import android.Manifest
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.text.font.FontWeight
+import com.rubookscanner.app.data.Deck
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -126,7 +134,10 @@ fun ScannerScreen(
     settings: AiSettings,
     pendingCrops: SnapshotStateList<Bitmap>,
     onFlashcardsAccepted: (List<Flashcard>) -> Unit,
-    onHandModeChange: (HandMode) -> Unit
+    onHandModeChange: (HandMode) -> Unit,
+    decks: List<Deck>,
+    activeDeckId: Long?,
+    onSelectDeck: (Long) -> Unit
 ) {
     val context = LocalContext.current
     var hasPermission by remember {
@@ -150,7 +161,10 @@ fun ScannerScreen(
             settings = settings,
             pendingCrops = pendingCrops,
             onFlashcardsAccepted = onFlashcardsAccepted,
-            onHandModeChange = onHandModeChange
+            onHandModeChange = onHandModeChange,
+            decks = decks,
+            activeDeckId = activeDeckId,
+            onSelectDeck = onSelectDeck
         )
     } else {
         PermissionRequiredScreen(onRequest = { launcher.launch(Manifest.permission.CAMERA) })
@@ -181,7 +195,10 @@ private fun CameraScanContent(
     settings: AiSettings,
     pendingCrops: SnapshotStateList<Bitmap>,
     onFlashcardsAccepted: (List<Flashcard>) -> Unit,
-    onHandModeChange: (HandMode) -> Unit
+    onHandModeChange: (HandMode) -> Unit,
+    decks: List<Deck>,
+    activeDeckId: Long?,
+    onSelectDeck: (Long) -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -189,6 +206,11 @@ private fun CameraScanContent(
     val t = LocalStrings.current
     val previewView = remember { PreviewView(context) }
     val cameraController = remember { LifecycleCameraController(context) }
+    var torchOn by remember { mutableStateOf(false) }
+    var showInfo by remember { mutableStateOf(false) }
+    DisposableEffect(Unit) {
+        onDispose { cameraController.enableTorch(false) }
+    }
 
     // Kezesség: a sárga téglalap fél centit (~32 dp) arrébb kerül, a fotó gomb felmegy oldalra.
     val density = LocalDensity.current
@@ -461,6 +483,63 @@ private fun CameraScanContent(
             factory = { previewView },
             modifier = Modifier.fillMaxSize()
         )
+
+        // top row: deck picker (left), flashlight (center), info (right)
+        DeckPicker(
+            decks = decks,
+            activeDeckId = activeDeckId,
+            onSelect = onSelectDeck,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(top = 8.dp, start = 16.dp)
+                .graphicsLayer { alpha = 0.85f },
+            maxWidth = 150.dp
+        )
+        Box(
+            Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 8.dp)
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(if (torchOn) Color(0xCCFFD600) else Color(0x66000000))
+                .border(
+                    1.dp,
+                    if (torchOn) Color(0xFFFFF59D) else Color(0x66FFFFFF),
+                    CircleShape
+                )
+                .clickable {
+                    torchOn = !torchOn
+                    cameraController.enableTorch(torchOn)
+                },
+            contentAlignment = Alignment.Center
+        ) { Text("🔦", fontSize = 20.sp) }
+        Box(
+            Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 8.dp, end = 16.dp)
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(Color(0x66000000))
+                .border(1.dp, Color(0x66FFFFFF), CircleShape)
+                .clickable { showInfo = true },
+            contentAlignment = Alignment.Center
+        ) {
+            Text("i", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE6EDF3))
+        }
+        if (showInfo) {
+            AlertDialog(
+                onDismissRequest = { showInfo = false },
+                title = { Text(t.infoTitle) },
+                text = {
+                    Column(Modifier.verticalScroll(rememberScrollState())) {
+                        Text(t.infoBody, fontSize = 14.sp)
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showInfo = false }) { Text(t.closeLabel) }
+                }
+            )
+        }
 
         // Statikus, üres sárga téglalap a képernyő közepén (vízszintes) — ide célozd a szót.
                 // A téglalap csak akkor látszik, amikor nem fut a scan animáció.

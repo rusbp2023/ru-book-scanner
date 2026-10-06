@@ -51,6 +51,18 @@ class AiClient(private val settings: AiSettings) {
         }
         return parseResponse(rawText, List(imagesBase64.size) { "" })
     }
+    /** Blokkolo hivas (Dispatchers.IO-n hivd): egy mini kerest kuld, hogy kiderüljön, jo-e a kulcs. */
+    fun testConnection() {
+        if (settings.apiKey.isBlank()) throw IllegalStateException("Nincs megadva API kulcs.")
+        val prompt = "Reply with exactly one word: OK"
+        val raw = when (settings.provider) {
+            AiProvider.ANTHROPIC -> callAnthropic(prompt)
+            AiProvider.OPENAI -> callOpenAi(prompt)
+            AiProvider.GEMINI -> callGemini(prompt)
+        }
+        if (raw.isBlank()) throw RuntimeException("Ures valasz.")
+    }
+
     private fun buildPrompt(words: List<String>): String {
         val list = words.joinToString("\n") { "- $it" }
         return """

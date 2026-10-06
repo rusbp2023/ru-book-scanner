@@ -184,6 +184,9 @@ fun AppContent(store: Store) {
                     onHandModeChange = { mode ->
                         scope.launch { store.saveSettings(settings.copy(handMode = mode)) }
                     },
+                    decks = decks,
+                    activeDeckId = activeDeckId,
+                    onSelectDeck = { id -> scope.launch { store.setActiveDeck(id) } },
                     onFlashcardsAccepted = { newCards ->
                         scope.launch {
                             val deckId = activeDeckId
@@ -245,6 +248,7 @@ fun AppContent(store: Store) {
                     onToggleKnown = { c -> scope.launch { store.updateFlashcard(c.copy(known = !c.known)) } },
                     onEdit = { c -> scope.launch { store.updateFlashcard(c) } },
                     allKnownHidden = allKnownHidden,
+                    cardFront = settings.cardFront,
                     isShuffled = isShuffled,
                     onShuffle = { activeDeckId?.let { id -> scope.launch { store.shuffleDeck(id) } } },
                     onResetOrder = { activeDeckId?.let { id -> scope.launch { store.resetDeckOrder(id) } } }

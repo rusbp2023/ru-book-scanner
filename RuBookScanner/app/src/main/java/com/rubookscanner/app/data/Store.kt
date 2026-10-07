@@ -35,6 +35,7 @@ private object Keys {
     val HAND_MODE = stringPreferencesKey("hand_mode")
     val CARD_FRONT = stringPreferencesKey("card_front")
     val SHOW_KNOWN = stringPreferencesKey("show_known")
+    val SHOW_INFO = stringPreferencesKey("show_info")
     val BUTTON_X = stringPreferencesKey("button_x")
     val BUTTON_Y = stringPreferencesKey("button_y")
     val SHOW_STRESS = stringPreferencesKey("show_stress")
@@ -97,6 +98,7 @@ class Store(private val context: Context) {
                 ?: when (prefs[Keys.HAND_MODE]) { "RIGHT", "LEFT" -> 0f; else -> 1f },
             cardFront = enumOrDefault(prefs[Keys.CARD_FRONT], CardFront.TRANSLATION),
             showKnown = prefs[Keys.SHOW_KNOWN]?.toBooleanStrictOrNull() ?: true,
+            showInfo = prefs[Keys.SHOW_INFO]?.toBooleanStrictOrNull() ?: true,
             showStress = prefs[Keys.SHOW_STRESS]?.toBooleanStrictOrNull() ?: true,
             exportStress = prefs[Keys.EXPORT_STRESS]?.toBooleanStrictOrNull() ?: false
         )
@@ -281,6 +283,7 @@ class Store(private val context: Context) {
             prefs[Keys.BUTTON_Y] = settings.buttonY.toString()
             prefs[Keys.CARD_FRONT] = settings.cardFront.name
             prefs[Keys.SHOW_KNOWN] = settings.showKnown.toString()
+            prefs[Keys.SHOW_INFO] = settings.showInfo.toString()
             prefs[Keys.SHOW_STRESS] = settings.showStress.toString()
             prefs[Keys.EXPORT_STRESS] = settings.exportStress.toString()
         }

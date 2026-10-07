@@ -1,28 +1,47 @@
 package com.rubookscanner.app.data
 
+/** A kartyan szereplo szotari alak a letolteshez (opcionalisan hangsulyjellel). */
+private fun exportForm(c: Flashcard, useStress: Boolean): String =
+    if (useStress && c.stressedForm.isNotBlank()) c.stressedForm else c.dictionaryForm
+
+/** Lathato hossz: a kombinalo hangsulyjel nem foglal helyet. */
+private fun visibleLength(s: String): Int = s.count { it != '\u0301' }
+
 /** Egyetlen pakli tartalmát sima szöveggé alakítja. */
-fun buildDeckExportText(deckName: String, cards: List<Flashcard>, emptyText: String): String {
+fun buildDeckExportText(
+    deckName: String,
+    cards: List<Flashcard>,
+    emptyText: String,
+    useStress: Boolean = false
+): String {
     val sb = StringBuilder()
     sb.append(deckName).append("\n")
     sb.append("=".repeat(deckName.length)).append("\n\n")
     if (cards.isEmpty()) {
         sb.append(emptyText).append("\n")
     } else {
-        val width = cards.maxOf { it.dictionaryForm.length }.coerceAtMost(40)
-        cards.forEach { c ->
-            val pad = (width - c.dictionaryForm.length).coerceAtLeast(0) + 10
-            sb.append(c.dictionaryForm).append(" ".repeat(pad)).append(c.translation).append("\n")
+        val forms = cards.map { exportForm(it, useStress) }
+        val width = forms.maxOf { visibleLength(it) }.coerceAtMost(40)
+        cards.forEachIndexed { i, c ->
+            val form = forms[i]
+            val pad = (width - visibleLength(form)).coerceAtLeast(0) + 10
+            sb.append(form).append(" ".repeat(pad)).append(c.translation).append("\n")
         }
     }
     return sb.toString()
 }
 
 /** Az összes pakli tartalmát egyetlen sima szöveggé alakítja, paklinként elválasztva. */
-fun buildAllDecksExportText(decks: List<Deck>, allCards: List<Flashcard>, emptyText: String): String {
+fun buildAllDecksExportText(
+    decks: List<Deck>,
+    allCards: List<Flashcard>,
+    emptyText: String,
+    useStress: Boolean = false
+): String {
     val sb = StringBuilder()
     decks.forEach { deck ->
         val cardsForDeck = allCards.filter { it.deckId == deck.id }
-        sb.append(buildDeckExportText(deck.name, cardsForDeck, emptyText))
+        sb.append(buildDeckExportText(deck.name, cardsForDeck, emptyText, useStress))
         sb.append("\n")
     }
     return sb.toString()

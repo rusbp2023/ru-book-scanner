@@ -112,7 +112,7 @@ object StringsHu : Strings {
     override val cameraError = "kamera hiba"
 
     override val wordsHint =
-        "Jelölj ki egy szót egy weboldalon vagy bármelyik appban, majd Megosztás → ez az app. " +
+        "Jelölj ki egy szót egy weboldalon vagy bármelyik appban, majd [[Megosztás]] → [[ez az app]]. " +
             "A szó itt jelenik meg a listában."
     override val addWordManually = "Szó kézzel hozzáadása"
     override val clearList = "Lista ürítése"
@@ -218,7 +218,7 @@ object StringsEn : Strings {
     override val cameraError = "camera error"
 
     override val wordsHint =
-        "Select a word on a web page or in any app, then Share → this app. " +
+        "Select a word on a web page or in any app, then [[Share]] → [[this app]]. " +
             "The word will appear in this list."
     override val addWordManually = "Add a word manually"
     override val clearList = "Clear list"
@@ -324,7 +324,7 @@ object StringsDe : Strings {
     override val cameraError = "Kamerafehler"
 
     override val wordsHint =
-        "Markiere auf einer Webseite oder in einer beliebigen App ein Wort und wähle dann Teilen → diese App. " +
+        "Markiere auf einer Webseite oder in einer beliebigen App ein Wort und wähle dann [[Teilen]] → [[diese App]]. " +
             "Das Wort erscheint dann in dieser Liste."
     override val addWordManually = "Wort manuell hinzufügen"
     override val clearList = "Liste leeren"
@@ -430,7 +430,7 @@ object StringsIt : Strings {
     override val cameraError = "errore della fotocamera"
 
     override val wordsHint =
-        "Seleziona una parola in una pagina web o in qualsiasi app, poi Condividi → questa app. " +
+        "Seleziona una parola in una pagina web o in qualsiasi app, poi [[Condividi]] → [[questa app]]. " +
             "La parola apparirà in questo elenco."
     override val addWordManually = "Aggiungi una parola manualmente"
     override val clearList = "Svuota elenco"
@@ -536,7 +536,7 @@ object StringsFr : Strings {
     override val cameraError = "erreur de l'appareil photo"
 
     override val wordsHint =
-        "Sélectionne un mot sur une page web ou dans n'importe quelle application, puis Partager → cette application. " +
+        "Sélectionne un mot sur une page web ou dans n'importe quelle application, puis [[Partager]] → [[cette application]]. " +
             "Le mot apparaîtra dans cette liste."
     override val addWordManually = "Ajouter un mot manuellement"
     override val clearList = "Vider la liste"
@@ -642,7 +642,7 @@ object StringsEs : Strings {
     override val cameraError = "error de la cámara"
 
     override val wordsHint =
-        "Selecciona una palabra en una página web o en cualquier app y luego Compartir → esta app. " +
+        "Selecciona una palabra en una página web o en cualquier app y luego [[Compartir]] → [[esta app]]. " +
             "La palabra aparecerá en esta lista."
     override val addWordManually = "Añadir una palabra manualmente"
     override val clearList = "Vaciar lista"
@@ -748,7 +748,7 @@ object StringsRu : Strings {
     override val cameraError = "ошибка камеры"
 
     override val wordsHint =
-        "Выдели слово на веб-странице или в любом приложении, затем «Поделиться» → это приложение. " +
+        "Выдели слово на веб-странице или в любом приложении, затем [[«Поделиться»]] → [[это приложение]]. " +
             "Слово появится в этом списке."
     override val addWordManually = "Добавить слово вручную"
     override val clearList = "Очистить список"

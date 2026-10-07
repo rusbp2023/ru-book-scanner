@@ -90,6 +90,9 @@ interface Strings {
     val showStressLabel: String
     val exportStressLabel: String
     val resetButtonPos: String
+    val infoShowLabel: String
+    val dontShowAgain: String
+    val wordsInfoBody: String
 
     /** A nyelv neve az app (felulet) nyelven. */
     fun langName(l: AppLang): String
@@ -186,6 +189,9 @@ object StringsHu : Strings {
     override val showStressLabel = "Hangsúlyjel mutatása a kártyán"
     override val exportStressLabel = "Hangsúlyjel a letöltött fájlban"
     override val resetButtonPos = "Fotó gomb alaphelyzetbe"
+    override val infoShowLabel = "Info gombok mutatása"
+    override val dontShowAgain = "Ne mutasd többé"
+    override val wordsInfoBody = "Tipp: érdemes több szót összegyűjteni, és egyszerre generálni belőlük a kártyákat, nem egyesével.\n\n• Az összes szó egyetlen AI-kérésben megy el, így kevesebb kérést használsz fel. Az ingyenes API kulcsoknak általában kérésszám-korlátjuk van (percenként és naponta), így ez tovább tart.\n• Addig gyűjtsd a szavakat (Megosztás menüből vagy kézzel), amíg össze nem jön egy csomag, és csak utána nyomd meg a „Kártyák generálása” gombot."
 
     override fun langName(l: AppLang): String = when (l) {
         AppLang.HUNGARIAN -> "Magyar"
@@ -289,6 +295,9 @@ object StringsEn : Strings {
     override val showStressLabel = "Show stress marks on cards"
     override val exportStressLabel = "Stress marks in downloaded files"
     override val resetButtonPos = "Reset camera button position"
+    override val infoShowLabel = "Show info buttons"
+    override val dontShowAgain = "Don't show again"
+    override val wordsInfoBody = "Tip: collect several words and generate the cards together instead of one by one.\n\n• All the words go out in a single AI request, so you use fewer requests. Free API keys usually have a request limit (per minute and per day), so this makes them last longer.\n• Keep collecting words (from the Share menu or by hand) and press “Generate cards” only once you have a batch."
 
     override fun langName(l: AppLang): String = when (l) {
         AppLang.HUNGARIAN -> "Hungarian"
@@ -392,6 +401,9 @@ object StringsDe : Strings {
     override val showStressLabel = "Betonungszeichen auf Karten anzeigen"
     override val exportStressLabel = "Betonungszeichen in heruntergeladenen Dateien"
     override val resetButtonPos = "Kamera-Button zurücksetzen"
+    override val infoShowLabel = "Info-Buttons anzeigen"
+    override val dontShowAgain = "Nicht mehr anzeigen"
+    override val wordsInfoBody = "Tipp: Sammle mehrere Wörter und erstelle die Karten gemeinsam statt einzeln.\n\n• Alle Wörter gehen in einer einzigen KI-Anfrage raus, du verbrauchst also weniger Anfragen. Kostenlose API-Schlüssel haben meist ein Anfragelimit (pro Minute und pro Tag), so halten sie länger.\n• Sammle die Wörter (über das Teilen-Menü oder von Hand) und tippe erst auf „Karten erstellen“, wenn du einen Stapel zusammen hast."
 
     override fun langName(l: AppLang): String = when (l) {
         AppLang.HUNGARIAN -> "Ungarisch"
@@ -495,6 +507,9 @@ object StringsIt : Strings {
     override val showStressLabel = "Mostra gli accenti sulle schede"
     override val exportStressLabel = "Accenti nei file scaricati"
     override val resetButtonPos = "Ripristina la posizione del pulsante"
+    override val infoShowLabel = "Mostra i pulsanti info"
+    override val dontShowAgain = "Non mostrare più"
+    override val wordsInfoBody = "Consiglio: raccogli più parole e genera le schede tutte insieme invece che una per una.\n\n• Tutte le parole partono in un'unica richiesta IA, quindi usi meno richieste. Le chiavi API gratuite di solito hanno un limite di richieste (al minuto e al giorno), così durano di più.\n• Continua a raccogliere parole (dal menu Condividi o a mano) e premi «Genera schede» solo quando ne hai un gruppo."
 
     override fun langName(l: AppLang): String = when (l) {
         AppLang.HUNGARIAN -> "Ungherese"
@@ -598,6 +613,9 @@ object StringsFr : Strings {
     override val showStressLabel = "Afficher les accents toniques sur les cartes"
     override val exportStressLabel = "Accents toniques dans les fichiers téléchargés"
     override val resetButtonPos = "Réinitialiser la position du bouton"
+    override val infoShowLabel = "Afficher les boutons d'info"
+    override val dontShowAgain = "Ne plus afficher"
+    override val wordsInfoBody = "Astuce : rassemble plusieurs mots et génère les cartes ensemble plutôt qu'une par une.\n\n• Tous les mots partent dans une seule requête IA, tu utilises donc moins de requêtes. Les clés API gratuites ont généralement une limite de requêtes (par minute et par jour), elles durent ainsi plus longtemps.\n• Continue à collecter des mots (depuis le menu Partager ou à la main) et appuie sur « Générer les cartes » seulement quand tu en as un lot."
 
     override fun langName(l: AppLang): String = when (l) {
         AppLang.HUNGARIAN -> "Hongrois"
@@ -701,6 +719,9 @@ object StringsEs : Strings {
     override val showStressLabel = "Mostrar los acentos en las tarjetas"
     override val exportStressLabel = "Acentos en los archivos descargados"
     override val resetButtonPos = "Restablecer la posición del botón"
+    override val infoShowLabel = "Mostrar los botones de información"
+    override val dontShowAgain = "No mostrar más"
+    override val wordsInfoBody = "Consejo: reúne varias palabras y genera las tarjetas juntas en lugar de una por una.\n\n• Todas las palabras se envían en una sola petición de IA, así que usas menos peticiones. Las claves API gratuitas suelen tener un límite de peticiones (por minuto y por día), de modo que duran más.\n• Sigue reuniendo palabras (desde el menú Compartir o a mano) y pulsa «Generar tarjetas» solo cuando tengas un grupo."
 
     override fun langName(l: AppLang): String = when (l) {
         AppLang.HUNGARIAN -> "Húngaro"
@@ -804,6 +825,9 @@ object StringsRu : Strings {
     override val showStressLabel = "Показывать ударения на карточках"
     override val exportStressLabel = "Ударения в скачанных файлах"
     override val resetButtonPos = "Вернуть кнопку камеры на место"
+    override val infoShowLabel = "Показывать кнопки информации"
+    override val dontShowAgain = "Больше не показывать"
+    override val wordsInfoBody = "Совет: собирай несколько слов и создавай карточки сразу, а не по одной.\n\n• Все слова уходят одним запросом к ИИ, так что ты тратишь меньше запросов. У бесплатных API-ключей обычно есть лимит запросов (в минуту и в день), поэтому так их хватает дольше.\n• Продолжай собирать слова (через меню «Поделиться» или вручную) и нажимай «Создать карточки», только когда наберётся пачка."
 
     override fun langName(l: AppLang): String = when (l) {
         AppLang.HUNGARIAN -> "Венгерский"

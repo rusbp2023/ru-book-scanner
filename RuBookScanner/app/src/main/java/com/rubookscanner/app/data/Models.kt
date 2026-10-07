@@ -63,6 +63,7 @@ data class AiSettings(
     val buttonX: Float = 0.5f,
     val buttonY: Float = 1f,
     val showKnown: Boolean = true,
+    val showInfo: Boolean = true,
     val cardFront: CardFront = CardFront.TRANSLATION,
     val showStress: Boolean = true,
     val exportStress: Boolean = false,

@@ -68,11 +68,26 @@ class Store(private val context: Context) {
         } catch (e: Exception) {
             AiProvider.GEMINI
         }
+        // every provider keeps its own key / model / endpoint; the old single values belong to the saved provider
+        fun cfgFor(p: AiProvider): ProviderConfig {
+            val legacy = p == provider
+            return ProviderConfig(
+                apiKey = prefs[stringPreferencesKey("api_key_" + p.name)]
+                    ?: (if (legacy) (prefs[Keys.API_KEY] ?: "") else ""),
+                model = prefs[stringPreferencesKey("model_" + p.name)]
+                    ?: (if (legacy) (prefs[Keys.MODEL] ?: defaultModelFor(p)) else defaultModelFor(p)),
+                baseUrl = prefs[stringPreferencesKey("base_url_" + p.name)]
+                    ?: (if (legacy) (prefs[Keys.BASE_URL] ?: "") else "")
+            )
+        }
+        val configs = AiProvider.entries.associateWith { cfgFor(it) }
+        val active = configs.getValue(provider)
         AiSettings(
             provider = provider,
-            apiKey = prefs[Keys.API_KEY] ?: "",
-            model = prefs[Keys.MODEL] ?: defaultModelFor(provider),
-            baseUrl = prefs[Keys.BASE_URL] ?: "",
+            apiKey = active.apiKey,
+            model = active.model,
+            baseUrl = active.baseUrl,
+            providerConfigs = configs,
             sourceLanguage = enumOrDefault(prefs[Keys.SOURCE_LANGUAGE], SourceLanguage.RUSSIAN),
             uiLanguage = enumOrDefault(prefs[Keys.UI_LANGUAGE], AppLang.HUNGARIAN),
             targetLanguage = enumOrDefault(prefs[Keys.TARGET_LANGUAGE], AppLang.HUNGARIAN),
@@ -249,9 +264,16 @@ class Store(private val context: Context) {
     suspend fun saveSettings(settings: AiSettings) {
         context.dataStore.edit { prefs ->
             prefs[Keys.PROVIDER] = settings.provider.name
-            prefs[Keys.API_KEY] = settings.apiKey
-            prefs[Keys.MODEL] = settings.model
-            prefs[Keys.BASE_URL] = settings.baseUrl
+            AiProvider.entries.forEach { p ->
+                val cfg = if (p == settings.provider) {
+                    ProviderConfig(settings.apiKey, settings.model, settings.baseUrl)
+                } else {
+                    settings.providerConfigs[p] ?: ProviderConfig("", defaultModelFor(p), "")
+                }
+                prefs[stringPreferencesKey("api_key_" + p.name)] = cfg.apiKey
+                prefs[stringPreferencesKey("model_" + p.name)] = cfg.model
+                prefs[stringPreferencesKey("base_url_" + p.name)] = cfg.baseUrl
+            }
             prefs[Keys.SOURCE_LANGUAGE] = settings.sourceLanguage.name
             prefs[Keys.UI_LANGUAGE] = settings.uiLanguage.name
             prefs[Keys.TARGET_LANGUAGE] = settings.targetLanguage.name

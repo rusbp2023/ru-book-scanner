@@ -181,8 +181,8 @@ fun AppContent(store: Store) {
                 AppScreen.SCAN -> ScannerScreen(
                     settings = settings,
                     pendingCrops = pendingCrops,
-                    onHandModeChange = { mode ->
-                        scope.launch { store.saveSettings(settings.copy(handMode = mode)) }
+                    onButtonPosChange = { fx, fy ->
+                        scope.launch { store.saveSettings(settings.copy(buttonX = fx, buttonY = fy)) }
                     },
                     decks = decks,
                     activeDeckId = activeDeckId,
@@ -249,6 +249,7 @@ fun AppContent(store: Store) {
                     onEdit = { c -> scope.launch { store.updateFlashcard(c) } },
                     allKnownHidden = allKnownHidden,
                     cardFront = settings.cardFront,
+                    showStress = settings.showStress,
                     isShuffled = isShuffled,
                     onShuffle = { activeDeckId?.let { id -> scope.launch { store.shuffleDeck(id) } } },
                     onResetOrder = { activeDeckId?.let { id -> scope.launch { store.resetDeckOrder(id) } } }
@@ -258,6 +259,7 @@ fun AppContent(store: Store) {
                     decks = decks,
                     activeDeckId = activeDeckId,
                     allCards = cards,
+                    exportStress = settings.exportStress,
                     onSetActive = { id -> scope.launch { store.setActiveDeck(id) } },
                     onOpenDeck = { id ->
                         scope.launch {
@@ -283,6 +285,12 @@ fun AppContent(store: Store) {
 
                 AppScreen.SETTINGS -> SettingsScreen(
                     settings = settings,
+                    onResetButtonPos = {
+                        scope.launch {
+                            store.saveSettings(settings.copy(buttonX = 0.5f, buttonY = 1f))
+                            snackbarHostState.showSnackbar(t.settingsSaved)
+                        }
+                    },
                     onSave = { s ->
                         scope.launch {
                             store.saveSettings(s)
@@ -352,23 +360,16 @@ private fun NeonIndicator(selected: Int) {
                     val inset = w * 0.2f
                     val lx = x + inset
                     val lw = w - 2 * inset
-                    // soft glow rising from the line
-                    drawRect(
-                        brush = Brush.verticalGradient(
-                            listOf(Color.Transparent, blue.copy(alpha = 0.35f)),
-                            startY = 0f,
-                            endY = bottom
-                        ),
-                        topLeft = Offset(x + w * 0.05f, 0f),
-                        size = Size(w * 0.9f, bottom)
-                    )
-                    // halo around the line
-                    drawRoundRect(
-                        blue.copy(alpha = 0.45f),
-                        Offset(lx - 2.dp.toPx(), bottom - lineH - 2.dp.toPx()),
-                        Size(lw + 4.dp.toPx(), lineH + 4.dp.toPx()),
-                        CornerRadius(4.dp.toPx())
-                    )
+                    // soft layered glow around the line (no lighter rectangle)
+                    listOf(8f to 0.10f, 5f to 0.18f, 2.5f to 0.34f).forEach { (g, a) ->
+                        val gp = g.dp.toPx()
+                        drawRoundRect(
+                            blue.copy(alpha = a),
+                            Offset(lx - gp, bottom - lineH - gp),
+                            Size(lw + 2 * gp, lineH + 2 * gp),
+                            CornerRadius(gp + 2.dp.toPx())
+                        )
+                    }
                     // the bright neon line
                     drawRoundRect(
                         bright,

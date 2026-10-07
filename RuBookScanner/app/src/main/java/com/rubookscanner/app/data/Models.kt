@@ -45,6 +45,13 @@ enum class AppLang(val label: String, val promptName: String) {
     RUSSIAN("Русский", "orosz")
 }
 
+/** Egy szolgaltato sajat kulcsa, modellje es vegpontja. */
+data class ProviderConfig(
+    val apiKey: String = "",
+    val model: String = "",
+    val baseUrl: String = ""
+)
+
 data class AiSettings(
     val provider: AiProvider = AiProvider.GEMINI,
     val apiKey: String = "",
@@ -58,7 +65,8 @@ data class AiSettings(
     val showKnown: Boolean = true,
     val cardFront: CardFront = CardFront.TRANSLATION,
     val showStress: Boolean = true,
-    val exportStress: Boolean = false
+    val exportStress: Boolean = false,
+    val providerConfigs: Map<AiProvider, ProviderConfig> = emptyMap()
 )
 
 fun defaultModelFor(provider: AiProvider): String = when (provider) {

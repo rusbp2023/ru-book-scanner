@@ -1,6 +1,9 @@
 package com.rubookscanner.app
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -216,9 +219,29 @@ fun WTextField(
     }
 }
 
+/** Tiny stack of cards: language-independent "deck" symbol. */
+@Composable
+private fun DeckIcon(color: Color, fill: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier.size(width = 20.dp, height = 18.dp)) {
+        val cw = 11.dp.toPx()
+        val ch = 14.dp.toPx()
+        val corner = CornerRadius(2.5.dp.toPx())
+        val stroke = Stroke(width = 1.3.dp.toPx())
+        // back, middle, front card (each a bit lower-left of the previous one)
+        listOf(
+            Triple(Offset(7.dp.toPx(), 0f), 0.45f, false),
+            Triple(Offset(3.5.dp.toPx(), 2.dp.toPx()), 0.7f, true),
+            Triple(Offset(0f, 4.dp.toPx()), 1f, true)
+        ).forEach { (pos, alpha, filled) ->
+            if (filled) drawRoundRect(fill, pos, Size(cw, ch), corner)
+            drawRoundRect(color.copy(alpha = alpha), pos, Size(cw, ch), corner, style = stroke)
+        }
+    }
+}
+
 /**
- * Pakli valaszto: a WButton-hoz hasonlo domboruval (felul vilagos, alul sotet gradiens, vilagos-sotet perem,
- * nyomaskor besullyed), de a pakli barsony szineivel.
+ * Deck picker: one line (44 dp, same height everywhere): a small card-stack icon, the deck name and a
+ * drop-down arrow. Same convex shading as WButton, in velvet colours.
  */
 @Composable
 fun DeckPicker(
@@ -226,9 +249,8 @@ fun DeckPicker(
     activeDeckId: Long?,
     onSelect: (Long) -> Unit,
     modifier: Modifier = Modifier,
-    maxWidth: Dp = 150.dp
+    maxWidth: Dp = 132.dp
 ) {
-    val t = LocalStrings.current
     var expanded by remember { mutableStateOf(false) }
     val activeName = decks.firstOrNull { it.id == activeDeckId }?.name.orEmpty()
     val interaction = remember { MutableInteractionSource() }
@@ -243,6 +265,7 @@ fun DeckPicker(
     Box(modifier.widthIn(max = maxWidth)) {
         Row(
             Modifier
+                .height(44.dp)
                 .clip(shape)
                 .background(Brush.verticalGradient(listOf(top, bottom)))
                 .border(1.dp, Brush.verticalGradient(listOf(rimTop, rimBottom)), shape)
@@ -251,30 +274,23 @@ fun DeckPicker(
                     indication = null,
                     onClick = { expanded = true }
                 )
-                .padding(horizontal = 10.dp, vertical = 6.dp),
+                .padding(horizontal = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(Modifier.weight(1f, fill = false)) {
-                Text(
-                    t.navDeck,
-                    fontFamily = FontFamily.Serif,
-                    fontStyle = FontStyle.Italic,
-                    fontSize = 11.sp,
-                    color = inkSoft,
-                    maxLines = 1
-                )
-                Text(
-                    activeName.ifBlank { "-" },
-                    fontFamily = FontFamily.Serif,
-                    fontStyle = FontStyle.Italic,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 16.sp,
-                    color = ink,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            DeckIcon(color = inkSoft, fill = top)
             Spacer(Modifier.width(8.dp))
+            Text(
+                activeName.ifBlank { "-" },
+                modifier = Modifier.weight(1f, fill = false),
+                fontFamily = FontFamily.Serif,
+                fontStyle = FontStyle.Italic,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp,
+                color = ink,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(Modifier.width(6.dp))
             Text("\u25BE", color = inkSoft, fontSize = 22.sp)
         }
         DropdownMenu(
@@ -374,7 +390,7 @@ fun WordListScreen(
                 decks = decks,
                 activeDeckId = activeDeckId,
                 onSelect = onSelectDeck,
-                maxWidth = 200.dp
+                maxWidth = 132.dp
             )
             if (showInfoButton) {
                 InfoButton(onClick = { showWordsInfo = true })
@@ -492,7 +508,7 @@ fun FlashcardScreen(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(16.dp),
-                maxWidth = 200.dp
+                maxWidth = 132.dp
             )
             Text(
                 if (allKnownHidden) t.allKnownHidden else t.noCardsYet,
@@ -593,7 +609,9 @@ fun FlashcardScreen(
                     flipped = false
                     playShuffle()
                 },
-                modifier = Modifier.align(Alignment.CenterEnd)
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .height(48.dp)
             ) {
                 WLabel(if (isShuffled) t.originalOrder else t.shuffle)
             }
@@ -607,7 +625,7 @@ fun FlashcardScreen(
                 activeDeckId = activeDeckId,
                 onSelect = onSelectDeck,
                 modifier = Modifier.align(Alignment.CenterStart),
-                maxWidth = 120.dp
+                maxWidth = 132.dp
             )
         }
         Spacer(Modifier.height(4.dp))

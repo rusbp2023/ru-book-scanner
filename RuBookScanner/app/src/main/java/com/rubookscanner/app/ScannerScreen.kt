@@ -1,6 +1,8 @@
 package com.rubookscanner.app
 
 import android.Manifest
+import kotlin.math.abs
+import kotlin.math.sign
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -94,7 +96,6 @@ import androidx.core.content.ContextCompat
 import com.rubookscanner.app.data.AiClient
 import com.rubookscanner.app.data.AiSettings
 import com.rubookscanner.app.data.Flashcard
-import com.rubookscanner.app.data.HandMode
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -134,7 +135,7 @@ fun ScannerScreen(
     settings: AiSettings,
     pendingCrops: SnapshotStateList<Bitmap>,
     onFlashcardsAccepted: (List<Flashcard>) -> Unit,
-    onHandModeChange: (HandMode) -> Unit,
+    onButtonPosChange: (Float, Float) -> Unit,
     decks: List<Deck>,
     activeDeckId: Long?,
     onSelectDeck: (Long) -> Unit
@@ -161,7 +162,7 @@ fun ScannerScreen(
             settings = settings,
             pendingCrops = pendingCrops,
             onFlashcardsAccepted = onFlashcardsAccepted,
-            onHandModeChange = onHandModeChange,
+            onButtonPosChange = onButtonPosChange,
             decks = decks,
             activeDeckId = activeDeckId,
             onSelectDeck = onSelectDeck
@@ -195,7 +196,7 @@ private fun CameraScanContent(
     settings: AiSettings,
     pendingCrops: SnapshotStateList<Bitmap>,
     onFlashcardsAccepted: (List<Flashcard>) -> Unit,
-    onHandModeChange: (HandMode) -> Unit,
+    onButtonPosChange: (Float, Float) -> Unit,
     decks: List<Deck>,
     activeDeckId: Long?,
     onSelectDeck: (Long) -> Unit
@@ -212,21 +213,71 @@ private fun CameraScanContent(
         onDispose { cameraController.enableTorch(false) }
     }
 
-    // Kezesség: a sárga téglalap fél centit (~32 dp) arrébb kerül, a fotó gomb felmegy oldalra.
-    val density = LocalDensity.current
-    val aimOffsetDp = when (settings.handMode) {
-        HandMode.RIGHT -> (-32).dp
-        HandMode.LEFT -> 32.dp
-        HandMode.CENTER -> 0.dp
-    }
-    val aimOffsetAnimated by animateDpAsState(aimOffsetDp, tween(220), label = "aimOffset")
-    /** A téglalap középpontjának eltolása a képernyő szélességéhez viszonyítva (a kivágás is ide igazodik). */
-    fun aimShift(): Float =
-        if (previewView.width > 0) with(density) { aimOffsetDp.toPx() } / previewView.width else 0f
-
     var isCapturing by remember { mutableStateOf(false) }
     var isTranslating by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
+
+    // --- freely movable capture button ---
+    val density = LocalDensity.current
+    var boxW by remember { mutableStateOf(0f) }
+    var boxH by remember { mutableStateOf(0f) }
+    var panelH by remember { mutableStateOf(0f) }
+    var dragging by remember { mutableStateOf(false) }
+    var dragX by remember { mutableStateOf(0f) }
+    var dragY by remember { mutableStateOf(0f) }
+    var localPos by remember { mutableStateOf<Offset?>(null) }
+    var longPressed by remember { mutableStateOf(false) }
+    val buttonXSetting by rememberUpdatedState(settings.buttonX)
+    val buttonYSetting by rememberUpdatedState(settings.buttonY)
+    val onPosChange by rememberUpdatedState(onButtonPosChange)
+    val haptic = LocalHapticFeedback.current
+    val btnPx = with(density) { 80.dp.toPx() }
+    val sidePx = with(density) { 8.dp.toPx() }
+    val topLimitPx = with(density) { 60.dp.toPx() }
+    val bottomMarginPx = with(density) { 16.dp.toPx() }
+
+    LaunchedEffect(settings.buttonX, settings.buttonY) { localPos = null }
+
+    fun xRange(): Float = maxOf(0f, boxW - 2 * sidePx - btnPx)
+    fun yRange(): Float = maxOf(0f, boxH - bottomMarginPx - btnPx - topLimitPx)
+    /** Lowest allowed top edge: above the collected-words / error panel when it is visible. */
+    fun maxYNow(): Float {
+        val panelVisible = pendingCrops.isNotEmpty() || errorMsg != null
+        val reserve = if (panelVisible) panelH else bottomMarginPx
+        return maxOf(topLimitPx, boxH - reserve - btnPx)
+    }
+    fun renderPos(): Offset {
+        if (dragging) return Offset(dragX, dragY.coerceIn(topLimitPx, maxYNow()))
+        val frac = localPos ?: Offset(buttonXSetting, buttonYSetting)
+        val x = sidePx + frac.x.coerceIn(0f, 1f) * xRange()
+        val y = topLimitPx + frac.y.coerceIn(0f, 1f) * yRange()
+        return Offset(x, y.coerceIn(topLimitPx, maxYNow()))
+    }
+
+    val btnPos = renderPos()
+    val btnX = btnPos.x
+    val btnY = btnPos.y
+
+    // The aiming rectangle shifts a little away from the button: button on the left -> rectangle moves right.
+    val cxFrac = if (boxW > 0f) (btnX + btnPx / 2f) / boxW else 0.5f
+    val tShift = (0.5f - cxFrac) / 0.5f
+    val sShift = if (abs(tShift) < 0.2f) 0f else sign(tShift) * (abs(tShift) - 0.2f) / 0.8f
+    val aimOffsetDp = (32f * sShift).dp
+    val aimOffsetAnimated by animateDpAsState(aimOffsetDp, tween(150), label = "aimOffset")
+    /** Shift of the rectangle centre relative to the screen width (the crop follows it). */
+    fun aimShift(): Float =
+        if (previewView.width > 0) with(density) { aimOffsetDp.toPx() } / previewView.width else 0f
+
+    fun finishDrag() {
+        longPressed = false
+        val xr = xRange()
+        val yr = yRange()
+        val fx = if (xr > 0f) ((dragX - sidePx) / xr).coerceIn(0f, 1f) else 0.5f
+        val fy = if (yr > 0f) ((dragY.coerceIn(topLimitPx, maxYNow()) - topLimitPx) / yr).coerceIn(0f, 1f) else 1f
+        localPos = Offset(fx, fy)
+        dragging = false
+        onPosChange(fx, fy)
+    }
 
     val listState = rememberLazyListState()
     LaunchedEffect(pendingCrops.size) {
@@ -309,58 +360,6 @@ private fun CameraScanContent(
             fade.animateTo(0f, tween(160))
             burstJob?.join()
             scanActive = false
-        }
-    }
-
-    // --- draggable capture button ---
-    var boxW by remember { mutableStateOf(0f) }
-    var boxH by remember { mutableStateOf(0f) }
-    var dragging by remember { mutableStateOf(false) }
-    var settling by remember { mutableStateOf(false) }
-    var dragX by remember { mutableStateOf(0f) }
-    var dragY by remember { mutableStateOf(0f) }
-    var hoverMode by remember { mutableStateOf<HandMode?>(null) }
-    var longPressed by remember { mutableStateOf(false) }
-    val settleX = remember { Animatable(0f) }
-    val settleY = remember { Animatable(0f) }
-    val currentMode by rememberUpdatedState(settings.handMode)
-    val onModeChange by rememberUpdatedState(onHandModeChange)
-    val haptic = LocalHapticFeedback.current
-    val btnPx = with(density) { 80.dp.toPx() }
-
-    /** Top-left corner of the capture button in each mode. */
-    fun slotPos(m: HandMode): Offset {
-        val side = with(density) { 16.dp.toPx() }
-        val top = with(density) { 63.dp.toPx() }
-        return when (m) {
-            HandMode.RIGHT -> Offset(boxW - side - btnPx, top)
-            HandMode.LEFT -> Offset(side, top)
-            HandMode.CENTER -> Offset((boxW - btnPx) / 2f, boxH - side - btnPx)
-        }
-    }
-
-    fun distToSlot(m: HandMode, cx: Float, cy: Float): Float {
-        val p = slotPos(m)
-        return hypot(p.x + btnPx / 2f - cx, p.y + btnPx / 2f - cy)
-    }
-
-    fun finishDrag() {
-        val target = hoverMode
-        hoverMode = null
-        longPressed = false
-        scope.launch {
-            settleX.snapTo(dragX)
-            settleY.snapTo(dragY)
-            settling = true
-            dragging = false
-            val mode = target ?: currentMode
-            if (mode != currentMode) onModeChange(mode)
-            val dest = slotPos(mode)
-            val a = launch { settleX.animateTo(dest.x, tween(180)) }
-            val b = launch { settleY.animateTo(dest.y, tween(180)) }
-            a.join()
-            b.join()
-            settling = false
         }
     }
 
@@ -677,6 +676,7 @@ private fun CameraScanContent(
             Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
+                .onSizeChanged { panelH = it.height.toFloat() }
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -772,47 +772,17 @@ private fun CameraScanContent(
                     }
                 }
             }
-
-            if (settings.handMode == HandMode.CENTER) {
-                Box(Modifier.height(80.dp))
-            }
         }
 
-        // drag targets: visible only while the capture button is being dragged
+        // the capture button: long press, then drag it anywhere (outside the top icons and the bottom panel)
         if (boxW > 0f) {
-            if (dragging) {
-                HandMode.entries.filter { it != currentMode }.forEach { m ->
-                    val p = slotPos(m)
-                    val hot = hoverMode == m
-                    Box(
-                        Modifier
-                            .offset { IntOffset(p.x.roundToInt(), p.y.roundToInt()) }
-                            .size(80.dp)
-                            .graphicsLayer {
-                                val sc = if (hot) 1.12f else 1f
-                                scaleX = sc
-                                scaleY = sc
-                            }
-                            .clip(CircleShape)
-                            .background(Color(0xFF64B5F6).copy(alpha = if (hot) 0.60f else 0.32f))
-                            .border(
-                                2.dp,
-                                Color(0xFFBBDEFB).copy(alpha = if (hot) 1f else 0.7f),
-                                CircleShape
-                            )
-                    )
-                }
-            }
-            val slot = slotPos(settings.handMode)
-            val btnX = if (dragging) dragX else if (settling) settleX.value else slot.x
-            val btnY = if (dragging) dragY else if (settling) settleY.value else slot.y
             captureButton(
                 Modifier
                     .offset { IntOffset(btnX.roundToInt(), btnY.roundToInt()) }
                     .pointerInput(Unit) {
                         detectDragGesturesAfterLongPress(
                             onDragStart = {
-                                val p = slotPos(currentMode)
+                                val p = renderPos()
                                 dragX = p.x
                                 dragY = p.y
                                 longPressed = true
@@ -821,15 +791,8 @@ private fun CameraScanContent(
                             },
                             onDrag = { change, amount ->
                                 change.consume()
-                                dragX = (dragX + amount.x).coerceIn(0f, maxOf(0f, boxW - btnPx))
-                                dragY = (dragY + amount.y).coerceIn(0f, maxOf(0f, boxH - btnPx))
-                                val cx = dragX + btnPx / 2f
-                                val cy = dragY + btnPx / 2f
-                                val thresh = 70.dp.toPx()
-                                val best = HandMode.entries
-                                    .filter { it != currentMode }
-                                    .minByOrNull { distToSlot(it, cx, cy) }
-                                hoverMode = if (best != null && distToSlot(best, cx, cy) < thresh) best else null
+                                dragX = (dragX + amount.x).coerceIn(sidePx, maxOf(sidePx, boxW - sidePx - btnPx))
+                                dragY = (dragY + amount.y).coerceIn(topLimitPx, maxYNow())
                             },
                             onDragEnd = { finishDrag() },
                             onDragCancel = { finishDrag() }

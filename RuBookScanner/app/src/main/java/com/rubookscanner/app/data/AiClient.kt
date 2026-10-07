@@ -63,6 +63,23 @@ class AiClient(private val settings: AiSettings) {
         if (raw.isBlank()) throw RuntimeException("Ures valasz.")
     }
 
+    /** Orosz forrasnyelvnel a hangsulyos alakot is keressuk (kombinalo ekezetjellel). */
+    private fun isRussian() = settings.sourceLanguage == SourceLanguage.RUSSIAN
+
+    private fun jsonItem(): String =
+        if (isRussian()) {
+            """{"original":"...","dictionary_form":"...","stressed_form":"...","translation":"..."}"""
+        } else {
+            """{"original":"...","dictionary_form":"...","translation":"..."}"""
+        }
+
+    private fun stressNote(): String =
+        if (isRussian()) {
+            "Ezen felül minden elemhez add meg a \"stressed_form\" mezőt is: ez a szótári alapalak hangsúlyos változata, a hangsúlyos magánhangzó után a kombináló ékezetjellel (U+0301), például до́м. Egyszótagú szónál és ё betűs szónál ne tegyél jelet, ilyenkor a stressed_form legyen azonos a dictionary_form-mal. "
+        } else {
+            ""
+        }
+
     private fun buildPrompt(words: List<String>): String {
         val list = words.joinToString("\n") { "- $it" }
         return """
@@ -71,9 +88,9 @@ class AiClient(private val settings: AiSettings) {
                         1. a szótári alapalakot (ige esetén infinitivus, főnév esetén egyes szám alanyeset, stb.). A szótári alakot a szótárban szereplő írásmóddal add meg: kisbetűvel, kivéve ha a szó a szótár szerint is nagybetűs (például tulajdonnév). Ha a szó csak mondat eleje miatt vagy más okból van nagybetűvel, a szótári alak legyen kisbetűs.
             2. a szótári alapalak legjellemzőbb ${settings.targetLanguage.promptName} fordítását, röviden, ugyancsak szótári alakban (ige: főnévi igenév, főnév: egyes szám alanyeset). NEM a ragozott alak fordítását kérem.
 
-            Válaszolj KIZÁRÓLAG egy JSON tömbbel, semmi mást ne írj a válaszba (se magyarázatot, se code fence-t).
+            ${stressNote()}Válaszolj KIZÁRÓLAG egy JSON tömbbel, semmi mást ne írj a válaszba (se magyarázatot, se code fence-t).
             A formátum pontosan ez legyen:
-            [{"original":"...","dictionary_form":"...","translation":"..."}]
+            [${jsonItem()}]
 
             A szavak:
             $list
@@ -195,9 +212,9 @@ class AiClient(private val settings: AiSettings) {
         2. a szótári alapalakot (ige esetén infinitivus, főnév esetén egyes szám alanyeset, stb.)
         3. a szótári alapalak legjellemzőbb ${settings.targetLanguage.promptName} fordítását, röviden, ugyancsak szótári alakban (ige: főnévi igenév, főnév: egyes szám alanyeset). NEM a ragozott alak fordítását kérem.
 
-        Válaszolj KIZÁRÓLAG egy JSON objektummal, semmi mást ne írj a válaszba (se magyarázatot, se code fence-t).
+        ${stressNote()}Válaszolj KIZÁRÓLAG egy JSON objektummal, semmi mást ne írj a válaszba (se magyarázatot, se code fence-t).
         A formátum pontosan ez legyen:
-        {"original":"...","dictionary_form":"...","translation":"..."}
+        ${jsonItem()}
     """.trimIndent()
 
     private fun callAnthropicVision(prompt: String, imageBase64: String): String {
@@ -340,8 +357,8 @@ class AiClient(private val settings: AiSettings) {
         2. a szótári alapalakot, a szótárban szereplő írásmóddal: kisbetűvel, kivéve ha a szó a szótár szerint is nagybetűs (például tulajdonnév). Ha a szó csak mondat eleje miatt vagy más okból van nagybetűvel, a szótári alak legyen kisbetűs.
         3. a szótári alapalak legjellemzőbb ${settings.targetLanguage.promptName} fordítását, röviden, ugyancsak szótári alakban (ige: főnévi igenév, főnév: egyes szám alanyeset). NEM a ragozott alak fordítását kérem.
 
-        Válaszolj KIZÁRÓLAG egy JSON tömbbel, pontosan $count elemmel, a képek sorrendjében, semmi mást ne írj:
-        [{"original":"...","dictionary_form":"...","translation":"..."}]
+        ${stressNote()}Válaszolj KIZÁRÓLAG egy JSON tömbbel, pontosan $count elemmel, a képek sorrendjében, semmi mást ne írj:
+        [${jsonItem()}]
     """.trimIndent()
 
     private fun callAnthropicVisionBatch(prompt: String, imagesBase64: List<String>): String {
@@ -483,6 +500,13 @@ class AiClient(private val settings: AiSettings) {
             return partsArr.getJSONObject(0).getString("text")
         }
     }
+    /** Csak akkor tartjuk meg a hangsulyos alakot, ha a jel nelkul ugyanaz, mint a szotari alak. */
+    private fun cleanStress(stressed: String, dict: String): String {
+        val s = stressed.trim()
+        if (s.isEmpty() || !s.contains('\u0301')) return ""
+        return if (s.replace("\u0301", "").equals(dict.trim(), ignoreCase = true)) s else ""
+    }
+
     private fun parseResponse(raw: String, originalWords: List<String>): List<Flashcard> {
         val cleaned = raw.trim()
             .removePrefix("```json").removePrefix("```")
@@ -497,11 +521,13 @@ class AiClient(private val settings: AiSettings) {
         val out = mutableListOf<Flashcard>()
         for (i in 0 until arr.length()) {
             val o = arr.getJSONObject(i)
+            val dict = o.optString("dictionary_form", "")
             out.add(
                 Flashcard(
                     id = 0L,
-                    dictionaryForm = o.optString("dictionary_form", ""),
-                    translation = o.optString("translation", "")
+                    dictionaryForm = dict,
+                    translation = o.optString("translation", ""),
+                    stressedForm = cleanStress(o.optString("stressed_form", ""), dict)
                 )
             )
         }
@@ -518,10 +544,12 @@ class AiClient(private val settings: AiSettings) {
             throw RuntimeException("Nem sikerült értelmezni az AI válaszát: $cleaned")
         }
         val obj = JSONObject(cleaned.substring(startIdx, endIdx + 1))
+        val dict = obj.optString("dictionary_form", "")
         return Flashcard(
             id = 0L,
-            dictionaryForm = obj.optString("dictionary_form", ""),
-            translation = obj.optString("translation", "")
+            dictionaryForm = dict,
+            translation = obj.optString("translation", ""),
+            stressedForm = cleanStress(obj.optString("stressed_form", ""), dict)
         )
     }
 }

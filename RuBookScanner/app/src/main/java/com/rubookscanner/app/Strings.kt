@@ -87,6 +87,9 @@ interface Strings {
     val infoBody: String
     val testKey: String
     val keyOk: String
+    val showStressLabel: String
+    val exportStressLabel: String
+    val resetButtonPos: String
 
     /** A nyelv neve az app (felulet) nyelven. */
     fun langName(l: AppLang): String
@@ -177,9 +180,12 @@ object StringsHu : Strings {
     override val helpUploadBody = "A „Pakli feltöltése” gomb a letöltött .txt formátumot olvassa vissza. Egy- vagy többpaklis fájl is jó (az „Összes pakli letöltése” fájlja is).\n\n• Mindig új pakli jön létre, még azonos név esetén is, a meglévő paklikat nem érinti.\n• A kártyák „nem tudom” állapotban érkeznek.\n• Ha a fájlban nincs pakli-fejléc (név és alatta ==== vonal), a fájl neve lesz a pakli neve.\n• Egy kártya sorában a szótári alakot és a fordítást tabulátor vagy legalább két szóköz válassza el. A régi, gondolatjeles forma („szó - fordítás”) is működik."
     override val cardFrontLabel = "Kártya előlapja"
     override val infoTitle = "Tudnivalók"
-    override val infoBody = "Tipp: érdemes több szót összegyűjteni, és egyszerre lefordítani, nem egyesével.\n\n• Az összes összegyűjtött szó egyetlen AI-kérésben megy el, így kevesebb kérést használsz fel. Az ingyenes API kulcsoknak általában kérésszám-korlátjuk van (percenként és naponta), így ez tovább tart.\n• Fotózz le egymás után több szót, majd nyomd meg a „Lefordítás” gombot.\n• A fotó gomb helyét átviheted: nyomd hosszan, és húzd az egyik halványkék körre (jobb kezes / bal kezes / közép). A célzó téglalap vele együtt mozdul.\n• A zseblámpa gomb gyenge fényben segít."
+    override val infoBody = "Tipp: érdemes több szót összegyűjteni, és egyszerre lefordítani, nem egyesével.\n\n• Az összes összegyűjtött szó egyetlen AI-kérésben megy el, így kevesebb kérést használsz fel. Az ingyenes API kulcsoknak általában kérésszám-korlátjuk van (percenként és naponta), így ez tovább tart.\n• Fotózz le egymás után több szót, majd nyomd meg a „Lefordítás” gombot.\n• A fotó gomb helyét szabadon átviheted: nyomd hosszan, és húzd oda, ahol kényelmes. A célzó téglalap a gomb helyétől függően kicsit oldalra tolódik.\n• A zseblámpa gomb gyenge fényben segít."
     override val testKey = "Kulcs tesztelése"
     override val keyOk = "A kulcs működik ✓"
+    override val showStressLabel = "Hangsúlyjel mutatása a kártyán"
+    override val exportStressLabel = "Hangsúlyjel a letöltött fájlban"
+    override val resetButtonPos = "Fotó gomb alaphelyzetbe"
 
     override fun langName(l: AppLang): String = when (l) {
         AppLang.HUNGARIAN -> "Magyar"
@@ -277,9 +283,12 @@ object StringsEn : Strings {
     override val helpUploadBody = "“Upload deck” reads back the downloaded .txt format. A file with one or several decks works (including the “Download all decks” file).\n\n• It always creates a new deck, even if the name already exists; your existing decks are not touched.\n• Cards arrive as not known.\n• If the file has no deck header (a name with a ==== line under it), the file name becomes the deck name.\n• On a card line, the dictionary form and the translation must be separated by a tab or at least two spaces. The old dash format (“word - translation”) also works."
     override val cardFrontLabel = "Card front"
     override val infoTitle = "Info"
-    override val infoBody = "Tip: collect several words and translate them together instead of one by one.\n\n• All collected words go out in a single AI request, so you use fewer requests. Free API keys usually have a request limit (per minute and per day), so this makes them last longer.\n• Photograph several words in a row, then press “Translate”.\n• You can move the camera button: press and hold it, then drag it onto one of the light-blue circles (right-handed / left-handed / center). The aiming rectangle moves with it.\n• The flashlight button helps in dim light."
+    override val infoBody = "Tip: collect several words and translate them together instead of one by one.\n\n• All collected words go out in a single AI request, so you use fewer requests. Free API keys usually have a request limit (per minute and per day), so this makes them last longer.\n• Photograph several words in a row, then press “Translate”.\n• You can move the camera button anywhere: press and hold it, then drag it where it is comfortable. The aiming rectangle shifts a little to the side depending on where the button is.\n• The flashlight button helps in dim light."
     override val testKey = "Test key"
     override val keyOk = "The key works ✓"
+    override val showStressLabel = "Show stress marks on cards"
+    override val exportStressLabel = "Stress marks in downloaded files"
+    override val resetButtonPos = "Reset camera button position"
 
     override fun langName(l: AppLang): String = when (l) {
         AppLang.HUNGARIAN -> "Hungarian"
@@ -377,9 +386,12 @@ object StringsDe : Strings {
     override val helpUploadBody = "„Deck hochladen“ liest das heruntergeladene .txt-Format wieder ein. Eine Datei mit einem oder mehreren Decks funktioniert (auch die Datei von „Alle Decks herunterladen“).\n\n• Es entsteht immer ein neues Deck, auch bei gleichem Namen; bestehende Decks bleiben unberührt.\n• Die Karten kommen als „nicht gekonnt“ an.\n• Hat die Datei keine Deck-Kopfzeile (Name mit ====-Linie darunter), wird der Dateiname zum Decknamen.\n• In einer Kartenzeile müssen Grundform und Übersetzung durch einen Tabulator oder mindestens zwei Leerzeichen getrennt sein. Das alte Format mit Bindestrich („Wort - Übersetzung“) funktioniert ebenfalls."
     override val cardFrontLabel = "Vorderseite der Karte"
     override val infoTitle = "Hinweise"
-    override val infoBody = "Tipp: Sammle mehrere Wörter und übersetze sie gemeinsam statt einzeln.\n\n• Alle gesammelten Wörter gehen in einer einzigen KI-Anfrage raus, du verbrauchst also weniger Anfragen. Kostenlose API-Schlüssel haben meist ein Anfragelimit (pro Minute und pro Tag), so halten sie länger.\n• Fotografiere mehrere Wörter hintereinander und tippe dann auf „Übersetzen“.\n• Du kannst den Kamera-Button verschieben: lange drücken und auf einen der hellblauen Kreise ziehen (Rechtshänder / Linkshänder / Mitte). Das Zielrechteck wandert mit.\n• Die Taschenlampe hilft bei schwachem Licht."
+    override val infoBody = "Tipp: Sammle mehrere Wörter und übersetze sie gemeinsam statt einzeln.\n\n• Alle gesammelten Wörter gehen in einer einzigen KI-Anfrage raus, du verbrauchst also weniger Anfragen. Kostenlose API-Schlüssel haben meist ein Anfragelimit (pro Minute und pro Tag), so halten sie länger.\n• Fotografiere mehrere Wörter hintereinander und tippe dann auf „Übersetzen“.\n• Du kannst den Kamera-Button frei verschieben: lange drücken und dorthin ziehen, wo es bequem ist. Das Zielrechteck rückt je nach Position des Buttons ein Stück zur Seite.\n• Die Taschenlampe hilft bei schwachem Licht."
     override val testKey = "Schlüssel testen"
     override val keyOk = "Der Schlüssel funktioniert ✓"
+    override val showStressLabel = "Betonungszeichen auf Karten anzeigen"
+    override val exportStressLabel = "Betonungszeichen in heruntergeladenen Dateien"
+    override val resetButtonPos = "Kamera-Button zurücksetzen"
 
     override fun langName(l: AppLang): String = when (l) {
         AppLang.HUNGARIAN -> "Ungarisch"
@@ -477,9 +489,12 @@ object StringsIt : Strings {
     override val helpUploadBody = "«Carica mazzo» rilegge il formato .txt scaricato. Va bene un file con uno o più mazzi (anche quello di «Scarica tutti i mazzi»).\n\n• Crea sempre un nuovo mazzo, anche se il nome esiste già; i mazzi esistenti non vengono toccati.\n• Le schede arrivano come non conosciute.\n• Se il file non ha un'intestazione di mazzo (un nome con una linea ==== sotto), il nome del file diventa il nome del mazzo.\n• In una riga di scheda, forma base e traduzione devono essere separate da una tabulazione o da almeno due spazi. Funziona anche il vecchio formato con il trattino («parola - traduzione»)."
     override val cardFrontLabel = "Fronte della scheda"
     override val infoTitle = "Informazioni"
-    override val infoBody = "Consiglio: raccogli più parole e traducile insieme invece che una per una.\n\n• Tutte le parole raccolte partono in un'unica richiesta IA, quindi usi meno richieste. Le chiavi API gratuite di solito hanno un limite di richieste (al minuto e al giorno), così durano di più.\n• Fotografa più parole di fila, poi premi «Traduci».\n• Puoi spostare il pulsante della fotocamera: tienilo premuto e trascinalo su uno dei cerchi azzurri (destrorso / mancino / centro). Il rettangolo di mira si sposta con lui.\n• La torcia aiuta con poca luce."
+    override val infoBody = "Consiglio: raccogli più parole e traducile insieme invece che una per una.\n\n• Tutte le parole raccolte partono in un'unica richiesta IA, quindi usi meno richieste. Le chiavi API gratuite di solito hanno un limite di richieste (al minuto e al giorno), così durano di più.\n• Fotografa più parole di fila, poi premi «Traduci».\n• Puoi spostare liberamente il pulsante della fotocamera: tienilo premuto e trascinalo dove ti è comodo. Il rettangolo di mira si sposta un po' di lato a seconda della posizione del pulsante.\n• La torcia aiuta con poca luce."
     override val testKey = "Prova la chiave"
     override val keyOk = "La chiave funziona ✓"
+    override val showStressLabel = "Mostra gli accenti sulle schede"
+    override val exportStressLabel = "Accenti nei file scaricati"
+    override val resetButtonPos = "Ripristina la posizione del pulsante"
 
     override fun langName(l: AppLang): String = when (l) {
         AppLang.HUNGARIAN -> "Ungherese"
@@ -577,9 +592,12 @@ object StringsFr : Strings {
     override val helpUploadBody = "« Importer un paquet » relit le format .txt téléchargé. Un fichier avec un ou plusieurs paquets convient (y compris celui de « Télécharger tous les paquets »).\n\n• Un nouveau paquet est toujours créé, même si le nom existe déjà ; les paquets existants ne sont pas modifiés.\n• Les cartes arrivent comme non connues.\n• Si le fichier n'a pas d'en-tête de paquet (un nom avec une ligne ==== en dessous), le nom du fichier devient le nom du paquet.\n• Sur une ligne de carte, la forme de base et la traduction doivent être séparées par une tabulation ou au moins deux espaces. L'ancien format avec tiret (« mot - traduction ») fonctionne aussi."
     override val cardFrontLabel = "Recto de la carte"
     override val infoTitle = "Infos"
-    override val infoBody = "Astuce : rassemble plusieurs mots et traduis-les ensemble plutôt qu'un par un.\n\n• Tous les mots collectés partent dans une seule requête IA, tu utilises donc moins de requêtes. Les clés API gratuites ont généralement une limite de requêtes (par minute et par jour), elles durent ainsi plus longtemps.\n• Photographie plusieurs mots à la suite, puis appuie sur « Traduire ».\n• Tu peux déplacer le bouton de l'appareil photo : appuie longuement dessus et fais-le glisser sur l'un des cercles bleu clair (droitier / gaucher / centre). Le rectangle de visée se déplace avec lui.\n• La lampe torche aide quand il y a peu de lumière."
+    override val infoBody = "Astuce : rassemble plusieurs mots et traduis-les ensemble plutôt qu'un par un.\n\n• Tous les mots collectés partent dans une seule requête IA, tu utilises donc moins de requêtes. Les clés API gratuites ont généralement une limite de requêtes (par minute et par jour), elles durent ainsi plus longtemps.\n• Photographie plusieurs mots à la suite, puis appuie sur « Traduire ».\n• Tu peux déplacer librement le bouton de l'appareil photo : appuie longuement dessus et fais-le glisser où c'est confortable. Le rectangle de visée se décale un peu sur le côté selon la position du bouton.\n• La lampe torche aide quand il y a peu de lumière."
     override val testKey = "Tester la clé"
     override val keyOk = "La clé fonctionne ✓"
+    override val showStressLabel = "Afficher les accents toniques sur les cartes"
+    override val exportStressLabel = "Accents toniques dans les fichiers téléchargés"
+    override val resetButtonPos = "Réinitialiser la position du bouton"
 
     override fun langName(l: AppLang): String = when (l) {
         AppLang.HUNGARIAN -> "Hongrois"
@@ -677,9 +695,12 @@ object StringsEs : Strings {
     override val helpUploadBody = "«Subir mazo» vuelve a leer el formato .txt descargado. Sirve un archivo con uno o varios mazos (también el de «Descargar todos los mazos»).\n\n• Siempre se crea un mazo nuevo, aunque el nombre ya exista; los mazos existentes no se tocan.\n• Las tarjetas llegan como no sabidas.\n• Si el archivo no tiene encabezado de mazo (un nombre con una línea ==== debajo), el nombre del archivo pasa a ser el nombre del mazo.\n• En la línea de una tarjeta, la forma base y la traducción deben ir separadas por un tabulador o por al menos dos espacios. El formato antiguo con guion («palabra - traducción») también funciona."
     override val cardFrontLabel = "Anverso de la tarjeta"
     override val infoTitle = "Información"
-    override val infoBody = "Consejo: reúne varias palabras y tradúcelas juntas en lugar de una por una.\n\n• Todas las palabras reunidas se envían en una sola petición de IA, así que usas menos peticiones. Las claves API gratuitas suelen tener un límite de peticiones (por minuto y por día), de modo que duran más.\n• Fotografía varias palabras seguidas y luego pulsa «Traducir».\n• Puedes mover el botón de la cámara: mantenlo pulsado y arrástralo a uno de los círculos azul claro (diestro / zurdo / centro). El rectángulo de puntería se mueve con él.\n• La linterna ayuda con poca luz."
+    override val infoBody = "Consejo: reúne varias palabras y tradúcelas juntas en lugar de una por una.\n\n• Todas las palabras reunidas se envían en una sola petición de IA, así que usas menos peticiones. Las claves API gratuitas suelen tener un límite de peticiones (por minuto y por día), de modo que duran más.\n• Fotografía varias palabras seguidas y luego pulsa «Traducir».\n• Puedes mover libremente el botón de la cámara: mantenlo pulsado y arrástralo donde te resulte cómodo. El rectángulo de puntería se desplaza un poco hacia un lado según la posición del botón.\n• La linterna ayuda con poca luz."
     override val testKey = "Probar la clave"
     override val keyOk = "La clave funciona ✓"
+    override val showStressLabel = "Mostrar los acentos en las tarjetas"
+    override val exportStressLabel = "Acentos en los archivos descargados"
+    override val resetButtonPos = "Restablecer la posición del botón"
 
     override fun langName(l: AppLang): String = when (l) {
         AppLang.HUNGARIAN -> "Húngaro"
@@ -777,9 +798,12 @@ object StringsRu : Strings {
     override val helpUploadBody = "«Загрузить колоду» читает скачанный формат .txt. Подойдёт файл с одной или несколькими колодами (в том числе файл из «Скачать все колоды»).\n\n• Всегда создаётся новая колода, даже если такое название уже есть; существующие колоды не затрагиваются.\n• Карточки приходят как «не знаю».\n• Если в файле нет заголовка колоды (название с линией ==== под ним), названием колоды станет имя файла.\n• В строке карточки словарная форма и перевод должны быть разделены табуляцией или минимум двумя пробелами. Старый формат с тире («слово - перевод») тоже работает."
     override val cardFrontLabel = "Лицевая сторона карточки"
     override val infoTitle = "Информация"
-    override val infoBody = "Совет: собирай несколько слов и переводи их вместе, а не по одному.\n\n• Все собранные слова уходят одним запросом к ИИ, так что ты тратишь меньше запросов. У бесплатных API-ключей обычно есть лимит запросов (в минуту и в день), поэтому так их хватает дольше.\n• Сфотографируй несколько слов подряд, затем нажми «Перевести».\n• Кнопку камеры можно переместить: нажми и удерживай её, затем перетащи на один из голубых кругов (для правшей / для левшей / по центру). Прицельный прямоугольник сдвинется вместе с ней.\n• Фонарик помогает при слабом освещении."
+    override val infoBody = "Совет: собирай несколько слов и переводи их вместе, а не по одному.\n\n• Все собранные слова уходят одним запросом к ИИ, так что ты тратишь меньше запросов. У бесплатных API-ключей обычно есть лимит запросов (в минуту и в день), поэтому так их хватает дольше.\n• Сфотографируй несколько слов подряд, затем нажми «Перевести».\n• Кнопку камеры можно свободно переместить: нажми и удерживай её, затем перетащи туда, где удобно. Прицельный прямоугольник немного сдвигается в сторону в зависимости от положения кнопки.\n• Фонарик помогает при слабом освещении."
     override val testKey = "Проверить ключ"
     override val keyOk = "Ключ работает ✓"
+    override val showStressLabel = "Показывать ударения на карточках"
+    override val exportStressLabel = "Ударения в скачанных файлах"
+    override val resetButtonPos = "Вернуть кнопку камеры на место"
 
     override fun langName(l: AppLang): String = when (l) {
         AppLang.HUNGARIAN -> "Венгерский"

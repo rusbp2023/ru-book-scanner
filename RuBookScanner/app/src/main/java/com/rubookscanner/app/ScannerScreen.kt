@@ -138,7 +138,8 @@ fun ScannerScreen(
     onButtonPosChange: (Float, Float) -> Unit,
     decks: List<Deck>,
     activeDeckId: Long?,
-    onSelectDeck: (Long) -> Unit
+    onSelectDeck: (Long) -> Unit,
+    onHideInfo: () -> Unit
 ) {
     val context = LocalContext.current
     var hasPermission by remember {
@@ -165,7 +166,8 @@ fun ScannerScreen(
             onButtonPosChange = onButtonPosChange,
             decks = decks,
             activeDeckId = activeDeckId,
-            onSelectDeck = onSelectDeck
+            onSelectDeck = onSelectDeck,
+            onHideInfo = onHideInfo
         )
     } else {
         PermissionRequiredScreen(onRequest = { launcher.launch(Manifest.permission.CAMERA) })
@@ -199,7 +201,8 @@ private fun CameraScanContent(
     onButtonPosChange: (Float, Float) -> Unit,
     decks: List<Deck>,
     activeDeckId: Long?,
-    onSelectDeck: (Long) -> Unit
+    onSelectDeck: (Long) -> Unit,
+    onHideInfo: () -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -512,30 +515,21 @@ private fun CameraScanContent(
                 },
             contentAlignment = Alignment.Center
         ) { Text("🔦", fontSize = 20.sp) }
-        Box(
-            Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 8.dp, end = 16.dp)
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(Color(0x66000000))
-                .border(1.dp, Color(0x66FFFFFF), CircleShape)
-                .clickable { showInfo = true },
-            contentAlignment = Alignment.Center
-        ) {
-            Text("i", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE6EDF3))
+        if (settings.showInfo) {
+            InfoButton(
+                onClick = { showInfo = true },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 8.dp, end = 16.dp)
+            )
         }
         if (showInfo) {
-            AlertDialog(
-                onDismissRequest = { showInfo = false },
-                title = { Text(t.infoTitle) },
-                text = {
-                    Column(Modifier.verticalScroll(rememberScrollState())) {
-                        Text(t.infoBody, fontSize = 14.sp)
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = { showInfo = false }) { Text(t.closeLabel) }
+            InfoDialog(
+                body = t.infoBody,
+                onDismiss = { showInfo = false },
+                onDontShowAgain = {
+                    showInfo = false
+                    onHideInfo()
                 }
             )
         }

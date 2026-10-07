@@ -180,6 +180,7 @@ fun AppContent(store: Store) {
             when (screen) {
                 AppScreen.SCAN -> ScannerScreen(
                     settings = settings,
+                    onHideInfo = { scope.launch { store.saveSettings(settings.copy(showInfo = false)) } },
                     pendingCrops = pendingCrops,
                     onButtonPosChange = { fx, fy ->
                         scope.launch { store.saveSettings(settings.copy(buttonX = fx, buttonY = fy)) }
@@ -201,6 +202,8 @@ fun AppContent(store: Store) {
                 )
 
                 AppScreen.WORDS -> WordListScreen(
+                    showInfoButton = settings.showInfo,
+                    onHideInfo = { scope.launch { store.saveSettings(settings.copy(showInfo = false)) } },
                     words = words,
                     loading = loading,
                     decks = decks,

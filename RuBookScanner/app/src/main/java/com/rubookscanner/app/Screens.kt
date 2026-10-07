@@ -1,6 +1,8 @@
 package com.rubookscanner.app
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.VisualTransformation
 import com.rubookscanner.app.data.AiClient
 import com.rubookscanner.app.data.CardFront
@@ -90,7 +92,6 @@ import com.rubookscanner.app.data.AiSettings
 import com.rubookscanner.app.data.AppLang
 import com.rubookscanner.app.data.Deck
 import com.rubookscanner.app.data.Flashcard
-import com.rubookscanner.app.data.HandMode
 import com.rubookscanner.app.data.WordItem
 import com.rubookscanner.app.data.defaultModelFor
 import kotlin.math.PI
@@ -214,8 +215,8 @@ fun WTextField(
 }
 
 /**
- * Pakli valaszto: az app sotet kek feluletebol indul, csak halvany meleg (barsony-barnas)
- * arnyalattal, es meleg feher felirattal - emlekeztet a Pakli fulre, de nem azonos vele.
+ * Pakli valaszto: kis "barsony pakli" - melyvoros-barnas, enyhen domboru, gradienses elu,
+ * dolt serif felirattal, hogy hasonlitson a Pakli fulon levo paklikra.
  */
 @Composable
 fun DeckPicker(
@@ -228,17 +229,71 @@ fun DeckPicker(
     val t = LocalStrings.current
     var expanded by remember { mutableStateOf(false) }
     val activeName = decks.firstOrNull { it.id == activeDeckId }?.name.orEmpty()
-    val shape = RoundedCornerShape(10.dp)
-    val warmInk = Color(0xFFEDE6DA)
-    val warmSoft = Color(0xFFB8A39A)
+    val shape = RoundedCornerShape(12.dp)
+    val velvetLight = Color(0xFF63302F)
+    val velvetDark = Color(0xFF3A1717)
+    val ink = Color(0xFFEDE6DA)
+    val inkSoft = Color(0xFFD2BBB0)
     Box(modifier.widthIn(max = maxWidth)) {
         Row(
             Modifier
                 .clip(shape)
-                .background(Brush.verticalGradient(listOf(Color(0xFF2E2229), Color(0xFF1B1D29))))
+                .drawBehind {
+                    val w = size.width
+                    val h = size.height
+                    // velvet base
+                    drawRect(
+                        brush = Brush.verticalGradient(listOf(velvetLight, velvetDark), startY = 0f, endY = h),
+                        size = Size(w, h)
+                    )
+                    // soft sheen band in the middle
+                    drawRect(
+                        brush = Brush.horizontalGradient(
+                            listOf(Color(0x00FFFFFF), Color(0x1AFFC8B4), Color(0x00FFFFFF)),
+                            startX = 0f,
+                            endX = w
+                        ),
+                        size = Size(w, h)
+                    )
+                    // slightly domed: lighter on top, darker at the bottom
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            listOf(Color(0x2EFFFFFF), Color(0x00FFFFFF)),
+                            startY = 0f,
+                            endY = h * 0.45f
+                        ),
+                        size = Size(w, h)
+                    )
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            listOf(Color(0x00000000), Color(0x4D000000)),
+                            startY = h * 0.55f,
+                            endY = h
+                        ),
+                        size = Size(w, h)
+                    )
+                    // darker rounded edges on the sides
+                    val edgeW = 10.dp.toPx()
+                    drawRect(
+                        brush = Brush.horizontalGradient(
+                            listOf(Color(0x66000000), Color(0x00000000)),
+                            startX = 0f,
+                            endX = edgeW
+                        ),
+                        size = Size(w, h)
+                    )
+                    drawRect(
+                        brush = Brush.horizontalGradient(
+                            listOf(Color(0x00000000), Color(0x66000000)),
+                            startX = w - edgeW,
+                            endX = w
+                        ),
+                        size = Size(w, h)
+                    )
+                }
                 .border(
                     1.dp,
-                    Brush.verticalGradient(listOf(Color(0x55D2BBB0), Color(0x22D2BBB0))),
+                    Brush.verticalGradient(listOf(Color(0x66FFC8B4), Color(0x14FFFFFF), Color(0x80000000))),
                     shape
                 )
                 .clickable { expanded = true }
@@ -248,26 +303,30 @@ fun DeckPicker(
             Column(Modifier.weight(1f, fill = false)) {
                 Text(
                     t.navDeck,
+                    fontFamily = FontFamily.Serif,
+                    fontStyle = FontStyle.Italic,
                     fontSize = 11.sp,
-                    color = warmSoft,
+                    color = inkSoft,
                     maxLines = 1
                 )
                 Text(
                     activeName.ifBlank { "-" },
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = warmInk,
+                    fontFamily = FontFamily.Serif,
+                    fontStyle = FontStyle.Italic,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp,
+                    color = ink,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            Spacer(Modifier.width(6.dp))
-            Text("\u25BE", color = warmSoft, fontSize = 14.sp)
+            Spacer(Modifier.width(8.dp))
+            Text("\u25BE", color = inkSoft, fontSize = 22.sp)
         }
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.background(Color(0xFF221B24))
+            modifier = Modifier.background(Color(0xFF351818))
         ) {
             decks.forEach { deck ->
                 val active = deck.id == activeDeckId
@@ -275,8 +334,10 @@ fun DeckPicker(
                     text = {
                         Text(
                             deck.name,
+                            fontFamily = FontFamily.Serif,
+                            fontStyle = FontStyle.Italic,
                             fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
-                            color = if (active) Color(0xFFE8C4B8) else warmInk
+                            color = if (active) Color(0xFFFFC8B4) else ink
                         )
                     },
                     onClick = {
@@ -399,6 +460,7 @@ fun FlashcardScreen(
     onSelectDeck: (Long) -> Unit,
     allKnownHidden: Boolean,
     cardFront: CardFront,
+    showStress: Boolean,
     onDelete: (Long) -> Unit,
     onToggleKnown: (Flashcard) -> Unit,
     onEdit: (Flashcard) -> Unit,
@@ -455,6 +517,7 @@ fun FlashcardScreen(
 
     val safeIndex = index.coerceIn(0, cards.size - 1)
     val card = cards[safeIndex]
+    val dictDisplay = if (showStress && card.stressedForm.isNotBlank()) card.stressedForm else card.dictionaryForm
 
     val deleting = deletingId == card.id
     val delProgress = if (deleting) delAnim.value else 0f
@@ -600,7 +663,7 @@ fun FlashcardScreen(
                             .background(Color(0x4D66BB6A))
                     )
                     Text(
-                        if ((cardFront == CardFront.TRANSLATION) != flipped) card.translation else card.dictionaryForm,
+                        if ((cardFront == CardFront.TRANSLATION) != flipped) card.translation else dictDisplay,
                         style = MaterialTheme.typography.headlineMedium
                     )
                     // rugózó zöld pipa a kártya jobb alsó részén
@@ -698,7 +761,14 @@ fun FlashcardScreen(
                     enabled = editDict.isNotBlank() && editTrans.isNotBlank(),
                     onClick = {
                         showEditDialog = false
-                        onEdit(card.copy(dictionaryForm = editDict.trim(), translation = editTrans.trim()))
+                        val newDict = editDict.trim()
+                        onEdit(
+                            card.copy(
+                                dictionaryForm = newDict,
+                                translation = editTrans.trim(),
+                                stressedForm = if (newDict == card.dictionaryForm) card.stressedForm else ""
+                            )
+                        )
                     }
                 ) { Text(t.save) }
             },
@@ -775,7 +845,8 @@ private fun <T> DropdownField(
 @Composable
 fun SettingsScreen(
     settings: AiSettings,
-    onSave: (AiSettings) -> Unit
+    onSave: (AiSettings) -> Unit,
+    onResetButtonPos: () -> Unit
 ) {
     val t = LocalStrings.current
     val uriHandler = LocalUriHandler.current
@@ -791,16 +862,10 @@ fun SettingsScreen(
     var sourceLanguage by remember(settings) { mutableStateOf(settings.sourceLanguage) }
     var targetLanguage by remember(settings) { mutableStateOf(settings.targetLanguage) }
     var uiLanguage by remember(settings) { mutableStateOf(settings.uiLanguage) }
-    var handMode by remember(settings) { mutableStateOf(settings.handMode) }
     var cardFront by remember(settings) { mutableStateOf(settings.cardFront) }
     var showKnown by remember(settings) { mutableStateOf(settings.showKnown) }
-    val handLabel: (HandMode) -> String = {
-        when (it) {
-            HandMode.RIGHT -> t.handRight
-            HandMode.LEFT -> t.handLeft
-            HandMode.CENTER -> t.handCenter
-        }
-    }
+    var showStress by remember(settings) { mutableStateOf(settings.showStress) }
+    var exportStress by remember(settings) { mutableStateOf(settings.exportStress) }
 
     Column(
         Modifier
@@ -837,19 +902,18 @@ fun SettingsScreen(
 
         Text(t.customizeTitle, style = MaterialTheme.typography.titleMedium, color = Color(0xFFFFA726))
         Spacer(Modifier.height(8.dp))
-        DropdownField(
-            label = t.handModeLabel,
-            selectedText = handLabel(handMode),
-            options = HandMode.entries,
-            optionLabel = { handLabel(it) },
-            onSelect = { handMode = it }
-        )
+        WButton(
+            onClick = onResetButtonPos,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+        ) { WLabel(t.resetButtonPos) }
         Spacer(Modifier.height(12.dp))
         DropdownField(
             label = t.cardFrontLabel,
-            selectedText = if (cardFront == CardFront.TRANSLATION) t.translationLabel else t.dictionaryFormLabel,
+            selectedText = if (cardFront == CardFront.TRANSLATION) t.translationLanguageLabel else t.bookLanguageLabel,
             options = CardFront.entries,
-            optionLabel = { if (it == CardFront.TRANSLATION) t.translationLabel else t.dictionaryFormLabel },
+            optionLabel = { if (it == CardFront.TRANSLATION) t.translationLanguageLabel else t.bookLanguageLabel },
             onSelect = { cardFront = it }
         )
         Spacer(Modifier.height(12.dp))
@@ -860,6 +924,24 @@ fun SettingsScreen(
             optionLabel = { if (it) t.optYes else t.optNo },
             onSelect = { showKnown = it }
         )
+        if (sourceLanguage == com.rubookscanner.app.data.SourceLanguage.RUSSIAN) {
+            Spacer(Modifier.height(12.dp))
+            DropdownField(
+                label = t.showStressLabel,
+                selectedText = if (showStress) t.optYes else t.optNo,
+                options = listOf(true, false),
+                optionLabel = { if (it) t.optYes else t.optNo },
+                onSelect = { showStress = it }
+            )
+            Spacer(Modifier.height(12.dp))
+            DropdownField(
+                label = t.exportStressLabel,
+                selectedText = if (exportStress) t.optYes else t.optNo,
+                options = listOf(true, false),
+                optionLabel = { if (it) t.optYes else t.optNo },
+                onSelect = { exportStress = it }
+            )
+        }
         Spacer(Modifier.height(20.dp))
 
         Text(t.aiProviderTitle, style = MaterialTheme.typography.titleMedium, color = Color(0xFFFFA726))
@@ -957,9 +1039,12 @@ fun SettingsScreen(
                         sourceLanguage = sourceLanguage,
                         uiLanguage = uiLanguage,
                         targetLanguage = targetLanguage,
-                        handMode = handMode,
+                        buttonX = settings.buttonX,
+                        buttonY = settings.buttonY,
                         showKnown = showKnown,
-                        cardFront = cardFront
+                        cardFront = cardFront,
+                        showStress = showStress,
+                        exportStress = exportStress
                     )
                 )
             },

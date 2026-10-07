@@ -15,16 +15,14 @@ data class Flashcard(
     val dictionaryForm: String,
     val translation: String,
     val known: Boolean = false,
-    val deckId: Long = 0L
+    val deckId: Long = 0L,
+    val stressedForm: String = ""
 )
 
 enum class AiProvider { ANTHROPIC, OPENAI, GEMINI }
 
 /** A kartya elolapja: a fordites vagy a szotari alak. */
 enum class CardFront { TRANSLATION, DICTIONARY }
-
-/** A scan felület kiosztása: jobb kezes, bal kezes vagy közép (alapértelmezett). */
-enum class HandMode { RIGHT, LEFT, CENTER }
 
 /** A könyv nyelve. A label a nyelv saját neve, a promptName az AI-nak szóló kérésben szerepel. */
 enum class SourceLanguage(val label: String, val promptName: String) {
@@ -55,9 +53,12 @@ data class AiSettings(
     val sourceLanguage: SourceLanguage = SourceLanguage.RUSSIAN,
     val uiLanguage: AppLang = AppLang.HUNGARIAN,
     val targetLanguage: AppLang = AppLang.HUNGARIAN,
-    val handMode: HandMode = HandMode.CENTER,
+    val buttonX: Float = 0.5f,
+    val buttonY: Float = 1f,
     val showKnown: Boolean = true,
-    val cardFront: CardFront = CardFront.TRANSLATION
+    val cardFront: CardFront = CardFront.TRANSLATION,
+    val showStress: Boolean = true,
+    val exportStress: Boolean = false
 )
 
 fun defaultModelFor(provider: AiProvider): String = when (provider) {

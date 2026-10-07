@@ -1,6 +1,9 @@
 package com.rubookscanner.app
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -249,7 +252,8 @@ fun DeckPicker(
     activeDeckId: Long?,
     onSelect: (Long) -> Unit,
     modifier: Modifier = Modifier,
-    maxWidth: Dp = 132.dp
+    maxWidth: Dp = 132.dp,
+    fillWidth: Boolean = false
 ) {
     var expanded by remember { mutableStateOf(false) }
     val activeName = decks.firstOrNull { it.id == activeDeckId }?.name.orEmpty()
@@ -262,9 +266,10 @@ fun DeckPicker(
     val rimBottom = if (pressed) Color(0xFF8A5E55) else Color(0xFF2A1414)
     val ink = Color(0xFFEDE6DA)
     val inkSoft = Color(0xFFD2BBB0)
-    Box(modifier.widthIn(max = maxWidth)) {
+    Box(modifier.then(if (fillWidth) Modifier.width(maxWidth) else Modifier.widthIn(max = maxWidth))) {
         Row(
             Modifier
+                .then(if (fillWidth) Modifier.fillMaxWidth() else Modifier)
                 .height(44.dp)
                 .clip(shape)
                 .background(Brush.verticalGradient(listOf(top, bottom)))
@@ -318,6 +323,27 @@ fun DeckPicker(
             }
         }
     }
+}
+
+/** Hint text: softer colour, parts between [[ ]] are highlighted in deep orange. */
+@Composable
+fun HighlightedHint(text: String, modifier: Modifier = Modifier) {
+    val orange = Color(0xFFFF6F20)
+    val annotated = buildAnnotatedString {
+        text.split("[[", "]]").forEachIndexed { i, part ->
+            if (i % 2 == 1) {
+                withStyle(SpanStyle(color = orange, fontWeight = FontWeight.Bold)) { append(part) }
+            } else {
+                append(part)
+            }
+        }
+    }
+    Text(
+        annotated,
+        color = Color(0xFFAEB9C6),
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = modifier
+    )
 }
 
 /** Small round "i" button that opens an info dialog. */
@@ -378,7 +404,7 @@ fun WordListScreen(
     Column(
         Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp)
     ) {
         // bal felső sarok: pakliválasztó, alatta kezdődik a szöveg
         Row(
@@ -407,11 +433,7 @@ fun WordListScreen(
             )
         }
         Spacer(Modifier.height(12.dp))
-        Text(
-            t.wordsHint,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.fillMaxWidth()
-        )
+        HighlightedHint(t.wordsHint, Modifier.fillMaxWidth())
         Spacer(Modifier.height(12.dp))
         Row(
             Modifier
@@ -507,7 +529,7 @@ fun FlashcardScreen(
                 onSelect = onSelectDeck,
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(16.dp),
+                    .padding(top = 8.dp, start = 16.dp),
                 maxWidth = 132.dp
             )
             Text(
@@ -598,7 +620,7 @@ fun FlashcardScreen(
     Column(
         Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(Modifier.fillMaxWidth()) {
@@ -611,7 +633,9 @@ fun FlashcardScreen(
                 },
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
-                    .height(48.dp)
+                    .width(132.dp)
+                    .height(44.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 WLabel(if (isShuffled) t.originalOrder else t.shuffle)
             }
@@ -625,7 +649,8 @@ fun FlashcardScreen(
                 activeDeckId = activeDeckId,
                 onSelect = onSelectDeck,
                 modifier = Modifier.align(Alignment.CenterStart),
-                maxWidth = 132.dp
+                maxWidth = 132.dp,
+                fillWidth = true
             )
         }
         Spacer(Modifier.height(4.dp))

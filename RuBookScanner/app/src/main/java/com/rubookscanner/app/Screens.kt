@@ -1,6 +1,7 @@
 package com.rubookscanner.app
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.VisualTransformation
@@ -303,8 +304,47 @@ fun DeckPicker(
     }
 }
 
+/** Small round "i" button that opens an info dialog. */
+@Composable
+fun InfoButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier
+            .size(44.dp)
+            .clip(CircleShape)
+            .background(Color(0x66000000))
+            .border(1.dp, Color(0x66FFFFFF), CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text("i", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE6EDF3))
+    }
+}
+
+/** Info dialog with a "do not show again" button that hides every info button (see Settings). */
+@Composable
+fun InfoDialog(body: String, onDismiss: () -> Unit, onDontShowAgain: () -> Unit) {
+    val t = LocalStrings.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(t.infoTitle) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                Text(body, fontSize = 14.sp)
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(t.closeLabel) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDontShowAgain) { Text(t.dontShowAgain) }
+        }
+    )
+}
+
 @Composable
 fun WordListScreen(
+    showInfoButton: Boolean,
+    onHideInfo: () -> Unit,
     words: List<WordItem>,
     loading: Boolean,
     decks: List<Deck>,
@@ -317,6 +357,7 @@ fun WordListScreen(
 ) {
     val t = LocalStrings.current
     var manualText by remember { mutableStateOf("") }
+    var showWordsInfo by remember { mutableStateOf(false) }
 
     Column(
         Modifier
@@ -324,12 +365,31 @@ fun WordListScreen(
             .padding(16.dp)
     ) {
         // bal felső sarok: pakliválasztó, alatta kezdődik a szöveg
-        DeckPicker(
-            decks = decks,
-            activeDeckId = activeDeckId,
-            onSelect = onSelectDeck,
-            maxWidth = 200.dp
-        )
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            DeckPicker(
+                decks = decks,
+                activeDeckId = activeDeckId,
+                onSelect = onSelectDeck,
+                maxWidth = 200.dp
+            )
+            if (showInfoButton) {
+                InfoButton(onClick = { showWordsInfo = true })
+            }
+        }
+        if (showWordsInfo) {
+            InfoDialog(
+                body = t.wordsInfoBody,
+                onDismiss = { showWordsInfo = false },
+                onDontShowAgain = {
+                    showWordsInfo = false
+                    onHideInfo()
+                }
+            )
+        }
         Spacer(Modifier.height(12.dp))
         Text(
             t.wordsHint,
@@ -829,6 +889,7 @@ fun SettingsScreen(
     var uiLanguage by remember(settings) { mutableStateOf(settings.uiLanguage) }
     var cardFront by remember(settings) { mutableStateOf(settings.cardFront) }
     var showKnown by remember(settings) { mutableStateOf(settings.showKnown) }
+    var showInfo by remember(settings) { mutableStateOf(settings.showInfo) }
     var showStress by remember(settings) { mutableStateOf(settings.showStress) }
     var exportStress by remember(settings) { mutableStateOf(settings.exportStress) }
 
@@ -880,6 +941,14 @@ fun SettingsScreen(
             options = CardFront.entries,
             optionLabel = { if (it == CardFront.TRANSLATION) t.translationLanguageLabel else t.bookLanguageLabel },
             onSelect = { cardFront = it }
+        )
+        Spacer(Modifier.height(12.dp))
+        DropdownField(
+            label = t.infoShowLabel,
+            selectedText = if (showInfo) t.optYes else t.optNo,
+            options = listOf(true, false),
+            optionLabel = { if (it) t.optYes else t.optNo },
+            onSelect = { showInfo = it }
         )
         Spacer(Modifier.height(12.dp))
         DropdownField(
@@ -1005,6 +1074,7 @@ fun SettingsScreen(
                         buttonX = settings.buttonX,
                         buttonY = settings.buttonY,
                         showKnown = showKnown,
+                        showInfo = showInfo,
                         cardFront = cardFront,
                         showStress = showStress,
                         exportStress = exportStress

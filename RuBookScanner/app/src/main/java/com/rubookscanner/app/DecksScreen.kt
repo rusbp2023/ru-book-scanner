@@ -69,6 +69,7 @@ fun DecksScreen(
     decks: List<Deck>,
     activeDeckId: Long?,
     allCards: List<Flashcard>,
+    exportStress: Boolean,
     onSetActive: (Long) -> Unit,
     onOpenDeck: (Long) -> Unit,
     onCreateDeck: (String) -> Unit,
@@ -201,7 +202,7 @@ fun DecksScreen(
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             WButton(
                 onClick = {
-                    pendingExportText = buildAllDecksExportText(decks, allCards, t.emptyDeck)
+                    pendingExportText = buildAllDecksExportText(decks, allCards, t.emptyDeck, exportStress)
                     createDocLauncher.launch(t.allDecksFileName)
                 },
                 modifier = Modifier
@@ -296,7 +297,7 @@ fun DecksScreen(
                         IconButton(
                             onClick = {
                                 val cardsForDeck = allCards.filter { it.deckId == deck.id }
-                                pendingExportText = buildDeckExportText(deck.name, cardsForDeck, t.emptyDeck)
+                                pendingExportText = buildDeckExportText(deck.name, cardsForDeck, t.emptyDeck, exportStress)
                                 createDocLauncher.launch("${deck.name}.txt")
                             },
                             modifier = Modifier

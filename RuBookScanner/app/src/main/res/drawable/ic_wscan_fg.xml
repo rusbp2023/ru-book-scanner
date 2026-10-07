@@ -5,51 +5,77 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- glass body: gradient rounded square -->
+    <!-- soft drop shadow under the button -->
+    <path
+        android:fillColor="#59000000"
+        android:pathData="M41,29H67A15,15 0 0 1 82,44V70A15,15 0 0 1 67,85H41A15,15 0 0 1 26,70V44A15,15 0 0 1 41,29Z" />
+    <!-- dark glassy convex body -->
     <path android:pathData="M41,26H67A15,15 0 0 1 82,41V67A15,15 0 0 1 67,82H41A15,15 0 0 1 26,67V41A15,15 0 0 1 41,26Z">
         <aapt:attr name="android:fillColor">
             <gradient
                 android:type="linear"
-                android:startX="26"
+                android:startX="40"
                 android:startY="26"
-                android:endX="82"
+                android:endX="68"
                 android:endY="82"
-                android:startColor="#D0B7DAFF"
-                android:centerColor="#A05A92DE"
-                android:endColor="#C02A5AB0" />
+                android:startColor="#FF4F6E9E"
+                android:centerColor="#FF1E3865"
+                android:endColor="#FF0E1F40" />
         </aapt:attr>
     </path>
-    <!-- book page under the glass -->
+    <!-- recessed pocket around the page (the page is sunk into the glass) -->
     <path
-        android:fillColor="#C5CAD1"
-        android:pathData="M34,34h40v40h-40z" />
-    <!-- evenly spaced text lines -->
-    <path
-        android:fillColor="#8D949C"
-        android:pathData="M37,36.5h34v2.4h-34z M37,41.5h34v2.4h-34z M37,46.5h34v2.4h-34z M37,51.5h34v2.4h-34z M37,56.5h34v2.4h-34z M37,61.5h34v2.4h-34z M37,66.5h34v2.4h-34z" />
-    <!-- narrower translucent yellow scan rectangle -->
-    <path
-        android:fillColor="#99FFD600"
-        android:strokeColor="#FFD600"
-        android:strokeWidth="1.6"
-        android:pathData="M40,48h28v12h-28z" />
-    <!-- glass sheen over everything -->
-    <path android:pathData="M41,26H67A15,15 0 0 1 82,41V67A15,15 0 0 1 67,82H41A15,15 0 0 1 26,67V41A15,15 0 0 1 41,26Z">
+        android:fillColor="#99050E22"
+        android:pathData="M40,33H68A7,7 0 0 1 75,40V68A7,7 0 0 1 68,75H40A7,7 0 0 1 33,68V40A7,7 0 0 1 40,33Z" />
+    <!-- greyish-white page, no lines -->
+    <path android:pathData="M40,36H68A4,4 0 0 1 72,40V68A4,4 0 0 1 68,72H40A4,4 0 0 1 36,68V40A4,4 0 0 1 40,36Z">
         <aapt:attr name="android:fillColor">
             <gradient
                 android:type="linear"
-                android:startX="26"
+                android:startX="36"
+                android:startY="36"
+                android:endX="72"
+                android:endY="72"
+                android:startColor="#FFE4E7EB"
+                android:endColor="#FFB4BAC3" />
+        </aapt:attr>
+    </path>
+    <!-- depth: inner shadow on the top edge of the page -->
+    <path android:pathData="M36,36H72V44H36Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="54"
+                android:startY="36"
+                android:endX="54"
+                android:endY="44"
+                android:startColor="#66000000"
+                android:endColor="#00000000" />
+        </aapt:attr>
+    </path>
+    <!-- horizontal yellow rectangle on the page -->
+    <path
+        android:fillColor="#F2FFD600"
+        android:strokeColor="#FFB8A000"
+        android:strokeWidth="1"
+        android:pathData="M41,49h26v10h-26z" />
+    <!-- mirror-like reflection over the upper half of the glass -->
+    <path android:pathData="M41,26H67A15,15 0 0 1 82,41V50C66,57 42,57 26,50V41A15,15 0 0 1 41,26Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="54"
                 android:startY="26"
-                android:endX="70"
-                android:endY="82"
-                android:startColor="#66FFFFFF"
+                android:endX="54"
+                android:endY="56"
+                android:startColor="#78FFFFFF"
                 android:endColor="#0DFFFFFF" />
         </aapt:attr>
     </path>
-    <!-- glass rim -->
+    <!-- glass rim: bright on top-left, dark on bottom-right -->
     <path
         android:fillColor="#00000000"
-        android:strokeWidth="1.3"
+        android:strokeWidth="1.4"
         android:pathData="M41,26H67A15,15 0 0 1 82,41V67A15,15 0 0 1 67,82H41A15,15 0 0 1 26,67V41A15,15 0 0 1 41,26Z">
         <aapt:attr name="android:strokeColor">
             <gradient
@@ -58,8 +84,9 @@
                 android:startY="26"
                 android:endX="82"
                 android:endY="82"
-                android:startColor="#B3FFFFFF"
-                android:endColor="#26FFFFFF" />
+                android:startColor="#CCFFFFFF"
+                android:centerColor="#33FFFFFF"
+                android:endColor="#99000000" />
         </aapt:attr>
     </path>
 </vector>

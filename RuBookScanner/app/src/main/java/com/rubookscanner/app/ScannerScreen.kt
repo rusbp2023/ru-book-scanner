@@ -495,7 +495,7 @@ private fun CameraScanContent(
                 .align(Alignment.TopStart)
                 .padding(top = 8.dp, start = 16.dp)
                 .graphicsLayer { alpha = 0.85f },
-            maxWidth = 150.dp
+            maxWidth = 132.dp
         )
         Box(
             Modifier

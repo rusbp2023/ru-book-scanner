@@ -93,6 +93,7 @@ import com.rubookscanner.app.data.AppLang
 import com.rubookscanner.app.data.Deck
 import com.rubookscanner.app.data.Flashcard
 import com.rubookscanner.app.data.WordItem
+import com.rubookscanner.app.data.ProviderConfig
 import com.rubookscanner.app.data.defaultModelFor
 import kotlin.math.PI
 import kotlin.math.sin
@@ -215,8 +216,8 @@ fun WTextField(
 }
 
 /**
- * Pakli valaszto: kis "barsony pakli" - melyvoros-barnas, enyhen domboru, gradienses elu,
- * dolt serif felirattal, hogy hasonlitson a Pakli fulon levo paklikra.
+ * Pakli valaszto: a WButton-hoz hasonlo domboruval (felul vilagos, alul sotet gradiens, vilagos-sotet perem,
+ * nyomaskor besullyed), de a pakli barsony szineivel.
  */
 @Composable
 fun DeckPicker(
@@ -229,74 +230,26 @@ fun DeckPicker(
     val t = LocalStrings.current
     var expanded by remember { mutableStateOf(false) }
     val activeName = decks.firstOrNull { it.id == activeDeckId }?.name.orEmpty()
-    val shape = RoundedCornerShape(12.dp)
-    val velvetLight = Color(0xFF63302F)
-    val velvetDark = Color(0xFF3A1717)
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val shape = RoundedCornerShape(10.dp)
+    val top = if (pressed) Color(0xFF2E1313) else Color(0xFF6E3736)
+    val bottom = if (pressed) Color(0xFF4A2423) else Color(0xFF2E1313)
+    val rimTop = if (pressed) Color(0xFF2A1414) else Color(0xFFB98B80)
+    val rimBottom = if (pressed) Color(0xFF8A5E55) else Color(0xFF2A1414)
     val ink = Color(0xFFEDE6DA)
     val inkSoft = Color(0xFFD2BBB0)
     Box(modifier.widthIn(max = maxWidth)) {
         Row(
             Modifier
                 .clip(shape)
-                .drawBehind {
-                    val w = size.width
-                    val h = size.height
-                    // velvet base
-                    drawRect(
-                        brush = Brush.verticalGradient(listOf(velvetLight, velvetDark), startY = 0f, endY = h),
-                        size = Size(w, h)
-                    )
-                    // soft sheen band in the middle
-                    drawRect(
-                        brush = Brush.horizontalGradient(
-                            listOf(Color(0x00FFFFFF), Color(0x1AFFC8B4), Color(0x00FFFFFF)),
-                            startX = 0f,
-                            endX = w
-                        ),
-                        size = Size(w, h)
-                    )
-                    // slightly domed: lighter on top, darker at the bottom
-                    drawRect(
-                        brush = Brush.verticalGradient(
-                            listOf(Color(0x2EFFFFFF), Color(0x00FFFFFF)),
-                            startY = 0f,
-                            endY = h * 0.45f
-                        ),
-                        size = Size(w, h)
-                    )
-                    drawRect(
-                        brush = Brush.verticalGradient(
-                            listOf(Color(0x00000000), Color(0x4D000000)),
-                            startY = h * 0.55f,
-                            endY = h
-                        ),
-                        size = Size(w, h)
-                    )
-                    // darker rounded edges on the sides
-                    val edgeW = 10.dp.toPx()
-                    drawRect(
-                        brush = Brush.horizontalGradient(
-                            listOf(Color(0x66000000), Color(0x00000000)),
-                            startX = 0f,
-                            endX = edgeW
-                        ),
-                        size = Size(w, h)
-                    )
-                    drawRect(
-                        brush = Brush.horizontalGradient(
-                            listOf(Color(0x00000000), Color(0x66000000)),
-                            startX = w - edgeW,
-                            endX = w
-                        ),
-                        size = Size(w, h)
-                    )
-                }
-                .border(
-                    1.dp,
-                    Brush.verticalGradient(listOf(Color(0x66FFC8B4), Color(0x14FFFFFF), Color(0x80000000))),
-                    shape
+                .background(Brush.verticalGradient(listOf(top, bottom)))
+                .border(1.dp, Brush.verticalGradient(listOf(rimTop, rimBottom)), shape)
+                .clickable(
+                    interactionSource = interaction,
+                    indication = null,
+                    onClick = { expanded = true }
                 )
-                .clickable { expanded = true }
                 .padding(horizontal = 10.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -856,9 +809,21 @@ fun SettingsScreen(
     var testOk by remember { mutableStateOf(false) }
     var testResult by remember { mutableStateOf<String?>(null) }
     var provider by remember(settings) { mutableStateOf(settings.provider) }
-    var apiKey by remember(settings) { mutableStateOf(settings.apiKey) }
-    var model by remember(settings) { mutableStateOf(settings.model) }
-    var baseUrl by remember(settings) { mutableStateOf(settings.baseUrl) }
+    var configs by remember(settings) {
+        mutableStateOf(
+            AiProvider.entries.associateWith { p ->
+                settings.providerConfigs[p] ?: ProviderConfig(
+                    apiKey = if (p == settings.provider) settings.apiKey else "",
+                    model = if (p == settings.provider) settings.model else defaultModelFor(p),
+                    baseUrl = if (p == settings.provider) settings.baseUrl else ""
+                )
+            }
+        )
+    }
+    val cfg = configs.getValue(provider)
+    val apiKey = cfg.apiKey
+    val model = cfg.model
+    val baseUrl = cfg.baseUrl
     var sourceLanguage by remember(settings) { mutableStateOf(settings.sourceLanguage) }
     var targetLanguage by remember(settings) { mutableStateOf(settings.targetLanguage) }
     var uiLanguage by remember(settings) { mutableStateOf(settings.uiLanguage) }
@@ -951,15 +916,12 @@ fun SettingsScreen(
             selectedText = provider.name,
             options = AiProvider.entries,
             optionLabel = { it.name },
-            onSelect = {
-                provider = it
-                model = defaultModelFor(it)
-            }
+            onSelect = { provider = it }
         )
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
             value = apiKey,
-            onValueChange = { apiKey = it },
+            onValueChange = { configs = configs + (provider to cfg.copy(apiKey = it)) },
             label = { Text(t.apiKeyLabel) },
             singleLine = true,
             visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
@@ -973,14 +935,14 @@ fun SettingsScreen(
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
             value = model,
-            onValueChange = { model = it },
+            onValueChange = { configs = configs + (provider to cfg.copy(model = it)) },
             label = { Text(t.modelLabel) },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
             value = baseUrl,
-            onValueChange = { baseUrl = it },
+            onValueChange = { configs = configs + (provider to cfg.copy(baseUrl = it)) },
             label = { Text(t.baseUrlLabel) },
             modifier = Modifier.fillMaxWidth()
         )
@@ -1036,6 +998,7 @@ fun SettingsScreen(
                         apiKey = apiKey,
                         model = model,
                         baseUrl = baseUrl,
+                        providerConfigs = configs,
                         sourceLanguage = sourceLanguage,
                         uiLanguage = uiLanguage,
                         targetLanguage = targetLanguage,

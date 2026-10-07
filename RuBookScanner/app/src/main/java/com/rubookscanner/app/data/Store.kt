@@ -35,6 +35,10 @@ private object Keys {
     val HAND_MODE = stringPreferencesKey("hand_mode")
     val CARD_FRONT = stringPreferencesKey("card_front")
     val SHOW_KNOWN = stringPreferencesKey("show_known")
+    val BUTTON_X = stringPreferencesKey("button_x")
+    val BUTTON_Y = stringPreferencesKey("button_y")
+    val SHOW_STRESS = stringPreferencesKey("show_stress")
+    val EXPORT_STRESS = stringPreferencesKey("export_stress")
 }
 
 class Store(private val context: Context) {
@@ -72,9 +76,14 @@ class Store(private val context: Context) {
             sourceLanguage = enumOrDefault(prefs[Keys.SOURCE_LANGUAGE], SourceLanguage.RUSSIAN),
             uiLanguage = enumOrDefault(prefs[Keys.UI_LANGUAGE], AppLang.HUNGARIAN),
             targetLanguage = enumOrDefault(prefs[Keys.TARGET_LANGUAGE], AppLang.HUNGARIAN),
-            handMode = enumOrDefault(prefs[Keys.HAND_MODE], HandMode.CENTER),
+            buttonX = prefs[Keys.BUTTON_X]?.toFloatOrNull()
+                ?: when (prefs[Keys.HAND_MODE]) { "RIGHT" -> 1f; "LEFT" -> 0f; else -> 0.5f },
+            buttonY = prefs[Keys.BUTTON_Y]?.toFloatOrNull()
+                ?: when (prefs[Keys.HAND_MODE]) { "RIGHT", "LEFT" -> 0f; else -> 1f },
             cardFront = enumOrDefault(prefs[Keys.CARD_FRONT], CardFront.TRANSLATION),
-            showKnown = prefs[Keys.SHOW_KNOWN]?.toBooleanStrictOrNull() ?: true
+            showKnown = prefs[Keys.SHOW_KNOWN]?.toBooleanStrictOrNull() ?: true,
+            showStress = prefs[Keys.SHOW_STRESS]?.toBooleanStrictOrNull() ?: true,
+            exportStress = prefs[Keys.EXPORT_STRESS]?.toBooleanStrictOrNull() ?: false
         )
     }
 
@@ -122,7 +131,8 @@ class Store(private val context: Context) {
                     cards.add(
                         Flashcard(
                             id = nextCardId,
-                            dictionaryForm = pair.first,
+                            dictionaryForm = pair.first.replace("\u0301", ""),
+                            stressedForm = if (pair.first.contains("\u0301")) pair.first else "",
                             translation = pair.second,
                             deckId = deck.id
                         )
@@ -245,9 +255,12 @@ class Store(private val context: Context) {
             prefs[Keys.SOURCE_LANGUAGE] = settings.sourceLanguage.name
             prefs[Keys.UI_LANGUAGE] = settings.uiLanguage.name
             prefs[Keys.TARGET_LANGUAGE] = settings.targetLanguage.name
-            prefs[Keys.HAND_MODE] = settings.handMode.name
+            prefs[Keys.BUTTON_X] = settings.buttonX.toString()
+            prefs[Keys.BUTTON_Y] = settings.buttonY.toString()
             prefs[Keys.CARD_FRONT] = settings.cardFront.name
             prefs[Keys.SHOW_KNOWN] = settings.showKnown.toString()
+            prefs[Keys.SHOW_STRESS] = settings.showStress.toString()
+            prefs[Keys.EXPORT_STRESS] = settings.exportStress.toString()
         }
     }
     private fun parseShuffle(json: String): Map<Long, List<Long>> {
@@ -324,7 +337,8 @@ class Store(private val context: Context) {
                     deckId = o.optLong("deckId", 0L),
                     dictionaryForm = o.getString("dictionaryForm"),
                     translation = o.getString("translation"),
-                    known = o.optBoolean("known", false)
+                    known = o.optBoolean("known", false),
+                    stressedForm = o.optString("stressedForm", "")
                 )
             )
         }
@@ -340,6 +354,7 @@ class Store(private val context: Context) {
                 put("dictionaryForm", c.dictionaryForm)
                 put("translation", c.translation)
                 put("known", c.known)
+                put("stressedForm", c.stressedForm)
             })
         }
         return arr.toString()

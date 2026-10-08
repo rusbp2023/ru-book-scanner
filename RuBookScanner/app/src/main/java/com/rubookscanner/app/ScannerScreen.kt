@@ -398,14 +398,11 @@ private fun CameraScanContent(
                                                 .coerceIn(0, screenBitmap.width - 1)
                                             val centerY = screenBitmap.height / 2
                                             val text = recognizeTextOnDevice(screenBitmap)
-                                            val box = findWordBoxNearPoint(text, centerX, centerY, screenBitmap.width, screenBitmap.height)
+                                            val box = findWordBoxNearPoint(text, centerX, centerY)
                                             if (box != null) {
                                                 wordFound = true
-                                                // never crop tinier than a readable minimum (the AI picks the word in the middle)
-                                                val minCropW = (screenBitmap.width * 0.18f).toInt()
-                                                val minCropH = (screenBitmap.height * 0.06f).toInt()
-                                                val padW = maxOf((box.width() * 0.4f).toInt(), (minCropW - box.width()) / 2, 4)
-                                                val padH = maxOf((box.height() * 0.4f).toInt(), (minCropH - box.height()) / 2, 4)
+                                                val padW = (box.width() * 0.4f).toInt().coerceAtLeast(4)
+                                                val padH = (box.height() * 0.4f).toInt().coerceAtLeast(4)
                                                 val left = (box.left - padW).coerceIn(0, screenBitmap.width - 1)
                                                 val top = (box.top - padH).coerceIn(0, screenBitmap.height - 1)
                                                 val right = (box.right + padW).coerceIn(left + 1, screenBitmap.width)

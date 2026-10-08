@@ -5,7 +5,7 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- deep blue tile (the frame around the artwork) -->
+    <!-- deep blue diagonal gradient, matches the edges of the artwork -->
     <path android:pathData="M0,0h108v108h-108z">
         <aapt:attr name="android:fillColor">
             <gradient
@@ -14,8 +14,8 @@
                 android:startY="0"
                 android:endX="108"
                 android:endY="108"
-                android:startColor="#14409A"
-                android:endColor="#051642" />
+                android:startColor="#2B66B0"
+                android:endColor="#00051D" />
         </aapt:attr>
     </path>
 </vector>

@@ -15,7 +15,10 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 /** JPEG ImageProxy -> felfelé álló (elforgatott) Bitmap. */
-fun imageProxyToUprightBitmap(image: ImageProxy): Bitmap {
+fun imageProxyToUprightBitmap(
+    image: ImageProxy,
+    val rotation = rotationDegrees
+): Bitmap {
     val buffer = image.planes[0].buffer
     val bytes = ByteArray(buffer.remaining())
     buffer.get(bytes)

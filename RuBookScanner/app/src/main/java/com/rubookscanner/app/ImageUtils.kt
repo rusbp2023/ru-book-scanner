@@ -14,18 +14,17 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-/** JPEG ImageProxy -> felfelé álló (elforgatott) Bitmap. */
+/** JPEG ImageProxy -> felfelé álló (elforgatott) Bitmap. A forgatás szöge megadható, alapból a CameraX értéke. */
 fun imageProxyToUprightBitmap(
     image: ImageProxy,
-    val rotation = rotationDegrees
+    rotationDegrees: Int = image.imageInfo.rotationDegrees
 ): Bitmap {
     val buffer = image.planes[0].buffer
     val bytes = ByteArray(buffer.remaining())
     buffer.get(bytes)
     val raw = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-    val rotation = image.imageInfo.rotationDegrees
-    return if (rotation != 0) {
-        val matrix = Matrix().apply { postRotate(rotation.toFloat()) }
+    return if (rotationDegrees != 0) {
+        val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
         Bitmap.createBitmap(raw, 0, 0, raw.width, raw.height, matrix, true)
     } else {
         raw

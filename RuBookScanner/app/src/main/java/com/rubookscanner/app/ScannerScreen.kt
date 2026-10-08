@@ -212,6 +212,7 @@ private fun CameraScanContent(
     val cameraController = remember { LifecycleCameraController(context) }
     var torchOn by remember { mutableStateOf(false) }
     var showInfo by remember { mutableStateOf(false) }
+    var showClearDialog by remember { mutableStateOf(false) }
     DisposableEffect(Unit) {
         onDispose { cameraController.enableTorch(false) }
     }
@@ -529,6 +530,21 @@ private fun CameraScanContent(
                     .padding(top = 8.dp, end = 16.dp)
             )
         }
+                if (showClearDialog) {
+            AlertDialog(
+                onDismissRequest = { showClearDialog = false },
+                title = { Text(t.clearList + "?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        pendingCrops.clear()
+                        showClearDialog = false
+                    }) { Text(t.yesDelete) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showClearDialog = false }) { Text(t.cancel) }
+                }
+            )
+        }
         if (showInfo) {
             InfoDialog(
                 body = t.infoBody,
@@ -723,7 +739,7 @@ private fun CameraScanContent(
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             WButton(
-                                onClick = { pendingCrops.clear() },
+                                onClick = { showClearDialog = true },
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(48.dp)

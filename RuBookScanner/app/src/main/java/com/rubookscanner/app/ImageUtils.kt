@@ -86,23 +86,9 @@ suspend fun recognizeTextOnDevice(bitmap: Bitmap): Text = suspendCancellableCoro
         .addOnFailureListener { e -> cont.resumeWithException(e) }
 }
 
-/**
- * Megkeresi a (centerX, centerY) pont alatti, vagy ahhoz legkozelebbi felismert szo dobozat.
- * A Latin modell cirill betuknel gyakran zajt (betutoredeket, vonalat, pontot) is "elemnek" lat:
- * ezeket kiszuri (tul kicsi vagy tul keskeny, allo doboz), es csak kozeli szot fogad el.
- */
-fun findWordBoxNearPoint(text: Text, centerX: Int, centerY: Int, imgW: Int, imgH: Int): Rect? {
-    val minW = imgW * 0.02f
-    val minH = imgH * 0.01f
-    val elements = text.textBlocks
-        .flatMap { block -> block.lines.flatMap { it.elements } }
-        .filter { el ->
-            val box = el.boundingBox
-            box != null &&
-                box.width() >= minW &&
-                box.height() >= minH &&
-                box.height() <= box.width() * 1.5f
-        }
+/** Megkeresi a (centerX, centerY) pont alatti, vagy ahhoz legközelebbi felismert szó dobozát. */
+fun findWordBoxNearPoint(text: Text, centerX: Int, centerY: Int): Rect? {
+    val elements = text.textBlocks.flatMap { block -> block.lines.flatMap { it.elements } }
     if (elements.isEmpty()) return null
 
     val containing = elements.filter { el -> el.boundingBox?.contains(centerX, centerY) == true }
@@ -113,14 +99,14 @@ fun findWordBoxNearPoint(text: Text, centerX: Int, centerY: Int, imgW: Int, imgH
         }?.boundingBox
     }
 
-    val maxDist = imgW * 0.12f
-    val nearest = elements.minByOrNull { el ->
-        val box = el.boundingBox!!
-        val dx = (box.centerX() - centerX).toLong()
-        val dy = (box.centerY() - centerY).toLong()
-        dx * dx + dy * dy
-    } ?: return null
-    val nb = nearest.boundingBox!!
-    val dist = Math.hypot((nb.centerX() - centerX).toDouble(), (nb.centerY() - centerY).toDouble())
-    return if (dist <= maxDist) nb else null
+    return elements.minByOrNull { el ->
+        val box = el.boundingBox
+        if (box == null) {
+            Long.MAX_VALUE
+        } else {
+            val dx = (box.centerX() - centerX).toLong()
+            val dy = (box.centerY() - centerY).toLong()
+            dx * dx + dy * dy
+        }
+    }?.boundingBox
 }

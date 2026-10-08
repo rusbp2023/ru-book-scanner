@@ -271,7 +271,8 @@ private fun CameraScanContent(
     fun aimShift(): Float =
         if (previewView.width > 0) with(density) { aimOffsetDp.toPx() } / previewView.width else 0f
 
-    fun finishDrag() {
+        fun finishDrag() {
+        if (!dragging) return
         longPressed = false
         val xr = xRange()
         val yr = yRange()

@@ -379,7 +379,12 @@ private fun CameraScanContent(
                         ContextCompat.getMainExecutor(context),
                         object : androidx.camera.core.ImageCapture.OnImageCapturedCallback() {
                             override fun onCaptureSuccess(image: androidx.camera.core.ImageProxy) {
-                                val rawBitmap = imageProxyToUprightBitmap(image)
+                                val displayRot = previewView.display?.rotation
+                                    ?: android.view.Surface.ROTATION_0
+                                val rot = cameraController.cameraInfo
+                                    ?.getSensorRotationDegrees(displayRot)
+                                    ?: image.imageInfo.rotationDegrees
+                                val rawBitmap = imageProxyToUprightBitmap(image, rot)
                                 image.close()
                                 val screenAspect = if (previewView.height > 0) {
                                     previewView.width.toFloat() / previewView.height.toFloat()

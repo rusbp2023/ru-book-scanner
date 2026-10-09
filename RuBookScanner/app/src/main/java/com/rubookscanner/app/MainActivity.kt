@@ -195,7 +195,12 @@ fun AppContent(store: Store) {
                                 snackbarHostState.showSnackbar(t.noActiveDeck)
                             } else {
                                 store.addFlashcards(newCards, deckId)
-                                snackbarHostState.showSnackbar(t.cardsAdded(newCards.size))
+                                snackbarHostState.currentSnackbarData?.dismiss()
+                                val msgJob = launch {
+                                    snackbarHostState.showSnackbar(t.cardsAdded(newCards.size))
+                                }
+                                kotlinx.coroutines.delay(1200)
+                                msgJob.cancel()
                             }
                         }
                     }

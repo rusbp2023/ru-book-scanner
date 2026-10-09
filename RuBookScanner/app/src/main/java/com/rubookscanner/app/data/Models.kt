@@ -67,6 +67,7 @@ data class AiSettings(
     val cardFront: CardFront = CardFront.TRANSLATION,
     val showStress: Boolean = true,
     val exportStress: Boolean = false,
+    val exportTranslationFirst: Boolean = false,
     val providerConfigs: Map<AiProvider, ProviderConfig> = emptyMap()
 )
 

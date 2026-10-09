@@ -422,6 +422,21 @@ fun WordListScreen(
                 InfoButton(onClick = { showWordsInfo = true })
             }
         }
+            if (showClearDialog) {
+            AlertDialog(
+                onDismissRequest = { showClearDialog = false },
+                title = { Text(t.clearList + "?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        onClear()
+                        showClearDialog = false
+                    }) { Text(t.yesDelete) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showClearDialog = false }) { Text(t.cancel) }
+                }
+            )
+        }
         if (showWordsInfo) {
             InfoDialog(
                 body = t.wordsInfoBody,
@@ -481,7 +496,7 @@ fun WordListScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             WButton(
-                onClick = onClear,
+                onClick = { showClearDialog = true },
                 modifier = Modifier
                     .weight(1f)
                     .height(56.dp)

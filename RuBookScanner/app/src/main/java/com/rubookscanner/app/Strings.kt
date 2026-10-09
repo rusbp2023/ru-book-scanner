@@ -89,6 +89,7 @@ interface Strings {
     val keyOk: String
     val showStressLabel: String
     val exportStressLabel: String
+    val exportOrderLabel: String
     val resetButtonPos: String
     val infoShowLabel: String
     val dontShowAgain: String
@@ -188,6 +189,7 @@ object StringsHu : Strings {
     override val keyOk = "A kulcs működik ✓"
     override val showStressLabel = "Hangsúlyjel mutatása a kártyán"
     override val exportStressLabel = "Hangsúlyjel a letöltött fájlban"
+    override val exportOrderLabel = "Bal oldalon a fájlban és a szem ikonnál"
     override val resetButtonPos = "Fotó gomb alaphelyzetbe"
     override val infoShowLabel = "Info gombok mutatása"
     override val dontShowAgain = "Ne mutasd többé"
@@ -294,6 +296,7 @@ object StringsEn : Strings {
     override val keyOk = "The key works ✓"
     override val showStressLabel = "Show stress marks on cards"
     override val exportStressLabel = "Stress marks in downloaded files"
+    override val exportOrderLabel = "Left side in files and deck preview"
     override val resetButtonPos = "Reset camera button position"
     override val infoShowLabel = "Show info buttons"
     override val dontShowAgain = "Don't show again"
@@ -400,6 +403,7 @@ object StringsDe : Strings {
     override val keyOk = "Der Schlüssel funktioniert ✓"
     override val showStressLabel = "Betonungszeichen auf Karten anzeigen"
     override val exportStressLabel = "Betonungszeichen in heruntergeladenen Dateien"
+    override val exportOrderLabel = "Linke Spalte in Dateien und Deck-Ansicht"
     override val resetButtonPos = "Kamera-Button zurücksetzen"
     override val infoShowLabel = "Info-Buttons anzeigen"
     override val dontShowAgain = "Nicht mehr anzeigen"
@@ -506,6 +510,7 @@ object StringsIt : Strings {
     override val keyOk = "La chiave funziona ✓"
     override val showStressLabel = "Mostra gli accenti sulle schede"
     override val exportStressLabel = "Accenti nei file scaricati"
+    override val exportOrderLabel = "Colonna a sinistra nei file e nell'anteprima"
     override val resetButtonPos = "Ripristina la posizione del pulsante"
     override val infoShowLabel = "Mostra i pulsanti info"
     override val dontShowAgain = "Non mostrare più"
@@ -612,6 +617,7 @@ object StringsFr : Strings {
     override val keyOk = "La clé fonctionne ✓"
     override val showStressLabel = "Afficher les accents toniques sur les cartes"
     override val exportStressLabel = "Accents toniques dans les fichiers téléchargés"
+    override val exportOrderLabel = "Colonne de gauche dans les fichiers et l'aperçu"
     override val resetButtonPos = "Réinitialiser la position du bouton"
     override val infoShowLabel = "Afficher les boutons d'info"
     override val dontShowAgain = "Ne plus afficher"
@@ -718,6 +724,7 @@ object StringsEs : Strings {
     override val keyOk = "La clave funciona ✓"
     override val showStressLabel = "Mostrar los acentos en las tarjetas"
     override val exportStressLabel = "Acentos en los archivos descargados"
+    override val exportOrderLabel = "Columna izquierda en archivos y vista previa"
     override val resetButtonPos = "Restablecer la posición del botón"
     override val infoShowLabel = "Mostrar los botones de información"
     override val dontShowAgain = "No mostrar más"
@@ -824,6 +831,7 @@ object StringsRu : Strings {
     override val keyOk = "Ключ работает ✓"
     override val showStressLabel = "Показывать ударения на карточках"
     override val exportStressLabel = "Ударения в скачанных файлах"
+    override val exportOrderLabel = "Левый столбец в файлах и просмотре колоды"
     override val resetButtonPos = "Вернуть кнопку камеры на место"
     override val infoShowLabel = "Показывать кнопки информации"
     override val dontShowAgain = "Больше не показывать"

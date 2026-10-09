@@ -951,6 +951,7 @@ fun SettingsScreen(
     var showInfo by remember(settings) { mutableStateOf(settings.showInfo) }
     var showStress by remember(settings) { mutableStateOf(settings.showStress) }
     var exportStress by remember(settings) { mutableStateOf(settings.exportStress) }
+    var exportTranslationFirst by remember(settings) { mutableStateOf(settings.exportTranslationFirst) }
 
     Column(
         Modifier
@@ -1016,6 +1017,14 @@ fun SettingsScreen(
             options = listOf(true, false),
             optionLabel = { if (it) t.optYes else t.optNo },
             onSelect = { showKnown = it }
+        )
+        Spacer(Modifier.height(12.dp))
+        DropdownField(
+            label = t.exportOrderLabel,
+            selectedText = if (exportTranslationFirst) t.translationLanguageLabel else t.bookLanguageLabel,
+            options = listOf(false, true),
+            optionLabel = { if (it) t.translationLanguageLabel else t.bookLanguageLabel },
+            onSelect = { exportTranslationFirst = it }
         )
         if (sourceLanguage == com.rubookscanner.app.data.SourceLanguage.RUSSIAN) {
             Spacer(Modifier.height(12.dp))
@@ -1136,7 +1145,8 @@ fun SettingsScreen(
                         showInfo = showInfo,
                         cardFront = cardFront,
                         showStress = showStress,
-                        exportStress = exportStress
+                        exportStress = exportStress,
+                        exportTranslationFirst = exportTranslationFirst
                     )
                 )
             },

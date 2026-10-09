@@ -40,6 +40,7 @@ private object Keys {
     val BUTTON_Y = stringPreferencesKey("button_y")
     val SHOW_STRESS = stringPreferencesKey("show_stress")
     val EXPORT_STRESS = stringPreferencesKey("export_stress")
+    val EXPORT_ORDER = stringPreferencesKey("export_order")
 }
 
 class Store(private val context: Context) {
@@ -100,7 +101,8 @@ class Store(private val context: Context) {
             showKnown = prefs[Keys.SHOW_KNOWN]?.toBooleanStrictOrNull() ?: true,
             showInfo = prefs[Keys.SHOW_INFO]?.toBooleanStrictOrNull() ?: true,
             showStress = prefs[Keys.SHOW_STRESS]?.toBooleanStrictOrNull() ?: true,
-            exportStress = prefs[Keys.EXPORT_STRESS]?.toBooleanStrictOrNull() ?: false
+            exportStress = prefs[Keys.EXPORT_STRESS]?.toBooleanStrictOrNull() ?: false,
+            exportTranslationFirst = prefs[Keys.EXPORT_ORDER]?.toBooleanStrictOrNull() ?: false
         )
     }
 
@@ -286,6 +288,7 @@ class Store(private val context: Context) {
             prefs[Keys.SHOW_INFO] = settings.showInfo.toString()
             prefs[Keys.SHOW_STRESS] = settings.showStress.toString()
             prefs[Keys.EXPORT_STRESS] = settings.exportStress.toString()
+            prefs[Keys.EXPORT_ORDER] = settings.exportTranslationFirst.toString()
         }
     }
     private fun parseShuffle(json: String): Map<Long, List<Long>> {

@@ -84,6 +84,7 @@ fun DecksScreen(
     var pendingExportText by remember { mutableStateOf<String?>(null) }
     var deckToDelete by remember { mutableStateOf<Deck?>(null) }
     var deckToRename by remember { mutableStateOf<Deck?>(null) }
+    var deckToPeek by remember { mutableStateOf<Deck?>(null) }
     var helpDialog by remember { mutableStateOf<Int?>(null) } // 0 = letöltés, 1 = feltöltés
     val createDocLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("text/plain")
@@ -150,6 +151,44 @@ fun DecksScreen(
             },
             dismissButton = {
                 TextButton(onClick = { deckToRename = null }) { Text(t.cancel) }
+            }
+        )
+    }
+    deckToPeek?.let { deck ->
+        val peekCards = allCards.filter { it.deckId == deck.id }
+        AlertDialog(
+            onDismissRequest = { deckToPeek = null },
+            title = {
+                Text(
+                    deck.name,
+                    fontFamily = FontFamily.Serif,
+                    fontStyle = FontStyle.Italic,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    if (peekCards.isEmpty()) {
+                        Text(t.emptyDeck, fontSize = 14.sp)
+                    } else {
+                        peekCards.forEach { c ->
+                            val form = if (exportStress && c.stressedForm.isNotBlank()) c.stressedForm else c.dictionaryForm
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 3.dp)
+                            ) {
+                                Text(form, modifier = Modifier.weight(1f), fontSize = 15.sp)
+                                Spacer(Modifier.width(12.dp))
+                                Text(c.translation, modifier = Modifier.weight(1f), fontSize = 15.sp)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { deckToPeek = null }) { Text(t.closeLabel) }
             }
         )
     }
@@ -243,7 +282,7 @@ fun DecksScreen(
                             Modifier
                                 .fillMaxWidth()
                                 .height(84.dp)
-                                .padding(start = 10.dp, end = 44.dp),
+                                .padding(start = 10.dp, end = 92.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             DeckRadio(
@@ -276,42 +315,76 @@ fun DecksScreen(
                                     color = inkSoft
                                 )
                             }
+                        }
+                        // jobb felső sarok: átnevezés + törlés
+                        Row(
+                            Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(top = 2.dp, end = 4.dp)
+                        ) {
                             IconButton(
                                 onClick = { deckToRename = deck },
-                                modifier = Modifier.size(44.dp)
+                                modifier = Modifier.size(40.dp)
                             ) {
                                 Text("✎", fontSize = 22.sp, color = ink)
                             }
+                            IconButton(
+                                onClick = { deckToDelete = deck },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Text("✕", color = ink)
+                            }
                         }
-                        // jobb felső sarok: törlés
-                        IconButton(
-                            onClick = { deckToDelete = deck },
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(top = 2.dp, end = 4.dp)
-                                .size(40.dp)
-                        ) {
-                            Text("✕", color = ink)
-                        }
-                        // jobb alsó sarok: letöltés
-                        IconButton(
-                            onClick = {
-                                val cardsForDeck = allCards.filter { it.deckId == deck.id }
-                                pendingExportText = buildDeckExportText(deck.name, cardsForDeck, t.emptyDeck, exportStress)
-                                createDocLauncher.launch("${deck.name}.txt")
-                            },
-                            modifier = Modifier
+                        // jobb alsó sarok: betekintés (szem) + letöltés
+                        Row(
+                            Modifier
                                 .align(Alignment.BottomEnd)
                                 .padding(bottom = 2.dp, end = 4.dp)
-                                .size(40.dp)
                         ) {
-                            Text("⬇", fontSize = 22.sp, color = ink)
+                            IconButton(
+                                onClick = { deckToPeek = deck },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                EyeIcon(ink)
+                            }
+                            IconButton(
+                                onClick = {
+                                    val cardsForDeck = allCards.filter { it.deckId == deck.id }
+                                    pendingExportText = buildDeckExportText(deck.name, cardsForDeck, t.emptyDeck, exportStress)
+                                    createDocLauncher.launch("${deck.name}.txt")
+                                },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Text("⬇", fontSize = 22.sp, color = ink)
+                            }
                         }
                     }
                 }
             }
         }
     }
+}
+
+/** Egyszerű, rajzolt szem ikon (a pakli tartalmába való betekintéshez). */
+@Composable
+private fun EyeIcon(color: Color) {
+    Box(
+        Modifier
+            .size(width = 24.dp, height = 16.dp)
+            .drawBehind {
+                val w = size.width
+                val h = size.height
+                val cy = h / 2f
+                val path = Path().apply {
+                    moveTo(0f, cy)
+                    cubicTo(w * 0.25f, cy - h * 0.62f, w * 0.75f, cy - h * 0.62f, w, cy)
+                    cubicTo(w * 0.75f, cy + h * 0.62f, w * 0.25f, cy + h * 0.62f, 0f, cy)
+                    close()
+                }
+                drawPath(path, color, style = Stroke(width = 1.8.dp.toPx()))
+                drawCircle(color, radius = 3.2.dp.toPx(), center = Offset(w / 2f, cy))
+            }
+    )
 }
 
 /** Kis négyzet alakú "?" gomb: a letöltés / feltöltés tudnivalóit nyitja meg. */

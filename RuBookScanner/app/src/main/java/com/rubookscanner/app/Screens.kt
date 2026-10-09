@@ -398,6 +398,7 @@ fun WordListScreen(
     onGenerate: () -> Unit
 ) {
     val t = LocalStrings.current
+    var manualText by remember { mutableStateOf("") }
     var showWordsInfo by remember { mutableStateOf(false) }
     var showClearDialog by remember { mutableStateOf(false) }
 

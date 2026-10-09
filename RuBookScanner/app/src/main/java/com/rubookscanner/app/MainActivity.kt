@@ -268,6 +268,7 @@ fun AppContent(store: Store) {
                     activeDeckId = activeDeckId,
                     allCards = cards,
                     exportStress = settings.exportStress,
+                    exportTranslationFirst = settings.exportTranslationFirst,
                     onSetActive = { id -> scope.launch { store.setActiveDeck(id) } },
                     onOpenDeck = { id ->
                         scope.launch {

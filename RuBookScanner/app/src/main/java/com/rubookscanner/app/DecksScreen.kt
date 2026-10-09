@@ -70,6 +70,7 @@ fun DecksScreen(
     activeDeckId: Long?,
     allCards: List<Flashcard>,
     exportStress: Boolean,
+    exportTranslationFirst: Boolean,
     onSetActive: (Long) -> Unit,
     onOpenDeck: (Long) -> Unit,
     onCreateDeck: (String) -> Unit,
@@ -104,7 +105,13 @@ fun DecksScreen(
                 if (parsed.sumOf { it.cards.size } == 0) {
                     onMessage(t.uploadNothingFound)
                 } else {
-                    onImportDecks(parsed, displayNameOf(context, uri))
+                    // ha a fájlban a fordítás áll elöl, visszacseréljük a párokat
+                    val fixed = if (exportTranslationFirst) {
+                        parsed.map { dk -> ParsedDeck(dk.name, dk.cards.map { it.second to it.first }) }
+                    } else {
+                        parsed
+                    }
+                    onImportDecks(fixed, displayNameOf(context, uri))
                 }
             } catch (e: Exception) {
                 onMessage(t.errorPrefix(e.message))
@@ -179,9 +186,17 @@ fun DecksScreen(
                                     .fillMaxWidth()
                                     .padding(vertical = 3.dp)
                             ) {
-                                Text(form, modifier = Modifier.weight(1f), fontSize = 15.sp)
+                                Text(
+                                    if (exportTranslationFirst) c.translation else form,
+                                    modifier = Modifier.weight(1f),
+                                    fontSize = 15.sp
+                                )
                                 Spacer(Modifier.width(12.dp))
-                                Text(c.translation, modifier = Modifier.weight(1f), fontSize = 15.sp)
+                                Text(
+                                    if (exportTranslationFirst) form else c.translation,
+                                    modifier = Modifier.weight(1f),
+                                    fontSize = 15.sp
+                                )
                             }
                         }
                     }
@@ -241,7 +256,7 @@ fun DecksScreen(
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             WButton(
                 onClick = {
-                    pendingExportText = buildAllDecksExportText(decks, allCards, t.emptyDeck, exportStress)
+                    pendingExportText = buildAllDecksExportText(decks, allCards, t.emptyDeck, exportStress, exportTranslationFirst)
                     createDocLauncher.launch(t.allDecksFileName)
                 },
                 modifier = Modifier
@@ -350,7 +365,7 @@ fun DecksScreen(
                             IconButton(
                                 onClick = {
                                     val cardsForDeck = allCards.filter { it.deckId == deck.id }
-                                    pendingExportText = buildDeckExportText(deck.name, cardsForDeck, t.emptyDeck, exportStress)
+                                    pendingExportText = buildDeckExportText(deck.name, cardsForDeck, t.emptyDeck, exportStress, exportTranslationFirst)
                                     createDocLauncher.launch("${deck.name}.txt")
                                 },
                                 modifier = Modifier.size(40.dp)

@@ -199,7 +199,7 @@ fun AppContent(store: Store) {
                                 val msgJob = launch {
                                     snackbarHostState.showSnackbar(t.cardsAdded(newCards.size))
                                 }
-                                kotlinx.coroutines.delay(1200)
+                                kotlinx.coroutines.delay(950)
                                 msgJob.cancel()
                             }
                         }

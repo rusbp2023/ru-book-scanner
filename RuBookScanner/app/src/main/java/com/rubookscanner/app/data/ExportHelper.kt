@@ -12,7 +12,8 @@ fun buildDeckExportText(
     deckName: String,
     cards: List<Flashcard>,
     emptyText: String,
-    useStress: Boolean = false
+    useStress: Boolean = false,
+    translationFirst: Boolean = false
 ): String {
     val sb = StringBuilder()
     sb.append(deckName).append("\n")
@@ -20,12 +21,14 @@ fun buildDeckExportText(
     if (cards.isEmpty()) {
         sb.append(emptyText).append("\n")
     } else {
-        val forms = cards.map { exportForm(it, useStress) }
-        val width = forms.maxOf { visibleLength(it) }.coerceAtMost(40)
-        cards.forEachIndexed { i, c ->
-            val form = forms[i]
-            val pad = (width - visibleLength(form)).coerceAtLeast(0) + 10
-            sb.append(form).append(" ".repeat(pad)).append(c.translation).append("\n")
+        // bal oszlop: szótári alak (alap) vagy a fordítás (ha a beállítás úgy van)
+        val lefts = cards.map { if (translationFirst) it.translation else exportForm(it, useStress) }
+        val rights = cards.map { if (translationFirst) exportForm(it, useStress) else it.translation }
+        val width = lefts.maxOf { visibleLength(it) }.coerceAtMost(40)
+        cards.indices.forEach { i ->
+            val left = lefts[i]
+            val pad = (width - visibleLength(left)).coerceAtLeast(0) + 10
+            sb.append(left).append(" ".repeat(pad)).append(rights[i]).append("\n")
         }
     }
     return sb.toString()
@@ -36,12 +39,13 @@ fun buildAllDecksExportText(
     decks: List<Deck>,
     allCards: List<Flashcard>,
     emptyText: String,
-    useStress: Boolean = false
+    useStress: Boolean = false,
+    translationFirst: Boolean = false
 ): String {
     val sb = StringBuilder()
     decks.forEach { deck ->
         val cardsForDeck = allCards.filter { it.deckId == deck.id }
-        sb.append(buildDeckExportText(deck.name, cardsForDeck, emptyText, useStress))
+        sb.append(buildDeckExportText(deck.name, cardsForDeck, emptyText, useStress, translationFirst))
         sb.append("\n")
     }
     return sb.toString()

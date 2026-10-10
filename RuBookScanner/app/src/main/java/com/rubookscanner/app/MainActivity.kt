@@ -185,6 +185,9 @@ fun AppContent(store: Store) {
                     onButtonPosChange = { fx, fy ->
                         scope.launch { store.saveSettings(settings.copy(buttonX = fx, buttonY = fy)) }
                     },
+                    onAimWidthChange = { w ->
+                        scope.launch { store.saveSettings(settings.copy(aimWidthDp = w)) }
+                    },
                     decks = decks,
                     activeDeckId = activeDeckId,
                     onSelectDeck = { id -> scope.launch { store.setActiveDeck(id) } },

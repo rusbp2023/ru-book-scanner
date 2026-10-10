@@ -112,3 +112,46 @@ fun findWordBoxNearPoint(text: Text, centerX: Int, centerY: Int): Rect? {
         }
     }?.boundingBox
 }
+
+/**
+ * Azok a kivágások, amelyek többszavas KIFEJEZÉST tartalmaznak. Csak az AI-nak szóló kérésnél kell
+ * (hogy tudja, mely képeken kell a teljes szöveget kiolvasni). Gyenge hivatkozású halmaz, így a
+ * törölt képek maguktól kikerülnek belőle.
+ */
+val phraseCrops: MutableSet<Bitmap> = java.util.Collections.synchronizedSet(
+    java.util.Collections.newSetFromMap(java.util.WeakHashMap<Bitmap, Boolean>())
+)
+
+/**
+ * A téglalaphoz legközelebbi SORBÓL azokat a szavakat adja vissza (balról jobbra), amelyeknek
+ * legalább a fele (szélességben) a téglalapba esik. Üres lista, ha nincs ilyen.
+ */
+fun findWordBoxesInRect(text: Text, rect: Rect, minOverlap: Float = 0.5f): List<Rect> {
+    val lines = text.textBlocks.flatMap { it.lines }
+    if (lines.isEmpty()) return emptyList()
+    val cx = rect.centerX()
+    val cy = rect.centerY()
+
+    fun distSq(box: Rect): Long {
+        val dx = maxOf(box.left - cx, 0, cx - box.right).toLong()
+        val dy = maxOf(box.top - cy, 0, cy - box.bottom).toLong()
+        return dx * dx + dy * dy
+    }
+
+    val bestLine = lines.minByOrNull { line ->
+        line.elements.mapNotNull { it.boundingBox }.minOfOrNull { distSq(it) } ?: Long.MAX_VALUE
+    } ?: return emptyList()
+
+    return bestLine.elements.mapNotNull { el ->
+        val box = el.boundingBox ?: return@mapNotNull null
+        val overlap = minOf(box.right, rect.right) - maxOf(box.left, rect.left)
+        if (box.width() > 0 && overlap > 0 && overlap.toFloat() / box.width() >= minOverlap) box else null
+    }.sortedBy { it.left }
+}
+
+/** A megadott dobozok közös befoglaló doboza. */
+fun unionBox(boxes: List<Rect>): Rect {
+    val u = Rect(boxes.first())
+    boxes.drop(1).forEach { u.union(it) }
+    return u
+}

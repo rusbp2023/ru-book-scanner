@@ -39,11 +39,11 @@ class AiClient(private val settings: AiSettings) {
      * Több kivágott szóképet küld el EGY AI-hívásban, és ugyanannyi kártyát ad vissza,
      * a képek sorrendjében.
      */
-    fun lookupWordsFromImages(imagesBase64: List<String>): List<Flashcard> {
+    fun lookupWordsFromImages(imagesBase64: List<String>, phrases: List<Boolean> = emptyList()): List<Flashcard> {
         if (imagesBase64.isEmpty()) return emptyList()
         if (settings.apiKey.isBlank()) throw IllegalStateException("Nincs megadva API kulcs a Beállításoknál.")
 
-        val prompt = buildBatchImagePrompt(imagesBase64.size)
+        val prompt = buildBatchImagePrompt(imagesBase64.size, phrases)
         val rawText = when (settings.provider) {
             AiProvider.ANTHROPIC -> callAnthropicVisionBatch(prompt, imagesBase64)
             AiProvider.OPENAI -> callOpenAiVisionBatch(prompt, imagesBase64)
@@ -349,7 +349,15 @@ class AiClient(private val settings: AiSettings) {
             return partsArr.getJSONObject(0).getString("text")
         }
     }
-         private fun buildBatchImagePrompt(count: Int): String = """
+             /** A kifejezést tartalmazó képek sorszámai (1-től) az AI-nak szóló kérésben. */
+    private fun phraseNote(phrases: List<Boolean>): String {
+        val idx = phrases.withIndex().filter { it.value }.map { it.index + 1 }
+        if (idx.isEmpty()) return ""
+        return "Kivétel: a(z) ${idx.joinToString(", ")}. képen nem egyetlen szó, hanem egy többszavas kifejezés van, szorosan körbevágva. " +
+            "Ezeknél a képen látható teljes kifejezést olvasd ki: a \"dictionary_form\" a kifejezés alapalakja legyen (ha nincs benne ragozott szó, változatlanul, a szótárban szereplő írásmóddal), a \"translation\" a teljes kifejezés rövid, természetes ${settings.targetLanguage.promptName} fordítása, a \"stressed_form\" pedig üres string. "
+    }
+
+    private fun buildBatchImagePrompt(count: Int, phrases: List<Boolean> = emptyList()): String = """
         Az alábbi $count kép mindegyike egy-egy kivágott részletet mutat egy nyomtatott ${settings.sourceLanguage.promptName} szövegről;
         mindegyiken pontosan egy releváns ${settings.sourceLanguage.promptName} szó van középen.
         Minden képhez, a képek sorrendjében, add meg:
@@ -357,7 +365,7 @@ class AiClient(private val settings: AiSettings) {
         2. a szótári alapalakot, a szótárban szereplő írásmóddal: kisbetűvel, kivéve ha a szó a szótár szerint is nagybetűs (például tulajdonnév). Ha a szó csak mondat eleje miatt vagy más okból van nagybetűvel, a szótári alak legyen kisbetűs.
         3. a szótári alapalak legjellemzőbb ${settings.targetLanguage.promptName} fordítását, röviden, ugyancsak szótári alakban (ige: főnévi igenév, főnév: egyes szám alanyeset). NEM a ragozott alak fordítását kérem.
 
-        ${stressNote()}Válaszolj KIZÁRÓLAG egy JSON tömbbel, pontosan $count elemmel, a képek sorrendjében, semmi mást ne írj:
+        ${phraseNote(phrases)}${stressNote()}Válaszolj KIZÁRÓLAG egy JSON tömbbel, pontosan $count elemmel, a képek sorrendjében, semmi mást ne írj:
         [${jsonItem()}]
     """.trimIndent()
 

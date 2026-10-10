@@ -1141,6 +1141,7 @@ fun SettingsScreen(
                         targetLanguage = targetLanguage,
                         buttonX = settings.buttonX,
                         buttonY = settings.buttonY,
+                        aimWidthDp = settings.aimWidthDp,
                         showKnown = showKnown,
                         showInfo = showInfo,
                         cardFront = cardFront,

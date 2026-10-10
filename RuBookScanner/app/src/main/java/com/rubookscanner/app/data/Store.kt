@@ -102,7 +102,7 @@ class Store(private val context: Context) {
             showInfo = prefs[Keys.SHOW_INFO]?.toBooleanStrictOrNull() ?: true,
             showStress = prefs[Keys.SHOW_STRESS]?.toBooleanStrictOrNull() ?: true,
             exportStress = prefs[Keys.EXPORT_STRESS]?.toBooleanStrictOrNull() ?: false,
-            exportTranslationFirst = prefs[Keys.EXPORT_ORDER]?.toBooleanStrictOrNull() ?: false
+            exportTranslationFirst = prefs[Keys.EXPORT_ORDER]?.toBooleanStrictOrNull() ?: true
         )
     }
 

@@ -14,6 +14,7 @@ import com.rubookscanner.app.data.Deck
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -136,6 +137,7 @@ fun ScannerScreen(
     pendingCrops: SnapshotStateList<Bitmap>,
     onFlashcardsAccepted: (List<Flashcard>) -> Unit,
     onButtonPosChange: (Float, Float) -> Unit,
+    onAimWidthChange: (Float) -> Unit,
     decks: List<Deck>,
     activeDeckId: Long?,
     onSelectDeck: (Long) -> Unit,
@@ -164,6 +166,7 @@ fun ScannerScreen(
             pendingCrops = pendingCrops,
             onFlashcardsAccepted = onFlashcardsAccepted,
             onButtonPosChange = onButtonPosChange,
+            onAimWidthChange = onAimWidthChange,
             decks = decks,
             activeDeckId = activeDeckId,
             onSelectDeck = onSelectDeck,
@@ -199,6 +202,7 @@ private fun CameraScanContent(
     pendingCrops: SnapshotStateList<Bitmap>,
     onFlashcardsAccepted: (List<Flashcard>) -> Unit,
     onButtonPosChange: (Float, Float) -> Unit,
+    onAimWidthChange: (Float) -> Unit,
     decks: List<Deck>,
     activeDeckId: Long?,
     onSelectDeck: (Long) -> Unit,
@@ -241,6 +245,14 @@ private fun CameraScanContent(
     val bottomMarginPx = with(density) { 16.dp.toPx() }
 
     LaunchedEffect(settings.buttonX, settings.buttonY) { localPos = null }
+
+    // --- átméretezhető célzó téglalap (szélessége dp-ben; az alap 52 dp = egy szó) ---
+    val baseAimWidthDp = 52f
+    var aimWidthDp by remember { mutableStateOf(settings.aimWidthDp) }
+    LaunchedEffect(settings.aimWidthDp) { aimWidthDp = settings.aimWidthDp }
+    fun maxAimWidthDp(): Float =
+        if (boxW > 0f) maxOf(baseAimWidthDp, with(density) { boxW.toDp().value } * 0.85f) else 10000f
+    val aimW = aimWidthDp.coerceIn(baseAimWidthDp, maxAimWidthDp())
 
     fun xRange(): Float = maxOf(0f, boxW - 2 * sidePx - btnPx)
     fun yRange(): Float = maxOf(0f, boxH - bottomMarginPx - btnPx - topLimitPx)
@@ -395,20 +407,48 @@ private fun CameraScanContent(
                                 }
                                 val screenBitmap = centerCropToAspect(rawBitmap, screenAspect)
                                 val shiftFrac = aimShift()
+                                // csak akkor kifejezés-mód, ha a felhasználó szélesebbre húzta a téglalapot
+                                val widened = aimW > baseAimWidthDp + 8f
+                                val aimWidthFrac = if (previewView.width > 0) {
+                                    with(density) { aimW.dp.toPx() } / previewView.width
+                                } else {
+                                    0.13f
+                                }
+                                val aimHeightFrac = if (previewView.width > 0) {
+                                    with(density) { 26.dp.toPx() } / previewView.width
+                                } else {
+                                    0.065f
+                                }
 
                                 scope.launch {
                                     try {
                                         var newHighlight: ScanHighlight? = null
                                         var wordFound = false
+                                        var isPhrase = false
                                         val cropBitmap = withContext(Dispatchers.Default) {
                                             val centerX = (screenBitmap.width * (0.5f + shiftFrac)).toInt()
                                                 .coerceIn(0, screenBitmap.width - 1)
                                             val centerY = screenBitmap.height / 2
                                             val text = recognizeTextOnDevice(screenBitmap)
-                                            val box = findWordBoxNearPoint(text, centerX, centerY)
+                                            // a téglalap helye a képen (képpontban)
+                                            val rw = (aimWidthFrac * screenBitmap.width).toInt().coerceAtLeast(1)
+                                            val rh = (aimHeightFrac * screenBitmap.width).toInt().coerceAtLeast(1)
+                                            val aimRect = android.graphics.Rect(
+                                                centerX - rw / 2, centerY - rh / 2,
+                                                centerX + rw / 2, centerY + rh / 2
+                                            )
+                                            // szélesre húzott téglalapnál: a bele eső szavak; 2 vagy több = kifejezés
+                                            val inRect = if (widened) findWordBoxesInRect(text, aimRect) else emptyList()
+                                            val phraseBox = if (inRect.size >= 2) unionBox(inRect) else null
+                                            val box = phraseBox ?: findWordBoxNearPoint(text, centerX, centerY)
                                             if (box != null) {
                                                 wordFound = true
-                                                val padW = (box.width() * 0.4f).toInt().coerceAtLeast(4)
+                                                isPhrase = phraseBox != null
+                                                val padW = if (isPhrase) {
+                                                    (box.width() * 0.04f).toInt().coerceAtLeast(8)
+                                                } else {
+                                                    (box.width() * 0.4f).toInt().coerceAtLeast(4)
+                                                }
                                                 val padH = (box.height() * 0.4f).toInt().coerceAtLeast(4)
                                                 val left = (box.left - padW).coerceIn(0, screenBitmap.width - 1)
                                                 val top = (box.top - padH).coerceIn(0, screenBitmap.height - 1)
@@ -426,7 +466,10 @@ private fun CameraScanContent(
                                                     screenBitmap, left, top, right - left, bottom - top
                                                 )
                                             } else {
-                                                val fw = (screenBitmap.width * 0.35f).toInt().coerceAtLeast(1)
+                                                val fw = maxOf(
+                                                    (screenBitmap.width * 0.35f).toInt(),
+                                                    if (widened) (rw * 1.2f).toInt() else 0
+                                                ).coerceIn(1, screenBitmap.width)
                                                 val fh = (screenBitmap.height * 0.12f).toInt().coerceAtLeast(1)
                                                 val left = (centerX - fw / 2).coerceIn(0, screenBitmap.width - fw)
                                                 val top = (centerY - fh / 2).coerceIn(0, screenBitmap.height - fh)
@@ -439,6 +482,7 @@ private fun CameraScanContent(
                                                 Bitmap.createBitmap(screenBitmap, left, top, fw, fh)
                                             }
                                         }
+                                        if (isPhrase) phraseCrops.add(cropBitmap)
                                         pendingCrops.add(cropBitmap)
                                         finishScanAnim(
                                             newHighlight,
@@ -563,7 +607,7 @@ private fun CameraScanContent(
                 Modifier
                     .align(Alignment.Center)
                     .offset(x = aimOffsetAnimated)
-                    .size(width = 52.dp, height = 26.dp)
+                    .size(width = aimW.dp, height = 26.dp)
                     .border(2.dp, AimColor, RectangleShape)
             )
             // Keresés közben halvány keret pulzál a téglalap körül.
@@ -572,7 +616,7 @@ private fun CameraScanContent(
                     Modifier
                         .align(Alignment.Center)
                         .offset(x = aimOffsetAnimated)
-                        .size(width = 52.dp, height = 26.dp)
+                        .size(width = aimW.dp, height = 26.dp)
                         .graphicsLayer {
                             val s = 1.3f + 0.7f * pulse.value
                             scaleX = s
@@ -582,6 +626,31 @@ private fun CameraScanContent(
                         .border(2.dp, AimColor, RectangleShape)
                 )
             }
+        }
+
+        // a téglalap két oldali fogantyúja: húzva szélesedik / keskenyedik (középpont marad)
+        if (!scanActive) {
+            val halfW = (aimW / 2f).dp
+            AimHandle(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .offset(x = aimOffsetAnimated - halfW),
+                onDrag = { dx ->
+                    aimWidthDp = (aimWidthDp - 2f * dx / density.density)
+                        .coerceIn(baseAimWidthDp, maxAimWidthDp())
+                },
+                onDragEnd = { onAimWidthChange(aimWidthDp) }
+            )
+            AimHandle(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .offset(x = aimOffsetAnimated + halfW),
+                onDrag = { dx ->
+                    aimWidthDp = (aimWidthDp + 2f * dx / density.density)
+                        .coerceIn(baseAimWidthDp, maxAimWidthDp())
+                },
+                onDragEnd = { onAimWidthChange(aimWidthDp) }
+            )
         }
 
         if (scanActive) {
@@ -761,12 +830,13 @@ private fun CameraScanContent(
                                     val snapshot = pendingCrops.toList()
                                     scope.launch {
                                         try {
+                                            val phraseFlags = snapshot.map { it in phraseCrops }
                                             val base64List = withContext(Dispatchers.Default) {
                                                 snapshot.map { bitmapToJpegBase64(it) }
                                             }
                                             val client = AiClient(settings)
                                             val cards = withContext(Dispatchers.IO) {
-                                                client.lookupWordsFromImages(base64List)
+                                                client.lookupWordsFromImages(base64List, phraseFlags)
                                             }
                                             onFlashcardsAccepted(cards)
                                             pendingCrops.clear()
@@ -822,5 +892,38 @@ private fun CameraScanContent(
                     }
             )
         }
+    }
+}
+
+/** A célzó téglalap egyik oldali fogantyúja: nagy (44 dp) érintési terület, a rajzon csak egy kis csík. */
+@Composable
+private fun AimHandle(
+    modifier: Modifier = Modifier,
+    onDrag: (Float) -> Unit,
+    onDragEnd: () -> Unit
+) {
+    val dragState by rememberUpdatedState(onDrag)
+    val endState by rememberUpdatedState(onDragEnd)
+    Box(
+        modifier
+            .size(width = 44.dp, height = 48.dp)
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures(
+                    onDragEnd = { endState() },
+                    onDragCancel = { endState() },
+                    onHorizontalDrag = { change, dragAmount ->
+                        change.consume()
+                        dragState(dragAmount)
+                    }
+                )
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            Modifier
+                .size(width = 6.dp, height = 22.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(AimColor)
+        )
     }
 }

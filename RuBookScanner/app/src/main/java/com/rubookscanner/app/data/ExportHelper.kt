@@ -7,6 +7,11 @@ private fun exportForm(c: Flashcard, useStress: Boolean): String =
 /** Lathato hossz: a kombinalo hangsulyjel nem foglal helyet. */
 private fun visibleLength(s: String): Int = s.count { it != '\u0301' }
 
+/** A fajlfejlecben szereplo sorrend-jelolo (nyelvfuggetlen). */
+private const val ORDER_PREFIX = "#order="
+private const val ORDER_TRANSLATION_FIRST = "translation-first"
+private const val ORDER_DICTIONARY_FIRST = "dictionary-first"
+
 /** Egyetlen pakli tartalmát sima szöveggé alakítja. */
 fun buildDeckExportText(
     deckName: String,
@@ -17,7 +22,10 @@ fun buildDeckExportText(
 ): String {
     val sb = StringBuilder()
     sb.append(deckName).append("\n")
-    sb.append("=".repeat(deckName.length)).append("\n\n")
+    sb.append("=".repeat(deckName.length)).append("\n")
+    sb.append(ORDER_PREFIX)
+        .append(if (translationFirst) ORDER_TRANSLATION_FIRST else ORDER_DICTIONARY_FIRST)
+        .append("\n\n")
     if (cards.isEmpty()) {
         sb.append(emptyText).append("\n")
     } else {
@@ -51,8 +59,16 @@ fun buildAllDecksExportText(
     return sb.toString()
 }
 
-/** Egy beolvasott pakli: név + (szótári alak, fordítás) párok. */
-data class ParsedDeck(val name: String, val cards: List<Pair<String, String>>)
+/**
+ * Egy beolvasott pakli: név + (bal oszlop, jobb oszlop) párok.
+ * A translationFirst a fájl fejlécéből jön: true = a bal oszlop a fordítás, false = a szótári alak,
+ * null = a fájlban nincs jelölés (régi fájl), ilyenkor a jelenlegi beállítás dönt.
+ */
+data class ParsedDeck(
+    val name: String,
+    val cards: List<Pair<String, String>>,
+    val translationFirst: Boolean? = null
+)
 
 private fun isUnderline(line: String): Boolean {
     val s = line.trim()
@@ -94,22 +110,37 @@ fun parseDecksFromText(text: String): List<ParsedDeck> {
     val decks = mutableListOf<ParsedDeck>()
     var currentName = ""
     var currentCards = mutableListOf<Pair<String, String>>()
+    var currentOrder: Boolean? = null
     var inDeck = false
     var i = 0
     while (i < lines.size) {
         val line = lines[i].trim()
         val nextIsUnderline = i + 1 < lines.size && isUnderline(lines[i + 1])
         if (line.isNotEmpty() && nextIsUnderline) {
-            if (inDeck || currentCards.isNotEmpty()) decks.add(ParsedDeck(currentName, currentCards))
+            if (inDeck || currentCards.isNotEmpty()) {
+                decks.add(ParsedDeck(currentName, currentCards, currentOrder))
+            }
             currentName = line
             currentCards = mutableListOf()
+            currentOrder = null
             inDeck = true
             i += 2
+            continue
+        }
+        if (line.startsWith(ORDER_PREFIX)) {
+            currentOrder = when (line.removePrefix(ORDER_PREFIX).trim()) {
+                ORDER_TRANSLATION_FIRST -> true
+                ORDER_DICTIONARY_FIRST -> false
+                else -> null
+            }
+            i++
             continue
         }
         parseCardLine(line)?.let { currentCards.add(it) }
         i++
     }
-    if (inDeck || currentCards.isNotEmpty()) decks.add(ParsedDeck(currentName, currentCards))
+    if (inDeck || currentCards.isNotEmpty()) {
+        decks.add(ParsedDeck(currentName, currentCards, currentOrder))
+    }
     return decks
 }

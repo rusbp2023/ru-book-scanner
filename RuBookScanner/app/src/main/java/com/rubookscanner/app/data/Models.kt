@@ -62,6 +62,7 @@ data class AiSettings(
     val targetLanguage: AppLang = AppLang.HUNGARIAN,
     val buttonX: Float = 0.5f,
     val buttonY: Float = 1f,
+    val aimWidthDp: Float = 52f,
     val showKnown: Boolean = true,
     val showInfo: Boolean = true,
     val cardFront: CardFront = CardFront.TRANSLATION,

@@ -105,11 +105,15 @@ fun DecksScreen(
                 if (parsed.sumOf { it.cards.size } == 0) {
                     onMessage(t.uploadNothingFound)
                 } else {
-                    // ha a fájlban a fordítás áll elöl, visszacseréljük a párokat
-                    val fixed = if (exportTranslationFirst) {
-                        parsed.map { dk -> ParsedDeck(dk.name, dk.cards.map { it.second to it.first }) }
-                    } else {
-                        parsed
+                    // ha a fájlban a fordítás áll elöl, visszacseréljük a párokat;
+                    // a fájl fejléce dönt, ha nincs benne jelölés, a jelenlegi beállítás
+                    val fixed = parsed.map { dk ->
+                        val translationFirst = dk.translationFirst ?: exportTranslationFirst
+                        if (translationFirst) {
+                            ParsedDeck(dk.name, dk.cards.map { it.second to it.first })
+                        } else {
+                            dk
+                        }
                     }
                     onImportDecks(fixed, displayNameOf(context, uri))
                 }

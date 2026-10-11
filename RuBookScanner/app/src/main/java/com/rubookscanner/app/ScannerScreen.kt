@@ -631,6 +631,20 @@ private fun CameraScanContent(
         // a téglalap két oldali fogantyúja: húzva szélesedik / keskenyedik (középpont marad)
         if (!scanActive) {
             val halfW = (aimW / 2f).dp
+            // alaphelyzetben (biztosan 1 szó) egy kis "1" jelzés a téglalap fölött
+            if (aimW <= baseAimWidthDp + 8f) {
+                Box(
+                    Modifier
+                        .align(Alignment.Center)
+                        .offset(x = aimOffsetAnimated, y = (-26).dp)
+                        .size(18.dp)
+                        .clip(CircleShape)
+                        .background(Color(0x99000000)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("1", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = AimColor)
+                }
+            }
             AimHandle(
                 modifier = Modifier
                     .align(Alignment.Center)

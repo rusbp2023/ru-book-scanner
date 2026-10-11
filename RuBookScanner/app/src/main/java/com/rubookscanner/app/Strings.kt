@@ -85,6 +85,8 @@ interface Strings {
     val cardFrontLabel: String
     val infoTitle: String
     val infoBody: String
+    val infoModeOne: String
+    val infoModeMany: String
     val testKey: String
     val keyOk: String
     val showStressLabel: String
@@ -185,6 +187,8 @@ object StringsHu : Strings {
     override val cardFrontLabel = "Kártya előlapja"
     override val infoTitle = "Tudnivalók"
     override val infoBody = "Tipp: érdemes több szót összegyűjteni, és egyszerre lefordítani, nem egyesével.\n\n• Az összes összegyűjtött szó egyetlen AI-kérésben megy el, így kevesebb kérést használsz fel. Az ingyenes API kulcsoknak általában kérésszám-korlátjuk van (percenként és naponta), így ez tovább tart.\n• Fotózz le egymás után több szót, majd nyomd meg a „Lefordítás” gombot.\n• A fotó gomb helyét szabadon átviheted: nyomd hosszan, és húzd oda, ahol kényelmes. A célzó téglalap a gomb helyétől függően kicsit oldalra tolódik.\n• A zseblámpa gomb gyenge fényben segít."
+    override val infoModeOne = "1 szavas mód: a keskeny téglalap pontosan egy szót fotóz le (a közepén lévőt)."
+    override val infoModeMany = "Több szavas mód: a két oldali csíkot széthúzva szélesítsd a téglalapot, így egy kifejezést (több szót egy sorban) is lefotózhatsz."
     override val testKey = "Kulcs tesztelése"
     override val keyOk = "A kulcs működik ✓"
     override val showStressLabel = "Hangsúlyjel mutatása a kártyán"
@@ -292,6 +296,8 @@ object StringsEn : Strings {
     override val cardFrontLabel = "Card front"
     override val infoTitle = "Info"
     override val infoBody = "Tip: collect several words and translate them together instead of one by one.\n\n• All collected words go out in a single AI request, so you use fewer requests. Free API keys usually have a request limit (per minute and per day), so this makes them last longer.\n• Photograph several words in a row, then press “Translate”.\n• You can move the camera button anywhere: press and hold it, then drag it where it is comfortable. The aiming rectangle shifts a little to the side depending on where the button is.\n• The flashlight button helps in dim light."
+    override val infoModeOne = "1-word mode: the narrow rectangle captures exactly one word (the one in the middle)."
+    override val infoModeMany = "Multi-word mode: drag the side bars to widen the rectangle and capture a phrase (several words on one line)."
     override val testKey = "Test key"
     override val keyOk = "The key works ✓"
     override val showStressLabel = "Show stress marks on cards"
@@ -399,6 +405,8 @@ object StringsDe : Strings {
     override val cardFrontLabel = "Vorderseite der Karte"
     override val infoTitle = "Hinweise"
     override val infoBody = "Tipp: Sammle mehrere Wörter und übersetze sie gemeinsam statt einzeln.\n\n• Alle gesammelten Wörter gehen in einer einzigen KI-Anfrage raus, du verbrauchst also weniger Anfragen. Kostenlose API-Schlüssel haben meist ein Anfragelimit (pro Minute und pro Tag), so halten sie länger.\n• Fotografiere mehrere Wörter hintereinander und tippe dann auf „Übersetzen“.\n• Du kannst den Kamera-Button frei verschieben: lange drücken und dorthin ziehen, wo es bequem ist. Das Zielrechteck rückt je nach Position des Buttons ein Stück zur Seite.\n• Die Taschenlampe hilft bei schwachem Licht."
+    override val infoModeOne = "1-Wort-Modus: Das schmale Rechteck erfasst genau ein Wort (das in der Mitte)."
+    override val infoModeMany = "Mehrwort-Modus: Ziehe an den seitlichen Balken, um das Rechteck zu verbreitern und eine Wendung (mehrere Wörter in einer Zeile) zu erfassen."
     override val testKey = "Schlüssel testen"
     override val keyOk = "Der Schlüssel funktioniert ✓"
     override val showStressLabel = "Betonungszeichen auf Karten anzeigen"
@@ -506,6 +514,8 @@ object StringsIt : Strings {
     override val cardFrontLabel = "Fronte della scheda"
     override val infoTitle = "Informazioni"
     override val infoBody = "Consiglio: raccogli più parole e traducile insieme invece che una per una.\n\n• Tutte le parole raccolte partono in un'unica richiesta IA, quindi usi meno richieste. Le chiavi API gratuite di solito hanno un limite di richieste (al minuto e al giorno), così durano di più.\n• Fotografa più parole di fila, poi premi «Traduci».\n• Puoi spostare liberamente il pulsante della fotocamera: tienilo premuto e trascinalo dove ti è comodo. Il rettangolo di mira si sposta un po' di lato a seconda della posizione del pulsante.\n• La torcia aiuta con poca luce."
+    override val infoModeOne = "Modalità 1 parola: il rettangolo stretto cattura esattamente una parola (quella al centro)."
+    override val infoModeMany = "Modalità più parole: trascina le barre laterali per allargare il rettangolo e catturare un'espressione (più parole sulla stessa riga)."
     override val testKey = "Prova la chiave"
     override val keyOk = "La chiave funziona ✓"
     override val showStressLabel = "Mostra gli accenti sulle schede"
@@ -613,6 +623,8 @@ object StringsFr : Strings {
     override val cardFrontLabel = "Recto de la carte"
     override val infoTitle = "Infos"
     override val infoBody = "Astuce : rassemble plusieurs mots et traduis-les ensemble plutôt qu'un par un.\n\n• Tous les mots collectés partent dans une seule requête IA, tu utilises donc moins de requêtes. Les clés API gratuites ont généralement une limite de requêtes (par minute et par jour), elles durent ainsi plus longtemps.\n• Photographie plusieurs mots à la suite, puis appuie sur « Traduire ».\n• Tu peux déplacer librement le bouton de l'appareil photo : appuie longuement dessus et fais-le glisser où c'est confortable. Le rectangle de visée se décale un peu sur le côté selon la position du bouton.\n• La lampe torche aide quand il y a peu de lumière."
+    override val infoModeOne = "Mode 1 mot : le rectangle étroit capture exactement un mot (celui du centre)."
+    override val infoModeMany = "Mode plusieurs mots : fais glisser les barres latérales pour élargir le rectangle et capturer une expression (plusieurs mots sur une ligne)."
     override val testKey = "Tester la clé"
     override val keyOk = "La clé fonctionne ✓"
     override val showStressLabel = "Afficher les accents toniques sur les cartes"
@@ -720,6 +732,8 @@ object StringsEs : Strings {
     override val cardFrontLabel = "Anverso de la tarjeta"
     override val infoTitle = "Información"
     override val infoBody = "Consejo: reúne varias palabras y tradúcelas juntas en lugar de una por una.\n\n• Todas las palabras reunidas se envían en una sola petición de IA, así que usas menos peticiones. Las claves API gratuitas suelen tener un límite de peticiones (por minuto y por día), de modo que duran más.\n• Fotografía varias palabras seguidas y luego pulsa «Traducir».\n• Puedes mover libremente el botón de la cámara: mantenlo pulsado y arrástralo donde te resulte cómodo. El rectángulo de puntería se desplaza un poco hacia un lado según la posición del botón.\n• La linterna ayuda con poca luz."
+    override val infoModeOne = "Modo 1 palabra: el rectángulo estrecho captura exactamente una palabra (la del centro)."
+    override val infoModeMany = "Modo varias palabras: arrastra las barras laterales para ensanchar el rectángulo y capturar una expresión (varias palabras en una línea)."
     override val testKey = "Probar la clave"
     override val keyOk = "La clave funciona ✓"
     override val showStressLabel = "Mostrar los acentos en las tarjetas"
@@ -827,6 +841,8 @@ object StringsRu : Strings {
     override val cardFrontLabel = "Лицевая сторона карточки"
     override val infoTitle = "Информация"
     override val infoBody = "Совет: собирай несколько слов и переводи их вместе, а не по одному.\n\n• Все собранные слова уходят одним запросом к ИИ, так что ты тратишь меньше запросов. У бесплатных API-ключей обычно есть лимит запросов (в минуту и в день), поэтому так их хватает дольше.\n• Сфотографируй несколько слов подряд, затем нажми «Перевести».\n• Кнопку камеры можно свободно переместить: нажми и удерживай её, затем перетащи туда, где удобно. Прицельный прямоугольник немного сдвигается в сторону в зависимости от положения кнопки.\n• Фонарик помогает при слабом освещении."
+    override val infoModeOne = "Режим одного слова: узкий прямоугольник захватывает ровно одно слово (то, что в центре)."
+    override val infoModeMany = "Режим нескольких слов: потяни боковые полоски, чтобы расширить прямоугольник и захватить выражение (несколько слов в одной строке)."
     override val testKey = "Проверить ключ"
     override val keyOk = "Ключ работает ✓"
     override val showStressLabel = "Показывать ударения на карточках"

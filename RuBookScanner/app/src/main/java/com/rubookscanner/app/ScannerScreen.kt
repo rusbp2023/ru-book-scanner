@@ -284,7 +284,7 @@ private fun CameraScanContent(
     fun aimShift(): Float =
         if (previewView.width > 0) with(density) { aimOffsetDp.toPx() } / previewView.width else 0f
 
-        fun finishDrag() {
+    fun finishDrag() {
         if (!dragging) return
         longPressed = false
         val xr = xRange()
@@ -315,7 +315,7 @@ private fun CameraScanContent(
     val burst = remember { Animatable(0f) }
     val shake = remember { Animatable(0f) }
     val fade = remember { Animatable(0f) }
-    
+
     // A célzó négyzet körüli pulzáló keret, amíg a keresés tart.
     val pulseTransition = rememberInfiniteTransition(label = "searchPulse")
     val pulse = pulseTransition.animateFloat(
@@ -381,141 +381,141 @@ private fun CameraScanContent(
     }
 
     val captureButton: @Composable (Modifier) -> Unit = { mod ->
-            WButton(
-                onClick = {
-                    if (longPressed) {
-                        longPressed = false
-                        return@WButton
-                    }
-                    isCapturing = true
-                    errorMsg = null
-                    cameraController.takePicture(
-                        ContextCompat.getMainExecutor(context),
-                        object : androidx.camera.core.ImageCapture.OnImageCapturedCallback() {
-                            override fun onCaptureSuccess(image: androidx.camera.core.ImageProxy) {
-                                val displayRot = previewView.display?.rotation
-                                    ?: android.view.Surface.ROTATION_0
-                                val rot = cameraController.cameraInfo
-                                    ?.getSensorRotationDegrees(displayRot)
-                                    ?: image.imageInfo.rotationDegrees
-                                val rawBitmap = imageProxyToUprightBitmap(image, rot)
-                                image.close()
-                                val screenAspect = if (previewView.height > 0) {
-                                    previewView.width.toFloat() / previewView.height.toFloat()
-                                } else {
-                                    rawBitmap.width.toFloat() / rawBitmap.height.toFloat()
-                                }
-                                val screenBitmap = centerCropToAspect(rawBitmap, screenAspect)
-                                val shiftFrac = aimShift()
-                                // csak akkor kifejezés-mód, ha a felhasználó szélesebbre húzta a téglalapot
-                                val widened = aimW > baseAimWidthDp + 8f
-                                val aimWidthFrac = if (previewView.width > 0) {
-                                    with(density) { aimW.dp.toPx() } / previewView.width
-                                } else {
-                                    0.13f
-                                }
-                                val aimHeightFrac = if (previewView.width > 0) {
-                                    with(density) { 26.dp.toPx() } / previewView.width
-                                } else {
-                                    0.065f
-                                }
-
-                                scope.launch {
-                                    try {
-                                        var newHighlight: ScanHighlight? = null
-                                        var wordFound = false
-                                        var isPhrase = false
-                                        val cropBitmap = withContext(Dispatchers.Default) {
-                                            val centerX = (screenBitmap.width * (0.5f + shiftFrac)).toInt()
-                                                .coerceIn(0, screenBitmap.width - 1)
-                                            val centerY = screenBitmap.height / 2
-                                            val text = recognizeTextOnDevice(screenBitmap)
-                                            // a téglalap helye a képen (képpontban)
-                                            val rw = (aimWidthFrac * screenBitmap.width).toInt().coerceAtLeast(1)
-                                            val rh = (aimHeightFrac * screenBitmap.width).toInt().coerceAtLeast(1)
-                                            val aimRect = android.graphics.Rect(
-                                                centerX - rw / 2, centerY - rh / 2,
-                                                centerX + rw / 2, centerY + rh / 2
-                                            )
-                                            // szélesre húzott téglalapnál: a bele eső szavak; 2 vagy több = kifejezés
-                                            val inRect = if (widened) findWordBoxesInRect(text, aimRect) else emptyList()
-                                            val phraseBox = if (inRect.size >= 2) unionBox(inRect) else null
-                                            val box = phraseBox ?: findWordBoxNearPoint(text, centerX, centerY)
-                                            if (box != null) {
-                                                wordFound = true
-                                                isPhrase = phraseBox != null
-                                                val padW = if (isPhrase) {
-                                                    (box.width() * 0.04f).toInt().coerceAtLeast(8)
-                                                } else {
-                                                    (box.width() * 0.4f).toInt().coerceAtLeast(4)
-                                                }
-                                                val padH = (box.height() * 0.4f).toInt().coerceAtLeast(4)
-                                                val left = (box.left - padW).coerceIn(0, screenBitmap.width - 1)
-                                                val top = (box.top - padH).coerceIn(0, screenBitmap.height - 1)
-                                                val right = (box.right + padW).coerceIn(left + 1, screenBitmap.width)
-                                                val bottom = (box.bottom + padH).coerceIn(top + 1, screenBitmap.height)
-                                                val mx = (box.width() * 0.06f).toInt().coerceAtLeast(2)
-                                                val my = (box.height() * 0.10f).toInt().coerceAtLeast(2)
-                                                newHighlight = ScanHighlight(
-                                                    (box.left - mx).coerceAtLeast(0).toFloat() / screenBitmap.width,
-                                                    (box.top - my).coerceAtLeast(0).toFloat() / screenBitmap.height,
-                                                    (box.right + mx).coerceAtMost(screenBitmap.width).toFloat() / screenBitmap.width,
-                                                    (box.bottom + my).coerceAtMost(screenBitmap.height).toFloat() / screenBitmap.height
-                                                )
-                                                Bitmap.createBitmap(
-                                                    screenBitmap, left, top, right - left, bottom - top
-                                                )
-                                            } else {
-                                                val fw = maxOf(
-                                                    (screenBitmap.width * 0.35f).toInt(),
-                                                    if (widened) (rw * 1.2f).toInt() else 0
-                                                ).coerceIn(1, screenBitmap.width)
-                                                val fh = (screenBitmap.height * 0.12f).toInt().coerceAtLeast(1)
-                                                val left = (centerX - fw / 2).coerceIn(0, screenBitmap.width - fw)
-                                                val top = (centerY - fh / 2).coerceIn(0, screenBitmap.height - fh)
-                                                newHighlight = ScanHighlight(
-                                                    left.toFloat() / screenBitmap.width,
-                                                    top.toFloat() / screenBitmap.height,
-                                                    (left + fw).toFloat() / screenBitmap.width,
-                                                    (top + fh).toFloat() / screenBitmap.height
-                                                )
-                                                Bitmap.createBitmap(screenBitmap, left, top, fw, fh)
-                                            }
-                                        }
-                                        if (isPhrase) phraseCrops.add(cropBitmap)
-                                        pendingCrops.add(cropBitmap)
-                                        finishScanAnim(
-                                            newHighlight,
-                                            if (wordFound) ScanResult.OK else ScanResult.MISS
-                                        )
-                                    } catch (e: Exception) {
-                                        errorMsg = e.message ?: t.unknownError
-                                        finishScanAnim(null, ScanResult.ERROR)
-                                    } finally {
-                                        isCapturing = false
-                                    }
-                                }
+        WButton(
+            onClick = {
+                if (longPressed) {
+                    longPressed = false
+                    return@WButton
+                }
+                isCapturing = true
+                errorMsg = null
+                cameraController.takePicture(
+                    ContextCompat.getMainExecutor(context),
+                    object : androidx.camera.core.ImageCapture.OnImageCapturedCallback() {
+                        override fun onCaptureSuccess(image: androidx.camera.core.ImageProxy) {
+                            val displayRot = previewView.display?.rotation
+                                ?: android.view.Surface.ROTATION_0
+                            val rot = cameraController.cameraInfo
+                                ?.getSensorRotationDegrees(displayRot)
+                                ?: image.imageInfo.rotationDegrees
+                            val rawBitmap = imageProxyToUprightBitmap(image, rot)
+                            image.close()
+                            val screenAspect = if (previewView.height > 0) {
+                                previewView.width.toFloat() / previewView.height.toFloat()
+                            } else {
+                                rawBitmap.width.toFloat() / rawBitmap.height.toFloat()
+                            }
+                            val screenBitmap = centerCropToAspect(rawBitmap, screenAspect)
+                            val shiftFrac = aimShift()
+                            // csak akkor kifejezés-mód, ha a felhasználó szélesebbre húzta a téglalapot
+                            val widened = aimW > baseAimWidthDp + 8f
+                            val aimWidthFrac = if (previewView.width > 0) {
+                                with(density) { aimW.dp.toPx() } / previewView.width
+                            } else {
+                                0.13f
+                            }
+                            val aimHeightFrac = if (previewView.width > 0) {
+                                with(density) { 26.dp.toPx() } / previewView.width
+                            } else {
+                                0.065f
                             }
 
-                            override fun onError(exception: androidx.camera.core.ImageCaptureException) {
-                                errorMsg = exception.message ?: t.cameraError
-                                isCapturing = false
-                                finishScanAnim(null, ScanResult.ERROR)
+                            scope.launch {
+                                try {
+                                    var newHighlight: ScanHighlight? = null
+                                    var wordFound = false
+                                    var isPhrase = false
+                                    val cropBitmap = withContext(Dispatchers.Default) {
+                                        val centerX = (screenBitmap.width * (0.5f + shiftFrac)).toInt()
+                                            .coerceIn(0, screenBitmap.width - 1)
+                                        val centerY = screenBitmap.height / 2
+                                        val text = recognizeTextOnDevice(screenBitmap)
+                                        // a téglalap helye a képen (képpontban)
+                                        val rw = (aimWidthFrac * screenBitmap.width).toInt().coerceAtLeast(1)
+                                        val rh = (aimHeightFrac * screenBitmap.width).toInt().coerceAtLeast(1)
+                                        val aimRect = android.graphics.Rect(
+                                            centerX - rw / 2, centerY - rh / 2,
+                                            centerX + rw / 2, centerY + rh / 2
+                                        )
+                                        // szélesre húzott téglalapnál: a bele eső szavak; 2 vagy több = kifejezés
+                                        val inRect = if (widened) findWordBoxesInRect(text, aimRect) else emptyList()
+                                        val phraseBox = if (inRect.size >= 2) unionBox(inRect) else null
+                                        val box = phraseBox ?: findWordBoxNearPoint(text, centerX, centerY)
+                                        if (box != null) {
+                                            wordFound = true
+                                            isPhrase = phraseBox != null
+                                            val padW = if (isPhrase) {
+                                                (box.width() * 0.04f).toInt().coerceAtLeast(8)
+                                            } else {
+                                                (box.width() * 0.4f).toInt().coerceAtLeast(4)
+                                            }
+                                            val padH = (box.height() * 0.4f).toInt().coerceAtLeast(4)
+                                            val left = (box.left - padW).coerceIn(0, screenBitmap.width - 1)
+                                            val top = (box.top - padH).coerceIn(0, screenBitmap.height - 1)
+                                            val right = (box.right + padW).coerceIn(left + 1, screenBitmap.width)
+                                            val bottom = (box.bottom + padH).coerceIn(top + 1, screenBitmap.height)
+                                            val mx = (box.width() * 0.06f).toInt().coerceAtLeast(2)
+                                            val my = (box.height() * 0.10f).toInt().coerceAtLeast(2)
+                                            newHighlight = ScanHighlight(
+                                                (box.left - mx).coerceAtLeast(0).toFloat() / screenBitmap.width,
+                                                (box.top - my).coerceAtLeast(0).toFloat() / screenBitmap.height,
+                                                (box.right + mx).coerceAtMost(screenBitmap.width).toFloat() / screenBitmap.width,
+                                                (box.bottom + my).coerceAtMost(screenBitmap.height).toFloat() / screenBitmap.height
+                                            )
+                                            Bitmap.createBitmap(
+                                                screenBitmap, left, top, right - left, bottom - top
+                                            )
+                                        } else {
+                                            val fw = maxOf(
+                                                (screenBitmap.width * 0.35f).toInt(),
+                                                if (widened) (rw * 1.2f).toInt() else 0
+                                            ).coerceIn(1, screenBitmap.width)
+                                            val fh = (screenBitmap.height * 0.12f).toInt().coerceAtLeast(1)
+                                            val left = (centerX - fw / 2).coerceIn(0, screenBitmap.width - fw)
+                                            val top = (centerY - fh / 2).coerceIn(0, screenBitmap.height - fh)
+                                            newHighlight = ScanHighlight(
+                                                left.toFloat() / screenBitmap.width,
+                                                top.toFloat() / screenBitmap.height,
+                                                (left + fw).toFloat() / screenBitmap.width,
+                                                (top + fh).toFloat() / screenBitmap.height
+                                            )
+                                            Bitmap.createBitmap(screenBitmap, left, top, fw, fh)
+                                        }
+                                    }
+                                    if (isPhrase) phraseCrops.add(cropBitmap)
+                                    pendingCrops.add(cropBitmap)
+                                    finishScanAnim(
+                                        newHighlight,
+                                        if (wordFound) ScanResult.OK else ScanResult.MISS
+                                    )
+                                } catch (e: Exception) {
+                                    errorMsg = e.message ?: t.unknownError
+                                    finishScanAnim(null, ScanResult.ERROR)
+                                } finally {
+                                    isCapturing = false
+                                }
                             }
                         }
-                    )
-                },
-                enabled = !isCapturing,
-                modifier = mod.size(80.dp),
-                shape = CircleShape,
-                contentPadding = PaddingValues(0.dp)
-            ) {
-                if (isCapturing) {
-                    CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 3.dp)
-                } else {
-                    Text("📷", fontSize = 38.sp)
-                }
+
+                        override fun onError(exception: androidx.camera.core.ImageCaptureException) {
+                            errorMsg = exception.message ?: t.cameraError
+                            isCapturing = false
+                            finishScanAnim(null, ScanResult.ERROR)
+                        }
+                    }
+                )
+            },
+            enabled = !isCapturing,
+            modifier = mod.size(80.dp),
+            shape = CircleShape,
+            contentPadding = PaddingValues(0.dp)
+        ) {
+            if (isCapturing) {
+                CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 3.dp)
+            } else {
+                Text("📷", fontSize = 38.sp)
             }
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -574,7 +574,7 @@ private fun CameraScanContent(
                     .padding(top = 8.dp, end = 16.dp)
             )
         }
-                if (showClearDialog) {
+        if (showClearDialog) {
             AlertDialog(
                 onDismissRequest = { showClearDialog = false },
                 title = { Text(t.clearList + "?") },
@@ -590,7 +590,7 @@ private fun CameraScanContent(
             )
         }
         if (showInfo) {
-                InfoDialog(
+            InfoDialog(
                 body = t.infoBody,
                 header = { AimInfoHeader() },
                 onDismiss = { showInfo = false },
@@ -602,45 +602,43 @@ private fun CameraScanContent(
         }
 
         // Statikus, üres sárga téglalap a képernyő közepén (vízszintes) — ide célozd a szót.
-                // A téglalap csak akkor látszik, amikor nem fut a scan animáció.
+        // A téglalap csak akkor látszik, amikor nem fut a scan animáció.
         if (!scanActive) {
-            Box(
+            AimFrame(
                 Modifier
                     .align(Alignment.Center)
-                    .offset(x = aimOffsetAnimated)
-                    .size(width = aimW.dp, height = 26.dp)
-                    .border(2.dp, AimColor, RectangleShape)
+                    .offset(x = aimOffsetAnimated),
+                aimW, 26f
             )
             // Keresés közben halvány keret pulzál a téglalap körül.
             if (isCapturing) {
-                Box(
+                AimFrame(
                     Modifier
                         .align(Alignment.Center)
                         .offset(x = aimOffsetAnimated)
-                        .size(width = aimW.dp, height = 26.dp)
                         .graphicsLayer {
                             val s = 1.3f + 0.7f * pulse.value
                             scaleX = s
                             scaleY = s
                             alpha = 0.7f - 0.5f * pulse.value
-                        }
-                        .border(2.dp, AimColor, RectangleShape)
+                        },
+                    aimW, 26f
                 )
             }
         }
 
-        // a téglalap két oldali fogantyúja: húzva szélesedik / keskenyedik (középpont marad)
+        // a téglalap két oldali (láthatatlan) fogantyúja: húzva szélesedik / keskenyedik (középpont marad)
         if (!scanActive) {
             val halfW = (aimW / 2f).dp
-            // alaphelyzetben (biztosan 1 szó) egy kis "1" jelzés a téglalap bal felső sarkánál
+            // alaphelyzetben (biztosan 1 szó): álló "1" címke, közvetlenül a téglalap bal oldalára tapadva
             if (aimW <= baseAimWidthDp + 8f) {
                 Box(
                     Modifier
                         .align(Alignment.Center)
-                        .offset(x = aimOffsetAnimated - halfW + 9.dp, y = (-24).dp)
-                        .size(18.dp)
-                        .clip(CircleShape)
-                        .background(Color(0x99000000)),
+                        .offset(x = aimOffsetAnimated - halfW - 8.dp)
+                        .size(width = 16.dp, height = 26.dp)
+                        .clip(RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp))
+                        .background(Color(0xB3000000)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -916,7 +914,7 @@ private fun CameraScanContent(
     }
 }
 
-/** A célzó téglalap egyik oldali fogantyúja: nagy (44 dp) érintési terület, a rajzon csak egy kis csík. */
+/** A célzó téglalap egyik oldali, LÁTHATATLAN fogantyúja: nagy (44 dp) érintési terület, nem rajzol semmit. */
 @Composable
 private fun AimHandle(
     modifier: Modifier = Modifier,
@@ -937,16 +935,8 @@ private fun AimHandle(
                         dragState(dragAmount)
                     }
                 )
-            },
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
-            Modifier
-                .size(width = 6.dp, height = 22.dp)
-                .clip(RoundedCornerShape(3.dp))
-                .background(AimColor)
-        )
-    }
+            }
+    )
 }
 
 /** Az info ablak tetején: a két célzó mód kis mintája és a leírása. */
@@ -954,7 +944,7 @@ private fun AimHandle(
 private fun AimInfoHeader() {
     val t = LocalStrings.current
     Column(Modifier.padding(bottom = 12.dp)) {
-            Row(verticalAlignment = Alignment.Top) {
+        Row(verticalAlignment = Alignment.Top) {
             AimSample(rectWidthDp = 52, withBadge = true)
             Text(
                 t.infoModeOne,
@@ -980,45 +970,20 @@ private fun AimInfoHeader() {
     }
 }
 
-/** Kis minta a célzó téglalapról a két fogantyúval; opcionálisan az "1" jelzéssel. */
+/** Kis minta a célzó téglalapról; opcionálisan az "1" címkével a bal oldalán. */
 @Composable
 private fun AimSample(rectWidthDp: Int, withBadge: Boolean) {
     Box(
-        Modifier.size(width = 120.dp, height = 46.dp),
-        contentAlignment = Alignment.TopStart
+        Modifier.size(width = 120.dp, height = 26.dp),
+        contentAlignment = Alignment.CenterStart
     ) {
-        Row(
-            Modifier.padding(top = 20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                Modifier
-                    .size(width = 6.dp, height = 22.dp)
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(AimColor)
-            )
-            Box(
-                Modifier
-                    .padding(horizontal = 4.dp)
-                    .size(width = rectWidthDp.dp, height = 26.dp)
-                    .border(2.dp, AimColor, RectangleShape)
-            )
-            Box(
-                Modifier
-                    .size(width = 6.dp, height = 22.dp)
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(AimColor)
-            )
-        }
+        AimFrame(Modifier.padding(start = 16.dp), rectWidthDp.toFloat(), 26f)
         if (withBadge) {
             Box(
                 Modifier
-                    .align(Alignment.TopStart)
-                    .padding(start = 10.dp)
-                    .size(18.dp)
-                    .clip(CircleShape)
-                    .background(Color(0x99000000))
-                    .border(1.dp, Color(0x44FFFFFF), CircleShape),
+                    .size(width = 16.dp, height = 26.dp)
+                    .clip(RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp))
+                    .background(Color(0xB3000000)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -1030,5 +995,27 @@ private fun AimSample(rectWidthDp: Int, withBadge: Boolean) {
                 )
             }
         }
+    }
+}
+
+/** A célzó téglalap: a két hosszú oldal közepén kis rés van (ide esik a célpont). A méretek dp-ben. */
+@Composable
+private fun AimFrame(modifier: Modifier = Modifier, widthDp: Float, heightDp: Float) {
+    Canvas(modifier.size(width = widthDp.dp, height = heightDp.dp)) {
+        val sw = 2.dp.toPx()
+        val half = sw / 2f
+        val w = size.width
+        val h = size.height
+        val gap = 10.dp.toPx()
+        val a = w / 2f - gap / 2f
+        val b = w / 2f + gap / 2f
+        // bal és jobb oldal
+        drawLine(AimColor, Offset(half, 0f), Offset(half, h), strokeWidth = sw)
+        drawLine(AimColor, Offset(w - half, 0f), Offset(w - half, h), strokeWidth = sw)
+        // felső és alsó él, középen réssel
+        drawLine(AimColor, Offset(0f, half), Offset(a, half), strokeWidth = sw)
+        drawLine(AimColor, Offset(b, half), Offset(w, half), strokeWidth = sw)
+        drawLine(AimColor, Offset(0f, h - half), Offset(a, h - half), strokeWidth = sw)
+        drawLine(AimColor, Offset(b, h - half), Offset(w, h - half), strokeWidth = sw)
     }
 }

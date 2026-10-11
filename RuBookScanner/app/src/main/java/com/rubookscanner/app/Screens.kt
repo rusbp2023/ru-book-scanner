@@ -364,13 +364,19 @@ fun InfoButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
 
 /** Info dialog with a "do not show again" button that hides every info button (see Settings). */
 @Composable
-fun InfoDialog(body: String, onDismiss: () -> Unit, onDontShowAgain: () -> Unit) {
+fun InfoDialog(
+    body: String,
+    onDismiss: () -> Unit,
+    onDontShowAgain: () -> Unit,
+    header: (@Composable () -> Unit)? = null
+) {
     val t = LocalStrings.current
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(t.infoTitle) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
+                header?.invoke()
                 Text(body, fontSize = 14.sp)
             }
         },

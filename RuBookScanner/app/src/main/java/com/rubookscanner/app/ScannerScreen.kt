@@ -590,8 +590,9 @@ private fun CameraScanContent(
             )
         }
         if (showInfo) {
-            InfoDialog(
+                InfoDialog(
                 body = t.infoBody,
+                header = { AimInfoHeader() },
                 onDismiss = { showInfo = false },
                 onDontShowAgain = {
                     showInfo = false
@@ -939,5 +940,79 @@ private fun AimHandle(
                 .clip(RoundedCornerShape(3.dp))
                 .background(AimColor)
         )
+    }
+}
+
+/** Az info ablak tetején: a két célzó mód kis mintája és a leírása. */
+@Composable
+private fun AimInfoHeader() {
+    val t = LocalStrings.current
+    Column(Modifier.padding(bottom = 12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            AimSample(rectWidthDp = 52, withBadge = true)
+            Text(
+                t.infoModeOne,
+                fontSize = 14.sp,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 12.dp)
+            )
+        }
+        Row(
+            Modifier.padding(top = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AimSample(rectWidthDp = 96, withBadge = false)
+            Text(
+                t.infoModeMany,
+                fontSize = 14.sp,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 12.dp)
+            )
+        }
+    }
+}
+
+/** Kis minta a célzó téglalapról a két fogantyúval; opcionálisan az "1" jelzéssel. */
+@Composable
+private fun AimSample(rectWidthDp: Int, withBadge: Boolean) {
+    Box(
+        Modifier.size(width = 120.dp, height = 64.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .size(width = 6.dp, height = 22.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(AimColor)
+            )
+            Box(
+                Modifier
+                    .padding(horizontal = 4.dp)
+                    .size(width = rectWidthDp.dp, height = 26.dp)
+                    .border(2.dp, AimColor, RectangleShape)
+            )
+            Box(
+                Modifier
+                    .size(width = 6.dp, height = 22.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(AimColor)
+            )
+        }
+        if (withBadge) {
+            Box(
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .size(18.dp)
+                    .clip(CircleShape)
+                    .background(Color(0x99000000))
+                    .border(1.dp, Color(0x44FFFFFF), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("1", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = AimColor)
+            }
+        }
     }
 }

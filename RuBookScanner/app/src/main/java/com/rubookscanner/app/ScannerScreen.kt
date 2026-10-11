@@ -954,7 +954,7 @@ private fun AimHandle(
 private fun AimInfoHeader() {
     val t = LocalStrings.current
     Column(Modifier.padding(bottom = 12.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.Top) {
             AimSample(rectWidthDp = 52, withBadge = true)
             Text(
                 t.infoModeOne,
@@ -966,7 +966,7 @@ private fun AimInfoHeader() {
         }
         Row(
             Modifier.padding(top = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Top
         ) {
             AimSample(rectWidthDp = 96, withBadge = false)
             Text(
@@ -984,10 +984,13 @@ private fun AimInfoHeader() {
 @Composable
 private fun AimSample(rectWidthDp: Int, withBadge: Boolean) {
     Box(
-        Modifier.size(width = 120.dp, height = 64.dp),
-        contentAlignment = Alignment.Center
+        Modifier.size(width = 120.dp, height = 46.dp),
+        contentAlignment = Alignment.TopStart
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.padding(top = 20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Box(
                 Modifier
                     .size(width = 6.dp, height = 22.dp)
@@ -1011,7 +1014,7 @@ private fun AimSample(rectWidthDp: Int, withBadge: Boolean) {
             Box(
                 Modifier
                     .align(Alignment.TopStart)
-                    .padding(start = 34.dp)
+                    .padding(start = 10.dp)
                     .size(18.dp)
                     .clip(CircleShape)
                     .background(Color(0x99000000))

@@ -736,7 +736,9 @@ fun FlashcardScreen(
                     )
                     Text(
                         if ((cardFront == CardFront.TRANSLATION) != flipped) card.translation else dictDisplay,
-                        style = MaterialTheme.typography.headlineMedium
+                        style = MaterialTheme.typography.headlineMedium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 24.dp)
                     )
                     // rugózó zöld pipa a kártya jobb alsó részén
                     Text(

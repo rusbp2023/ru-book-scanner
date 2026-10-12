@@ -939,48 +939,50 @@ private fun AimHandle(
     )
 }
 
-/** Az info ablak tetején: a két célzó mód kis mintája és a leírása. */
+/** Az info ablak tetején: a célzó módok és a fotó gomb kis mintája, a leírásukkal. */
 @Composable
 private fun AimInfoHeader() {
     val t = LocalStrings.current
-    Column(Modifier.padding(bottom = 12.dp)) {
-        Row(verticalAlignment = Alignment.Top) {
-            AimSample(rectWidthDp = 52, withBadge = true)
-            Text(
-                t.infoModeOne,
-                fontSize = 14.sp,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 12.dp)
-            )
-        }
-        Row(
-            Modifier.padding(top = 4.dp),
-            verticalAlignment = Alignment.Top
-        ) {
-            AimSample(rectWidthDp = 96, withBadge = false)
-            Text(
-                t.infoModeMany,
-                fontSize = 14.sp,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 12.dp)
-            )
-        }
+    Column(Modifier.padding(bottom = 4.dp)) {
+        InfoSampleRow(t.infoModeOne) { AimSample(rectWidthDp = 52, withBadge = true, withHand = false) }
+        InfoSampleRow(t.infoModeMany) { AimSample(rectWidthDp = 96, withBadge = false, withHand = true) }
+        InfoSampleRow(t.infoModeButton) { ButtonSample() }
     }
 }
 
-/** Kis minta a célzó téglalapról; opcionálisan az "1" címkével a bal oldalán. */
+/** Egy sor az info ablak tetején: bal oldalon a minta, jobb oldalon a leírás (köztük kis hely). */
 @Composable
-private fun AimSample(rectWidthDp: Int, withBadge: Boolean) {
-    Box(
-        Modifier.size(width = 120.dp, height = 26.dp),
-        contentAlignment = Alignment.CenterStart
+private fun InfoSampleRow(text: String, sample: @Composable () -> Unit) {
+    Row(
+        Modifier.padding(bottom = 14.dp),
+        verticalAlignment = Alignment.Top
     ) {
-        AimFrame(Modifier.padding(start = 16.dp), rectWidthDp.toFloat(), 26f)
+        sample()
+        Text(
+            text,
+            fontSize = 14.sp,
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 14.dp)
+        )
+    }
+}
+
+/**
+ * Kis minta a célzó téglalapról. Az "1" címke a bal szélen áll, a téglalap utána következik;
+ * a széles mintánál (withHand) a jobb szélén mutatóujj és kis jobbra nyíl jelzi, hogy húzható.
+ */
+@Composable
+private fun AimSample(rectWidthDp: Int, withBadge: Boolean, withHand: Boolean) {
+    Box(
+        Modifier
+            .padding(top = 4.dp)
+            .size(width = 120.dp, height = 26.dp)
+    ) {
         if (withBadge) {
             Box(
                 Modifier
+                    .align(Alignment.CenterStart)
                     .size(width = 16.dp, height = 26.dp)
                     .clip(RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp))
                     .background(Color(0xB3000000)),
@@ -994,10 +996,60 @@ private fun AimSample(rectWidthDp: Int, withBadge: Boolean) {
                     modifier = Modifier.offset(y = (-1.5).dp)
                 )
             }
+            AimFrame(
+                Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 16.dp),
+                rectWidthDp.toFloat(), 26f
+            )
+        } else {
+            AimFrame(Modifier.align(Alignment.CenterStart), rectWidthDp.toFloat(), 26f)
+        }
+        if (withHand) {
+            Text(
+                "👆",
+                fontSize = 18.sp,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .offset(x = (rectWidthDp - 12).dp, y = 14.dp)
+            )
+            Text(
+                "→",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = AimColor,
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .offset(x = (rectWidthDp + 10).dp, y = (-1).dp)
+            )
         }
     }
 }
 
+/** Kis minta a fotó gombról, az ujjal (húzható). */
+@Composable
+private fun ButtonSample() {
+    Box(Modifier.size(width = 120.dp, height = 36.dp)) {
+        Box(
+            Modifier
+                .align(Alignment.CenterStart)
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(Brush.verticalGradient(listOf(Color(0xFF34425A), Color(0xFF182029))))
+                .border(1.dp, Color(0xFF6182A6), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("📷", fontSize = 16.sp)
+        }
+        Text(
+            "👆",
+            fontSize = 18.sp,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .offset(x = 18.dp, y = 18.dp)
+        )
+    }
+}
 /** A célzó téglalap: a két hosszú oldal közepén kis rés van (ide esik a célpont). A méretek dp-ben. */
 @Composable
 private fun AimFrame(modifier: Modifier = Modifier, widthDp: Float, heightDp: Float) {

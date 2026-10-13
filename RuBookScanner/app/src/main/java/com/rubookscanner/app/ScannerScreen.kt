@@ -97,6 +97,7 @@ import androidx.core.content.ContextCompat
 import com.rubookscanner.app.data.AiClient
 import com.rubookscanner.app.data.AiSettings
 import com.rubookscanner.app.data.Flashcard
+import com.rubookscanner.app.data.describeError
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -224,6 +225,7 @@ private fun CameraScanContent(
     var isCapturing by remember { mutableStateOf(false) }
     var isTranslating by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
+    var errorDetail by remember { mutableStateOf<String?>(null) }
 
     // --- freely movable capture button ---
     val density = LocalDensity.current
@@ -389,6 +391,7 @@ private fun CameraScanContent(
                 }
                 isCapturing = true
                 errorMsg = null
+                errorDetail = null
                 cameraController.takePicture(
                     ContextCompat.getMainExecutor(context),
                     object : androidx.camera.core.ImageCapture.OnImageCapturedCallback() {
@@ -489,7 +492,7 @@ private fun CameraScanContent(
                                         if (wordFound) ScanResult.OK else ScanResult.MISS
                                     )
                                 } catch (e: Exception) {
-                                    errorMsg = e.message ?: t.unknownError
+                                    errorMsg = t.errorPrefix(e.message ?: t.unknownError)
                                     finishScanAnim(null, ScanResult.ERROR)
                                 } finally {
                                     isCapturing = false
@@ -498,7 +501,7 @@ private fun CameraScanContent(
                         }
 
                         override fun onError(exception: androidx.camera.core.ImageCaptureException) {
-                            errorMsg = exception.message ?: t.cameraError
+                            errorMsg = t.errorPrefix(exception.message ?: t.cameraError)
                             isCapturing = false
                             finishScanAnim(null, ScanResult.ERROR)
                         }
@@ -784,9 +787,34 @@ private fun CameraScanContent(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            errorMsg?.let {
+            errorMsg?.let { msg ->
                 Card(Modifier.padding(bottom = 12.dp)) {
-                    Text(t.errorPrefix(it), Modifier.padding(12.dp))
+                    Row(
+                        Modifier.padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 8.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Column(
+                            Modifier
+                                .weight(1f)
+                                .padding(top = 8.dp)
+                        ) {
+                            Text(msg)
+                            errorDetail?.let { d ->
+                                Text(
+                                    d,
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
+                        IconButton(
+                            onClick = {
+                                errorMsg = null
+                                errorDetail = null
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) { Text("✕") }
+                    }
                 }
             }
 
@@ -842,10 +870,12 @@ private fun CameraScanContent(
                                 onClick = {
                                     if (settings.apiKey.isBlank()) {
                                         errorMsg = t.enterApiKeyFirst
+                                        errorDetail = null
                                         return@WButton
                                     }
                                     isTranslating = true
                                     errorMsg = null
+                                    errorDetail = null
                                     val snapshot = pendingCrops.toList()
                                     scope.launch {
                                         try {
@@ -859,8 +889,14 @@ private fun CameraScanContent(
                                             }
                                             onFlashcardsAccepted(cards)
                                             pendingCrops.clear()
+                                            if (cards.size != base64List.size) {
+                                                errorMsg = t.errCountMismatch(base64List.size, cards.size)
+                                                errorDetail = null
+                                            }
                                         } catch (e: Exception) {
-                                            errorMsg = e.message ?: t.unknownError
+                                            val info = describeError(t, e)
+                                            errorMsg = info.message
+                                            errorDetail = info.detail
                                         } finally {
                                             isTranslating = false
                                         }
@@ -1050,6 +1086,7 @@ private fun ButtonSample() {
         )
     }
 }
+
 /** A célzó téglalap: a két hosszú oldal közepén kis rés van (ide esik a célpont). A méretek dp-ben. */
 @Composable
 private fun AimFrame(modifier: Modifier = Modifier, widthDp: Float, heightDp: Float) {

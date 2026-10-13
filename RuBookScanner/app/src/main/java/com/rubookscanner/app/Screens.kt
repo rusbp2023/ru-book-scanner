@@ -1109,7 +1109,8 @@ fun SettingsScreen(
                         testResult = t.keyOk
                     } catch (e: Exception) {
                         testOk = false
-                        testResult = t.errorPrefix(e.message?.take(200))
+                        val info = com.rubookscanner.app.data.describeError(t, e)
+                        testResult = if (info.detail != null) info.message + " (" + info.detail + ")" else info.message
                     } finally {
                         testing = false
                     }
@@ -1180,5 +1181,25 @@ fun SettingsScreen(
             textDecoration = TextDecoration.Underline,
             modifier = Modifier.clickable { uriHandler.openUri(keyUrl) }
         )
+    }
+}
+
+/** Snackbar-állomás: az üzenet első sora normál, a második sor kis betűs (technikai részlet). */
+@Composable
+fun AppSnackbarHost(state: androidx.compose.material3.SnackbarHostState) {
+    androidx.compose.material3.SnackbarHost(state) { data ->
+        val parts = data.visuals.message.split("\n", limit = 2)
+        androidx.compose.material3.Snackbar {
+            Column {
+                Text(parts[0])
+                if (parts.size > 1) {
+                    Text(
+                        parts[1],
+                        fontSize = 11.sp,
+                        color = LocalContentColor.current.copy(alpha = 0.7f)
+                    )
+                }
+            }
+        }
     }
 }

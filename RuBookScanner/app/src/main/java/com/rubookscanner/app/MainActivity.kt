@@ -142,7 +142,7 @@ fun AppContent(store: Store) {
     val allKnownHidden = deckCards.isNotEmpty() && baseCards.isEmpty()
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { AppSnackbarHost(snackbarHostState) },
         bottomBar = {
             Column(
                 Modifier
@@ -240,8 +240,20 @@ fun AppContent(store: Store) {
                                     store.addFlashcards(result, deckId)
                                     store.clearWords()
                                     screen = AppScreen.CARDS
+                                    if (result.size != originals.size) {
+                                        launch {
+                                            snackbarHostState.showSnackbar(
+                                                t.errCountMismatch(originals.size, result.size)
+                                            )
+                                        }
+                                    }
                                 } catch (e: Exception) {
-                                    snackbarHostState.showSnackbar(t.errorPrefix(e.message))
+                                    val info = com.rubookscanner.app.data.describeError(t, e)
+                                    launch {
+                                        snackbarHostState.showSnackbar(
+                                            if (info.detail != null) info.message + "\n" + info.detail else info.message
+                                        )
+                                    }
                                 } finally {
                                     loading = false
                                 }

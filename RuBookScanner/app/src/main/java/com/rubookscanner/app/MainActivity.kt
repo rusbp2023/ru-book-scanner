@@ -127,7 +127,27 @@ fun AppContent(store: Store) {
     LaunchedEffect(Unit) {
         store.ensureDefaultDeck()
     }
-
+    // Gemini modell-lista havi frissítése, csendben a háttérben
+    val geminiKey = settings.providerConfigs[com.rubookscanner.app.data.AiProvider.GEMINI]?.apiKey.orEmpty()
+    LaunchedEffect(geminiKey) {
+        val stale = System.currentTimeMillis() - settings.modelsFetchedAt > 30L * 24 * 3600 * 1000
+        if (geminiKey.isNotBlank() && (settings.geminiModels.isEmpty() || stale)) {
+            try {
+                val list = withContext(Dispatchers.IO) {
+                    AiClient(
+                        settings.copy(
+                            provider = com.rubookscanner.app.data.AiProvider.GEMINI,
+                            apiKey = geminiKey.trim(),
+                            baseUrl = ""
+                        )
+                    ).listGeminiModels()
+                }
+                if (list.usable.isNotEmpty()) store.saveGeminiModels(list.usable, list.all)
+            } catch (e: Exception) {
+                // csendben: a beépített tartalék lista marad
+            }
+        }
+    }
         val deckCards = cards.filter { it.deckId == activeDeckId }
     val baseCards = if (settings.showKnown) deckCards else deckCards.filter { !it.known }
     val savedOrder = activeDeckId?.let { shuffleOrders[it] }

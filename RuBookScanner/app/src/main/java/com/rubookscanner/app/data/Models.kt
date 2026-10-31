@@ -69,7 +69,11 @@ data class AiSettings(
     val showStress: Boolean = true,
     val exportStress: Boolean = true,
     val exportTranslationFirst: Boolean = true,
-    val providerConfigs: Map<AiProvider, ProviderConfig> = emptyMap()
+    val providerConfigs: Map<AiProvider, ProviderConfig> = emptyMap(),
+    /** A Gemini-től lekért, használható modellek (az app tölti ki, a Mentés nem írja felül). */
+    val geminiModels: List<String> = emptyList(),
+    /** A modell-lista utolsó lekérésének ideje (ms); 0 = még nem volt lekérve. */
+    val modelsFetchedAt: Long = 0L
 )
 
 fun defaultModelFor(provider: AiProvider): String = when (provider) {

@@ -61,6 +61,33 @@ fun describeError(t: Strings, e: Throwable): ErrorInfo {
     return ErrorInfo(t.errOther, detail)
 }
 
+/** A Gemini-től lekért modellek: usable = a szűrt, rendezett lista (választáshoz), all = minden létező generateContent modell. */
+class GeminiModelList(val usable: List<String>, val all: Set<String>)
+
+/** Tartalék Gemini modellek, amíg nincs lekért lista (vagy nem sikerült a lekérés). */
+private val BUILTIN_GEMINI_FALLBACKS = listOf(
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
+    "gemini-3-flash-preview"
+)
+
+private val geminiVersionRegex = Regex("""gemini-(\d+(?:\.\d+)?)""")
+private val geminiDatedSuffix = Regex(""".*-(\d{3}|\d{4}|\d{2}-\d{2})$""")
+private val geminiExcludedParts = listOf(
+    "tts", "live", "image", "audio", "embed", "robotics", "computer-use",
+    "learnlm", "translate", "thinking", "exp", "latest"
+)
+
+private fun geminiVersionOf(name: String): Double =
+    geminiVersionRegex.find(name)?.groupValues?.get(1)?.toDoubleOrNull() ?: 0.0
+
+/** Csak a gyors, szöveget+képet kezelő flash / flash-lite modellek kellenek (nem pro, hang, kép, videó stb.). */
+private fun isUsableGeminiModel(name: String): Boolean =
+    name.startsWith("gemini-") &&
+        name.contains("flash") &&
+        geminiExcludedParts.none { name.contains(it) } &&
+        !geminiDatedSuffix.matches(name)
+
 /**
  * Egy AiClient hívást intéz az adott szolgáltatóhoz (Anthropic / OpenAI / Gemini),
  * és a kapott szólistából / képekből szótári alak + fordítás párokat állít elő.
@@ -74,6 +101,10 @@ class AiClient(private val settings: AiSettings) {
 
     private val jsonMedia = "application/json".toMediaType()
 
+    /** Átmenetileg ezt a Gemini modellt használja a callGemini (a tartalék-váltás állítja). */
+    @Volatile
+    private var geminiModelOverride: String? = null
+
     private fun requireKey() {
         if (settings.apiKey.isBlank()) throw AiException(AiErrorKind.NO_KEY, null, settings.provider)
     }
@@ -83,7 +114,7 @@ class AiClient(private val settings: AiSettings) {
         if (words.isEmpty()) return emptyList()
         requireKey()
         val prompt = buildPrompt(words)
-        val rawText = callText(prompt, (400 + words.size * 120).coerceIn(2000, 8000))
+        val rawText = withFallback { callText(prompt, (400 + words.size * 120).coerceIn(2000, 8000)) }
         return parseResponse(rawText)
     }
 
@@ -96,7 +127,7 @@ class AiClient(private val settings: AiSettings) {
         if (imagesBase64.isEmpty()) return emptyList()
         requireKey()
         val prompt = buildBatchImagePrompt(imagesBase64.size, phrases)
-        val rawText = callVision(prompt, imagesBase64, true)
+        val rawText = withFallback { callVision(prompt, imagesBase64, true) }
         return parseResponse(rawText)
     }
 
@@ -111,8 +142,119 @@ class AiClient(private val settings: AiSettings) {
     fun lookupWordFromImage(imageBase64: String): Flashcard {
         requireKey()
         val prompt = buildImagePrompt()
-        val rawText = callVision(prompt, listOf(imageBase64), false)
+        val rawText = withFallback { callVision(prompt, listOf(imageBase64), false) }
         return parseSingleCardResponse(rawText)
+    }
+
+    /**
+     * Blokkoló hívás (Dispatchers.IO-n hívd): lekéri a Gemini-től a használható modellek listáját.
+     * Nem generál semmit, így nem fogyaszt a napi keretből.
+     */
+    fun listGeminiModels(): GeminiModelList {
+        requireKey()
+        val usable = mutableListOf<String>()
+        val all = mutableSetOf<String>()
+        var pageToken = ""
+        for (page in 0 until 5) {
+            val url = "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000&key=" +
+                settings.apiKey.trim() +
+                (if (pageToken.isNotEmpty()) "&pageToken=$pageToken" else "")
+            val request = try {
+                Request.Builder().url(url).get().build()
+            } catch (e: IllegalArgumentException) {
+                throw AiException(AiErrorKind.REJECTED, "bad URL", settings.provider, e)
+            }
+            val body = execute(request)
+            try {
+                val json = JSONObject(body)
+                val arr = json.optJSONArray("models")
+                if (arr != null) {
+                    for (i in 0 until arr.length()) {
+                        val o = arr.getJSONObject(i)
+                        val name = o.optString("name").removePrefix("models/")
+                        val methods = o.optJSONArray("supportedGenerationMethods")
+                        var canGenerate = false
+                        if (methods != null) {
+                            for (j in 0 until methods.length()) {
+                                if (methods.optString(j) == "generateContent") canGenerate = true
+                            }
+                        }
+                        if (!canGenerate || !name.startsWith("gemini-")) continue
+                        all.add(name)
+                        if (isUsableGeminiModel(name)) usable.add(name)
+                    }
+                }
+                pageToken = json.optString("nextPageToken")
+            } catch (e: JSONException) {
+                throw AiException(AiErrorKind.BAD_RESPONSE, "JSON: " + (e.message ?: "").take(100), settings.provider, e)
+            }
+            if (pageToken.isEmpty()) break
+        }
+        // elöl a stabil, újabb verziók; a preview modellek a végén; azonos verziónál a lite van elöl
+        val sorted = usable.distinct().sortedWith(
+            compareBy<String>(
+                { it.contains("preview") },
+                { -geminiVersionOf(it) },
+                { !it.contains("lite") },
+                { it }
+            )
+        )
+        return GeminiModelList(sorted, all)
+    }
+
+    // ---------------------------------------------------------------- tartalék-váltás
+
+    /** A kipróbálandó modellek sorrendje: először a kiválasztott, utána (csak Gemininél) legfeljebb 3 tartalék. */
+    private fun modelChain(): List<String> {
+        val primary = settings.model.trim().ifBlank { defaultModelFor(settings.provider) }
+        if (settings.provider != AiProvider.GEMINI || settings.baseUrl.isNotBlank()) return listOf(primary)
+        val pool = if (settings.geminiModels.isNotEmpty()) settings.geminiModels else BUILTIN_GEMINI_FALLBACKS
+        val others = pool
+            .filter { it != primary }
+            .sortedWith(compareBy<String>({ it.contains("preview") }, { !it.contains("lite") }))
+        return (listOf(primary) + others).take(4)
+    }
+
+    /**
+     * Átmeneti hibánál (túlterhelt, időtúllépés, kéréslimit, megszűnt modell) automatikusan próbálkozik tovább:
+     * túlterheltségnél előbb még egyszer ugyanazzal a modellel 2 mp múlva, utána a következő modellel.
+     * Rossz kulcsnál és más, nem átmeneti hibánál azonnal megáll.
+     */
+    private fun <T> withFallback(call: () -> T): T {
+        val chain = modelChain()
+        var last: AiException? = null
+        try {
+            for (model in chain) {
+                geminiModelOverride = if (settings.provider == AiProvider.GEMINI) model else null
+                var attempt = 0
+                while (true) {
+                    try {
+                        return call()
+                    } catch (e: AiException) {
+                        last = e
+                        when (e.kind) {
+                            AiErrorKind.OVERLOADED, AiErrorKind.NO_INTERNET -> {
+                                if (attempt == 0) {
+                                    attempt++
+                                    Thread.sleep(2000)
+                                    continue
+                                }
+                                // internet nélkül egy másik modell sem segít
+                                if (e.kind == AiErrorKind.NO_INTERNET) throw e
+                            }
+                            AiErrorKind.TIMEOUT, AiErrorKind.RATE_LIMIT, AiErrorKind.MODEL_NOT_FOUND -> {
+                                // a következő modellel folytatjuk
+                            }
+                            else -> throw e
+                        }
+                        break
+                    }
+                }
+            }
+        } finally {
+            geminiModelOverride = null
+        }
+        throw last ?: AiException(AiErrorKind.OTHER, "no model", settings.provider)
     }
 
     // ---------------------------------------------------------------- promptok
@@ -311,7 +453,7 @@ class AiClient(private val settings: AiSettings) {
     }
 
     private fun callGemini(parts: JSONArray): String {
-        val model = settings.model.ifBlank { "gemini-2.0-flash" }
+        val model = geminiModelOverride ?: settings.model.ifBlank { defaultModelFor(AiProvider.GEMINI) }
         val url = settings.baseUrl.ifBlank {
             "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=${settings.apiKey.trim()}"
         }

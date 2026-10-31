@@ -1078,12 +1078,22 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(12.dp))
-        OutlinedTextField(
-            value = model,
-            onValueChange = { configs = configs + (provider to cfg.copy(model = it)) },
-            label = { Text(t.modelLabel) },
-            modifier = Modifier.fillMaxWidth()
-        )
+                if (provider == AiProvider.GEMINI && settings.geminiModels.isNotEmpty()) {
+            DropdownField(
+                label = t.modelLabel,
+                selectedText = model,
+                options = (listOf(model) + settings.geminiModels).filter { it.isNotBlank() }.distinct(),
+                optionLabel = { it },
+                onSelect = { configs = configs + (provider to cfg.copy(model = it)) }
+            )
+        } else {
+            OutlinedTextField(
+                value = model,
+                onValueChange = { configs = configs + (provider to cfg.copy(model = it)) },
+                label = { Text(t.modelLabel) },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
             value = baseUrl,

@@ -42,6 +42,8 @@ private object Keys {
     val EXPORT_STRESS = stringPreferencesKey("export_stress")
     val EXPORT_ORDER = stringPreferencesKey("export_order")
     val AIM_WIDTH = stringPreferencesKey("aim_width")
+    val GEMINI_MODELS = stringPreferencesKey("gemini_models")
+    val GEMINI_MODELS_AT = stringPreferencesKey("gemini_models_at")
 }
 
 class Store(private val context: Context) {
@@ -104,7 +106,9 @@ class Store(private val context: Context) {
             showInfo = prefs[Keys.SHOW_INFO]?.toBooleanStrictOrNull() ?: true,
             showStress = prefs[Keys.SHOW_STRESS]?.toBooleanStrictOrNull() ?: true,
             exportStress = prefs[Keys.EXPORT_STRESS]?.toBooleanStrictOrNull() ?: true,
-            exportTranslationFirst = prefs[Keys.EXPORT_ORDER]?.toBooleanStrictOrNull() ?: true
+            exportTranslationFirst = prefs[Keys.EXPORT_ORDER]?.toBooleanStrictOrNull() ?: true,
+            geminiModels = (prefs[Keys.GEMINI_MODELS] ?: "").split(",").filter { it.isNotBlank() },
+            modelsFetchedAt = prefs[Keys.GEMINI_MODELS_AT]?.toLongOrNull() ?: 0L
         )
     }
 
@@ -294,6 +298,29 @@ class Store(private val context: Context) {
             prefs[Keys.EXPORT_ORDER] = settings.exportTranslationFirst.toString()
         }
     }
+
+    /**
+     * A lekért Gemini modell-lista mentése. Ha a mentett Gemini modell már egyáltalán nem létezik
+     * (a Google leállította), lecseréli egy élő, olcsó modellre. Egyéni végpontnál nem nyúl hozzá.
+     */
+    suspend fun saveGeminiModels(usable: List<String>, all: Set<String>) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.GEMINI_MODELS] = usable.joinToString(",")
+            prefs[Keys.GEMINI_MODELS_AT] = System.currentTimeMillis().toString()
+            val modelKey = stringPreferencesKey("model_GEMINI")
+            val urlKey = stringPreferencesKey("base_url_GEMINI")
+            val geminiIsSaved = (prefs[Keys.PROVIDER] ?: "GEMINI") == "GEMINI"
+            val current = (prefs[modelKey] ?: (if (geminiIsSaved) prefs[Keys.MODEL] else null) ?: "")
+                .trim().removePrefix("models/")
+            val customUrl = (prefs[urlKey] ?: (if (geminiIsSaved) prefs[Keys.BASE_URL] else null) ?: "").isNotBlank()
+            if (!customUrl && current.isNotBlank() && all.isNotEmpty() && current !in all) {
+                prefs[modelKey] = usable.firstOrNull { it.contains("flash-lite") && !it.contains("preview") }
+                    ?: usable.firstOrNull()
+                    ?: current
+            }
+        }
+    }
+
     private fun parseShuffle(json: String): Map<Long, List<Long>> {
         val obj = JSONObject(json)
         val out = mutableMapOf<Long, List<Long>>()

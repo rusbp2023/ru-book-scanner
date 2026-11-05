@@ -423,7 +423,7 @@ fun WordListScreen(
                 decks = decks,
                 activeDeckId = activeDeckId,
                 onSelect = onSelectDeck,
-                maxWidth = 132.dp
+                maxWidth = 220.dp
             )
             if (showInfoButton) {
                 InfoButton(onClick = { showWordsInfo = true })

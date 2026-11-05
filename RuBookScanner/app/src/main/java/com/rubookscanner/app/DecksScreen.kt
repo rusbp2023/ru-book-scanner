@@ -287,7 +287,7 @@ fun DecksScreen(
         Spacer(Modifier.height(12.dp))
 
         LazyColumn(Modifier.fillMaxSize()) {
-            items(decks, key = { it.id }) { deck ->
+                items(decks.sortedByDescending { it.id }, key = { it.id }) { deck ->
                 val count = allCards.count { it.deckId == deck.id }
                 val ink = Color(0xFFEDE6DA)
                 val inkSoft = Color(0xFFD2BBB0)

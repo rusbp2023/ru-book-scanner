@@ -71,6 +71,11 @@ private val BUILTIN_GEMINI_FALLBACKS = listOf(
     "gemini-3-flash-preview"
 )
 
+/** Ha a kiválasztott modell elbukott és egy tartalék működött: (kiválasztott, működő, mikor). 10 percig érvényes. */
+@Volatile
+private var rememberedGemini: Triple<String, String, Long>? = null
+private const val REMEMBER_MS = 10 * 60 * 1000L
+
 private val geminiVersionRegex = Regex("""gemini-(\d+(?:\.\d+)?)""")
 private val geminiDatedSuffix = Regex(""".*-(\d{3}|\d{4}|\d{2}-\d{2})$""")
 private val geminiExcludedParts = listOf(
@@ -96,8 +101,12 @@ class AiClient(private val settings: AiSettings) {
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(120, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
         .build()
+
+    /** Egy próbálkozás válaszvárási ideje (mp); a hívások állítják: szövegnél 30 + szavak száma (max 90), képnél 60. */
+    @Volatile
+    private var readTimeoutSec = 30L
 
     private val jsonMedia = "application/json".toMediaType()
 
@@ -113,6 +122,7 @@ class AiClient(private val settings: AiSettings) {
     fun lookupWords(words: List<String>): List<Flashcard> {
         if (words.isEmpty()) return emptyList()
         requireKey()
+        readTimeoutSec = (30L + words.size).coerceAtMost(90L)
         val prompt = buildPrompt(words)
         val rawText = withFallback { callText(prompt, (400 + words.size * 120).coerceIn(2000, 8000)) }
         return parseResponse(rawText)
@@ -126,6 +136,7 @@ class AiClient(private val settings: AiSettings) {
     fun lookupWordsFromImages(imagesBase64: List<String>, phrases: List<Boolean> = emptyList()): List<Flashcard> {
         if (imagesBase64.isEmpty()) return emptyList()
         requireKey()
+        readTimeoutSec = 60L
         val prompt = buildBatchImagePrompt(imagesBase64.size, phrases)
         val rawText = withFallback { callVision(prompt, imagesBase64, true) }
         return parseResponse(rawText)
@@ -141,6 +152,7 @@ class AiClient(private val settings: AiSettings) {
     /** Blokkoló hívás — mindig háttérszálon (Dispatchers.IO) hívd! Egy fotóból ismeri fel + fordítja a szót. */
     fun lookupWordFromImage(imageBase64: String): Flashcard {
         requireKey()
+        readTimeoutSec = 60L
         val prompt = buildImagePrompt()
         val rawText = withFallback { callVision(prompt, listOf(imageBase64), false) }
         return parseSingleCardResponse(rawText)
@@ -205,19 +217,27 @@ class AiClient(private val settings: AiSettings) {
     // ---------------------------------------------------------------- tartalék-váltás
 
     /** A kipróbálandó modellek sorrendje: először a kiválasztott, utána (csak Gemininél) legfeljebb 3 tartalék. */
+    private fun primaryModel(): String = settings.model.trim().ifBlank { defaultModelFor(settings.provider) }
+
     private fun modelChain(): List<String> {
-        val primary = settings.model.trim().ifBlank { defaultModelFor(settings.provider) }
+        val primary = primaryModel()
         if (settings.provider != AiProvider.GEMINI || settings.baseUrl.isNotBlank()) return listOf(primary)
         val pool = if (settings.geminiModels.isNotEmpty()) settings.geminiModels else BUILTIN_GEMINI_FALLBACKS
         val others = pool
             .filter { it != primary }
             .sortedWith(compareBy<String>({ it.contains("preview") }, { !it.contains("lite") }))
-        return (listOf(primary) + others).take(4)
+        var chain = (listOf(primary) + others).take(4)
+        // ha nemrég a kiválasztott modell elbukott és egy tartalék működött, azzal kezdünk
+        val mem = rememberedGemini
+        if (mem != null && mem.first == primary && System.currentTimeMillis() - mem.third < REMEMBER_MS && mem.second in chain) {
+            chain = listOf(mem.second) + chain.filter { it != mem.second }
+        }
+        return chain
     }
 
     /**
-     * Átmeneti hibánál (túlterhelt, időtúllépés, kéréslimit, megszűnt modell) automatikusan próbálkozik tovább:
-     * túlterheltségnél előbb még egyszer ugyanazzal a modellel 2 mp múlva, utána a következő modellel.
+     * Átmeneti hibánál (túlterhelt, időtúllépés, kéréslimit, megszűnt modell) azonnal a következő modellel próbálkozik.
+     * Ha csak egy modell van (pl. OpenAI, Anthropic), túlterheltségnél egyszer újra próbál 2 mp múlva.
      * Rossz kulcsnál és más, nem átmeneti hibánál azonnal megáll.
      */
     private fun <T> withFallback(call: () -> T): T {
@@ -229,18 +249,31 @@ class AiClient(private val settings: AiSettings) {
                 var attempt = 0
                 while (true) {
                     try {
-                        return call()
+                        val result = call()
+                        if (settings.provider == AiProvider.GEMINI) {
+                            val primary = primaryModel()
+                            rememberedGemini =
+                                if (model != primary) Triple(primary, model, System.currentTimeMillis()) else null
+                        }
+                        return result
                     } catch (e: AiException) {
                         last = e
                         when (e.kind) {
-                            AiErrorKind.OVERLOADED, AiErrorKind.NO_INTERNET -> {
+                            AiErrorKind.NO_INTERNET -> {
+                                // internet nélkül egy másik modell sem segít: egy gyors újrapróbálás, aztán megáll
                                 if (attempt == 0) {
                                     attempt++
                                     Thread.sleep(2000)
                                     continue
                                 }
-                                // internet nélkül egy másik modell sem segít
-                                if (e.kind == AiErrorKind.NO_INTERNET) throw e
+                                throw e
+                            }
+                            AiErrorKind.OVERLOADED -> {
+                                if (chain.size == 1 && attempt == 0) {
+                                    attempt++
+                                    Thread.sleep(2000)
+                                    continue
+                                }
                             }
                             AiErrorKind.TIMEOUT, AiErrorKind.RATE_LIMIT, AiErrorKind.MODEL_NOT_FOUND -> {
                                 // a következő modellel folytatjuk
@@ -478,7 +511,8 @@ class AiClient(private val settings: AiSettings) {
     /** Elküldi a kérést; hálózati és HTTP hibákat AiException-né alakítja. */
     private fun execute(request: Request): String {
         try {
-            return client.newCall(request).execute().use { resp ->
+            val http = client.newBuilder().readTimeout(readTimeoutSec, TimeUnit.SECONDS).build()
+            return http.newCall(request).execute().use { resp ->
                 val respBody = resp.body?.string() ?: ""
                 if (!resp.isSuccessful) throw httpError(resp.code, respBody)
                 respBody
